@@ -3,9 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOTP Generator</title>
+    <title>TOTP Authenticator</title>
+    <meta name="theme-color" content="#0066cc">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230066cc' width='100' height='100' rx='20'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='white'>T</text></svg>">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Hello World</h1>
+    <div class="container">
+        <header>
+            <h1>TOTP Authenticator</h1>
+            <button id="installBtn" class="install-btn hidden">Install App</button>
+        </header>
+
+        <main id="app">
+            <div id="createView" class="view">
+                <form id="createForm">
+                    <div class="form-group">
+                        <label for="secret">TOTP Secret <span class="required">*</span></label>
+                        <input type="text" id="secret" name="secret" class="mono" placeholder="AAAA BBBB CCCC DDDD" required autocomplete="off" spellcheck="false">
+                        <small>Enter the key provided by the service</small>
+                        <span id="secretError" class="error hidden"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="label">Label</label>
+                        <input type="text" id="label" name="label" placeholder="Service - account@example.com">
+                        <small>A description to identify this code</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="passphrase">Passphrase</label>
+                        <div class="passphrase-wrapper">
+                            <input type="text" id="passphrase" name="passphrase" class="mono" autocomplete="off">
+                            <button type="button" id="regenerateBtn" class="btn-secondary">Regenerate</button>
+                        </div>
+                        <small id="passphraseHelp">Generated phrase - edit for custom</small>
+                        <div id="strengthMeter" class="strength-meter hidden">
+                            <div id="strengthBar" class="strength-bar"></div>
+                            <span id="strengthText"></span>
+                        </div>
+                        <span id="passphraseError" class="error hidden"></span>
+                    </div>
+
+                    <details class="advanced-options">
+                        <summary>Advanced Options</summary>
+                        <div class="form-group">
+                            <label for="digits">Digits</label>
+                            <select id="digits" name="digits">
+                                <option value="6" selected>6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="period">Period (seconds)</label>
+                            <input type="number" id="period" name="period" value="30" min="1" max="300">
+                        </div>
+                        <div class="form-group">
+                            <label for="algorithm">Algorithm</label>
+                            <select id="algorithm" name="algorithm">
+                                <option value="SHA1" selected>SHA1</option>
+                                <option value="SHA256">SHA256</option>
+                                <option value="SHA512">SHA512</option>
+                            </select>
+                        </div>
+                    </details>
+
+                    <button type="submit" class="btn-primary">Generate TOTP URL</button>
+                </form>
+
+                <div id="result" class="result hidden">
+                    <h2>Your TOTP URL</h2>
+                    <div class="url-display">
+                        <textarea id="generatedUrl" readonly></textarea>
+                        <button type="button" id="copyUrlBtn" class="btn-secondary">Copy URL</button>
+                    </div>
+                    <div id="passphraseDisplay" class="passphrase-display">
+                        <h3>Your Passphrase</h3>
+                        <div class="mono" id="savedPassphrase"></div>
+                    </div>
+                    <div class="warning">
+                        <strong>Important:</strong> Save this URL and passphrase. They cannot be recovered.
+                    </div>
+                    <button type="button" id="createAnotherBtn" class="btn-secondary">Create Another</button>
+                </div>
+            </div>
+
+            <div id="unlockView" class="view hidden">
+                <h2>Enter Passphrase</h2>
+                <form id="unlockForm">
+                    <div class="form-group">
+                        <input type="password" id="unlockPassphrase" placeholder="Enter passphrase" autocomplete="off">
+                        <span id="unlockError" class="error hidden"></span>
+                    </div>
+                    <button type="submit" class="btn-primary">Unlock</button>
+                </form>
+                <a href="./" class="link">Create New TOTP</a>
+            </div>
+
+            <div id="displayView" class="view hidden">
+                <div id="totpLabel" class="totp-label"></div>
+                <div id="totpCode" class="totp-code mono"></div>
+                <div class="countdown-container">
+                    <svg class="countdown-ring" viewBox="0 0 100 100">
+                        <circle class="countdown-bg" cx="50" cy="50" r="45"/>
+                        <circle id="countdownCircle" class="countdown-progress" cx="50" cy="50" r="45"/>
+                    </svg>
+                    <span id="countdown" class="countdown-text"></span>
+                </div>
+                <button type="button" id="copyCodeBtn" class="btn-primary">Copy Code</button>
+                <a href="./" class="link">Create New TOTP</a>
+            </div>
+
+            <div id="errorView" class="view hidden">
+                <h2>Error</h2>
+                <p id="errorMessage"></p>
+                <a href="./" class="link">Go to Create Mode</a>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/otpauth@9/dist/otpauth.umd.min.js"></script>
+    <script src="app.js" type="module"></script>
 </body>
 </html>
