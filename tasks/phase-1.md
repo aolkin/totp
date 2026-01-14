@@ -349,3 +349,5 @@ Phase 1 is complete when:
 - [ ] PWA installs on mobile and desktop
 - [ ] Works offline after first load
 - [ ] Create → View flow works end-to-end
+- [ ] All code is checked for duplication and refactoring is done to ensure no duplication exists
+- [ ] All unnecessary comments are removed, code should be self-documenting
