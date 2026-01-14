@@ -3,7 +3,7 @@ A fully client-side browser-based TOTP generator
 
 ## Project Structure
 
-- `docs/` - GitHub Pages site content (publicly accessible at totp.starmaze.dev)
+- `site/` - GitHub Pages site content (publicly accessible at totp.starmaze.dev)
 - All other files (README, LICENSE, etc.) remain private and are not published to the site
 
 ## GitHub Pages Setup (TO BE REMOVED AFTER SETUP IS COMPLETE)
