@@ -1,10 +1,10 @@
-const CACHE_VERSION = 'v1.0.0';
+// These placeholders are replaced at build time by vite.config.ts
+declare const __STATIC_ASSETS__: string[];
+
+const CACHE_VERSION = '__CACHE_VERSION__';
 const CACHE_NAME = `totp-cache-${CACHE_VERSION}`;
 
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-];
+const STATIC_ASSETS: string[] = __STATIC_ASSETS__;
 
 declare const self: ServiceWorkerGlobalScope;
 

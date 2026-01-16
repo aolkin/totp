@@ -393,9 +393,15 @@ Phase 1 is complete when:
   - Cached response served immediately when available
   - Background network fetch updates cache for freshness
   - Fallback to index.html for document requests when offline
-  - Automatic cache versioning and cleanup
+  - Automatic cache versioning based on build content hash
+  - Automatic cache cleanup on activation
+- ✅ Vite plugin for automatic cache manifest generation
+  - Collects all build output files (including hashed JS/CSS)
+  - Injects file list into service worker at build time
+  - Generates cache version from content hash (no manual versioning)
+  - All files pre-cached on service worker install
 - ✅ Service worker registration in main.ts
 - ✅ Vite build configuration updated to build and output service worker
-- ✅ PWA icons created (SVG format for scalability)
+- ✅ PWA icons created (single SVG with sizes="any")
 - ⏸️ PWA UI elements (install prompt, offline indicators) - deferred
 - ⏸️ PWA tests - deferred

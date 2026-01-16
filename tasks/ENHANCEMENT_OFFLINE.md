@@ -176,17 +176,24 @@ function applyUpdate(): void {
 
 ## Service Worker Enhancements
 
-### Version Tracking (✅ Implemented in Phase 1)
+### Automatic Cache Versioning (✅ Implemented in Phase 1)
 
-Version tracking is already implemented with automatic cache cleanup on activation.
+Implemented via Vite plugin that automatically:
+- Collects all build output files (including hashed filenames from Vite)
+- Generates cache version from SHA256 hash of all file paths (8 chars)
+- Injects both version and file list into service worker at build time
+- Pre-caches all files during service worker installation
+- Automatically cleans up old cache versions on activation
+
+No manual version management needed - every build gets a unique cache version.
 
 ### Offline-First Cache Strategy (✅ Implemented in Phase 1)
 
 The current implementation uses an offline-first (cache-first) strategy for all resources:
+- All build output files pre-cached on install (HTML, JS, CSS, icons, manifest)
 - Cached response served immediately when available (instant loading)
 - Background network fetch updates cache for freshness
 - Fallback to index.html for document requests when fully offline
-- All resources cached automatically after first fetch
 
 This provides optimal performance and offline reliability.
 
