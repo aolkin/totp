@@ -38,22 +38,34 @@ otpauth://totp/Label?secret=SECRET&issuer=Issuer&algorithm=SHA1&digits=6&period=
 - `period` - Time step (optional, default 30)
 
 **Parser example:**
-```javascript
-function parseOTPAuthURL(url) {
+```typescript
+interface OTPAuthData {
+  label: string;
+  secret: string;
+  issuer: string;
+  algorithm: 'SHA1' | 'SHA256' | 'SHA512';
+  digits: number;
+  period: number;
+}
+
+function parseOTPAuthURL(url: string): OTPAuthData {
   const parsed = new URL(url);
   if (parsed.protocol !== 'otpauth:') throw new Error('Invalid URL');
   if (parsed.host !== 'totp') throw new Error('Only TOTP supported');
-  
+
   const label = decodeURIComponent(parsed.pathname.slice(1));
   const params = new URLSearchParams(parsed.search);
-  
+
+  const secret = params.get('secret');
+  if (!secret) throw new Error('Missing secret parameter');
+
   return {
     label,
-    secret: params.get('secret'),
+    secret,
     issuer: params.get('issuer') || '',
-    algorithm: params.get('algorithm') || 'SHA1',
-    digits: parseInt(params.get('digits')) || 6,
-    period: parseInt(params.get('period')) || 30
+    algorithm: (params.get('algorithm') as OTPAuthData['algorithm']) || 'SHA1',
+    digits: parseInt(params.get('digits') || '6') || 6,
+    period: parseInt(params.get('period') || '30') || 30
   };
 }
 ```
@@ -119,23 +131,23 @@ function parseOTPAuthURL(url) {
 
 ### Camera Stream Setup
 
-```javascript
-async function startCamera() {
-  const constraints = {
+```typescript
+async function startCamera(): Promise<void> {
+  const constraints: MediaStreamConstraints = {
     video: {
       facingMode: 'environment', // Rear camera on mobile
       width: { ideal: 1280 },
       height: { ideal: 720 }
     }
   };
-  
+
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     videoElement.srcObject = stream;
-    videoElement.play();
+    await videoElement.play();
     startScanning();
   } catch (error) {
-    if (error.name === 'NotAllowedError') {
+    if (error instanceof DOMException && error.name === 'NotAllowedError') {
       showError('Camera permission denied');
     } else {
       showError('Camera not available');
@@ -146,50 +158,57 @@ async function startCamera() {
 
 ### Continuous Scanning Loop
 
-```javascript
-function startScanning() {
+```typescript
+function startScanning(): void {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  
-  function tick() {
+  if (!ctx) throw new Error('Could not get canvas context');
+
+  function tick(): void {
     if (!videoElement.videoWidth) {
       requestAnimationFrame(tick);
       return;
     }
-    
+
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
     ctx.drawImage(videoElement, 0, 0);
-    
+
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const code = jsQR(imageData.data, imageData.width, imageData.height);
-    
+
     if (code) {
       handleQRCodeDetected(code.data);
       return; // Stop scanning
     }
-    
+
     requestAnimationFrame(tick);
   }
-  
+
   tick();
 }
 ```
 
 ### Form Auto-fill
 
-```javascript
-function handleQRCodeDetected(data) {
+```typescript
+function handleQRCodeDetected(data: string): void {
   try {
     const parsed = parseOTPAuthURL(data);
-    
+
     // Fill form fields
-    document.getElementById('secret').value = parsed.secret;
-    document.getElementById('label').value = parsed.label;
-    document.getElementById('digits').value = parsed.digits;
-    document.getElementById('period').value = parsed.period;
-    document.getElementById('algorithm').value = parsed.algorithm;
-    
+    const secretInput = document.getElementById('secret') as HTMLInputElement;
+    const labelInput = document.getElementById('label') as HTMLInputElement;
+    const digitsInput = document.getElementById('digits') as HTMLSelectElement;
+    const periodInput = document.getElementById('period') as HTMLInputElement;
+    const algorithmInput = document.getElementById('algorithm') as HTMLSelectElement;
+
+    if (secretInput) secretInput.value = parsed.secret;
+    if (labelInput) labelInput.value = parsed.label;
+    if (digitsInput) digitsInput.value = parsed.digits.toString();
+    if (periodInput) periodInput.value = parsed.period.toString();
+    if (algorithmInput) algorithmInput.value = parsed.algorithm;
+
     // Show success
     showToast('QR code scanned successfully!');
     closeCameraModal();
@@ -201,11 +220,12 @@ function handleQRCodeDetected(data) {
 
 ### Cleanup
 
-```javascript
-function stopCamera() {
-  const stream = videoElement.srcObject;
+```typescript
+function stopCamera(): void {
+  const stream = videoElement.srcObject as MediaStream | null;
   if (stream) {
     stream.getTracks().forEach(track => track.stop());
+    // Note: srcObject requires null (DOM API), exception to undefined-over-null rule
     videoElement.srcObject = null;
   }
 }
@@ -253,7 +273,7 @@ function stopCamera() {
 
 ## Testing Requirements
 
-### tests/qr-scan.spec.js
+### tests/qr-scan.spec.ts
 
 **Mock camera access:**
 ```javascript
@@ -277,10 +297,12 @@ test('should request camera permission', async ({ page }) => {
 - Cancel during scan → Stream stopped, modal closed
 - Multiple QR codes in view → First valid code used
 
-### tests/otpauth-parser.spec.js
+### tests/otpauth-parser.spec.ts
 
 Test URL parsing with various formats:
-```javascript
+```typescript
+import { test, expect } from '@playwright/test';
+
 test('parse standard otpauth URL', () => {
   const url = 'otpauth://totp/GitHub:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub';
   const result = parseOTPAuthURL(url);
@@ -303,7 +325,7 @@ test('reject invalid protocol', () => {
 });
 ```
 
-### tests/camera-ui.spec.js
+### tests/camera-ui.spec.ts
 - Modal opens on scan button click
 - Modal closes on cancel
 - Modal closes after successful scan

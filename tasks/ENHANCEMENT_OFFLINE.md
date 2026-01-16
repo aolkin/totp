@@ -48,11 +48,11 @@ Show dismissible banner at top of page:
 **On first visit after service worker activated:**
 
 Request persistent storage to prevent cache eviction:
-```javascript
-async function requestPersistentStorage() {
+```typescript
+async function requestPersistentStorage(): Promise<void> {
   if (navigator.storage && navigator.storage.persist) {
     const isPersisted = await navigator.storage.persist();
-    
+
     if (isPersisted) {
       console.log('Storage persistence granted');
       localStorage.setItem('storage_persisted', 'true');
@@ -97,22 +97,29 @@ async function requestPersistentStorage() {
 - Manual controls
 
 **Implementation:**
-```javascript
-async function getCacheInfo() {
+```typescript
+interface CacheInfo {
+  totalSize: number;
+  lastUpdate: string | undefined;
+  itemCount: number;
+}
+
+async function getCacheInfo(): Promise<CacheInfo> {
   const cache = await caches.open('totp-v1');
   const keys = await cache.keys();
-  
+
   const sizes = await Promise.all(
-    keys.map(async req => {
+    keys.map(async (req) => {
       const response = await cache.match(req);
+      if (!response) return 0;
       const blob = await response.blob();
       return blob.size;
     })
   );
-  
+
   const totalSize = sizes.reduce((a, b) => a + b, 0);
   const lastUpdate = localStorage.getItem('cache_last_update');
-  
+
   return { totalSize, lastUpdate, itemCount: keys.length };
 }
 ```
@@ -131,28 +138,30 @@ Show banner:
 ```
 
 **Service worker implementation:**
-```javascript
-self.addEventListener('activate', event => {
+```typescript
+self.addEventListener('activate', (event: ExtendableEvent) => {
   // New service worker activated
-  self.clients.matchAll().then(clients => {
-    clients.forEach(client => {
-      client.postMessage({
-        type: 'UPDATE_AVAILABLE'
+  event.waitUntil(
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'UPDATE_AVAILABLE'
+        });
       });
-    });
-  });
+    })
+  );
 });
 ```
 
 **Client side:**
-```javascript
-navigator.serviceWorker.addEventListener('message', event => {
+```typescript
+navigator.serviceWorker?.addEventListener('message', (event: MessageEvent) => {
   if (event.data.type === 'UPDATE_AVAILABLE') {
     showUpdateBanner();
   }
 });
 
-function applyUpdate() {
+function applyUpdate(): void {
   window.location.reload();
 }
 ```
@@ -168,17 +177,18 @@ function applyUpdate() {
 
 ### Add Version Tracking
 
-```javascript
+```typescript
 const CACHE_VERSION = 'v1.0.5';
 const CACHE_NAME = `totp-cache-${CACHE_VERSION}`;
 
-self.addEventListener('install', event => {
+self.addEventListener('install', (event: ExtendableEvent) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
+    caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
         '/',
         '/index.html',
-        'https://cdn.jsdelivr.net/npm/otpauth@9/dist/otpauth.umd.min.js'
+        '/assets/index.js',  // Vite build output
+        '/assets/index.css'  // Vite build output
       ]);
     })
   );
@@ -188,31 +198,31 @@ self.addEventListener('install', event => {
 ### Smart Cache Strategy
 
 **Network-first for HTML (get updates):**
-```javascript
-self.addEventListener('fetch', event => {
+```typescript
+self.addEventListener('fetch', (event: FetchEvent) => {
   if (event.request.destination === 'document') {
     event.respondWith(
       fetch(event.request)
-        .then(response => {
+        .then((response) => {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
+          caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, clone);
           });
           return response;
         })
-        .catch(() => caches.match(event.request))
+        .catch(() => caches.match(event.request) as Promise<Response>)
     );
   }
 });
 ```
 
 **Cache-first for assets (performance):**
-```javascript
-if (event.request.destination === 'script' || 
+```typescript
+if (event.request.destination === 'script' ||
     event.request.destination === 'style') {
   event.respondWith(
     caches.match(event.request)
-      .then(response => response || fetch(event.request))
+      .then((response) => response || fetch(event.request))
   );
 }
 ```

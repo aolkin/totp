@@ -14,14 +14,14 @@ Add dark mode support with automatic system preference detection and manual togg
 ### 1. System Preference Detection
 
 **Detect user's OS/browser preference:**
-```javascript
+```typescript
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 ```
 
 **Listen for system changes:**
-```javascript
+```typescript
 window.matchMedia('(prefers-color-scheme: dark)')
-  .addEventListener('change', event => {
+  .addEventListener('change', (event: MediaQueryListEvent) => {
     if (!hasManualPreference()) {
       applyTheme(event.matches ? 'dark' : 'light');
     }
@@ -68,8 +68,10 @@ window.matchMedia('(prefers-color-scheme: dark)')
 ```
 
 **Apply theme:**
-```javascript
-function applyTheme(theme) {
+```typescript
+type Theme = 'light' | 'dark';
+
+function applyTheme(theme: Theme): void {
   document.documentElement.setAttribute('data-theme', theme);
 }
 ```
@@ -161,13 +163,13 @@ function applyTheme(theme) {
 ```
 
 **Apply on load:**
-```javascript
-function initTheme() {
+```typescript
+function initTheme(): void {
   document.body.classList.add('disable-transitions');
-  
+
   // Apply theme
   applyTheme(getPreferredTheme());
-  
+
   // Re-enable after a frame
   requestAnimationFrame(() => {
     document.body.classList.remove('disable-transitions');
@@ -225,18 +227,20 @@ function initTheme() {
 ```
 
 **JavaScript:**
-```javascript
-document.querySelectorAll('[data-theme-option]').forEach(button => {
+```typescript
+type ThemeOption = 'light' | 'dark' | 'auto';
+
+document.querySelectorAll<HTMLButtonElement>('[data-theme-option]').forEach((button) => {
   button.addEventListener('click', () => {
-    const option = button.dataset.themeOption;
+    const option = button.dataset.themeOption as ThemeOption;
     setThemePreference(option);
     updateToggleUI(option);
   });
 });
 
-function setThemePreference(option) {
+function setThemePreference(option: ThemeOption): void {
   localStorage.setItem('theme', option);
-  
+
   if (option === 'auto') {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     applyTheme(prefersDark ? 'dark' : 'light');
@@ -245,8 +249,8 @@ function setThemePreference(option) {
   }
 }
 
-function updateToggleUI(active) {
-  document.querySelectorAll('[data-theme-option]').forEach(button => {
+function updateToggleUI(active: ThemeOption): void {
+  document.querySelectorAll<HTMLButtonElement>('[data-theme-option]').forEach((button) => {
     button.classList.toggle('active', button.dataset.themeOption === active);
   });
 }
@@ -372,13 +376,15 @@ Toggles between light and dark, ignoring system preference.
 
 ## Testing Requirements
 
-### tests/dark-mode.spec.js
+### tests/dark-mode.spec.ts
 
-```javascript
+```typescript
+import { test, expect, type Page } from '@playwright/test';
+
 test('detects system dark mode preference', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/');
-  
+
   const theme = await page.getAttribute('html', 'data-theme');
   expect(theme).toBe('dark');
 });
@@ -386,31 +392,31 @@ test('detects system dark mode preference', async ({ page }) => {
 test('manual toggle overrides system preference', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/');
-  
+
   await page.click('[data-theme-option="light"]');
-  
+
   const theme = await page.getAttribute('html', 'data-theme');
   expect(theme).toBe('light');
 });
 
-test('persists theme preference', async ({ page, context }) => {
+test('persists theme preference', async ({ page }) => {
   await page.goto('/');
   await page.click('[data-theme-option="dark"]');
-  
+
   // Reload page
   await page.reload();
-  
+
   const theme = await page.getAttribute('html', 'data-theme');
   expect(theme).toBe('dark');
 });
 
 test('all text meets contrast requirements', async ({ page }) => {
   await page.goto('/');
-  
+
   // Check light mode
   const lightContrast = await checkContrastRatios(page);
   expect(lightContrast.minimum).toBeGreaterThanOrEqual(4.5);
-  
+
   // Check dark mode
   await page.click('[data-theme-option="dark"]');
   const darkContrast = await checkContrastRatios(page);
@@ -419,20 +425,20 @@ test('all text meets contrast requirements', async ({ page }) => {
 
 test('smooth transition between themes', async ({ page }) => {
   await page.goto('/');
-  
-  const before = await page.evaluate(() => 
+
+  const before = await page.evaluate(() =>
     getComputedStyle(document.body).backgroundColor
   );
-  
+
   await page.click('[data-theme-option="dark"]');
-  
+
   // Wait for transition
   await page.waitForTimeout(300);
-  
-  const after = await page.evaluate(() => 
+
+  const after = await page.evaluate(() =>
     getComputedStyle(document.body).backgroundColor
   );
-  
+
   expect(before).not.toBe(after);
 });
 
@@ -441,7 +447,7 @@ test('TOTP code visible in both modes', async ({ page }) => {
   await page.goto('/#test-fragment');
   const lightCode = await page.textContent('[data-testid="totp-code"]');
   expect(lightCode).toBeTruthy();
-  
+
   // Dark mode
   await page.click('[data-theme-option="dark"]');
   const darkCode = await page.textContent('[data-testid="totp-code"]');
@@ -453,11 +459,13 @@ test('TOTP code visible in both modes', async ({ page }) => {
 ### Visual Regression Tests
 
 **Capture screenshots in both modes:**
-```javascript
+```typescript
+import { test, expect } from '@playwright/test';
+
 test('visual regression - create form', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveScreenshot('create-form-light.png');
-  
+
   await page.click('[data-theme-option="dark"]');
   await expect(page).toHaveScreenshot('create-form-dark.png');
 });

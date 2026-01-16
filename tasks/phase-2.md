@@ -22,26 +22,26 @@ Add local browser storage to Phase 1, allowing users to save TOTP configurations
 ### Storage Design
 
 **IndexedDB Schema:**
-```javascript
+```typescript
 Database: "totp-storage"
 Version: 1
 
 Object Store: "secrets"
 Key Path: "id" (auto-increment)
 
-Record Structure:
-{
-  id: 1,
-  label: "GitHub - work@example.com",
-  created: 1704067200000,  // timestamp
-  lastUsed: 1704153600000, // timestamp
+// TypeScript interface
+interface TOTPRecord {
+  id: number;
+  label: string;
+  created: number;  // timestamp
+  lastUsed: number; // timestamp
   encrypted: {
-    salt: Uint8Array,
-    iv: Uint8Array,
-    ciphertext: Uint8Array,
-    tag: Uint8Array
-  },
-  passphraseHint: "office-door-code" // optional, stored plaintext
+    salt: Uint8Array;
+    iv: Uint8Array;
+    ciphertext: Uint8Array;
+    tag: Uint8Array;
+  };
+  passphraseHint?: string; // optional, stored plaintext
 }
 ```
 
@@ -112,8 +112,8 @@ Record Structure:
 ### Export as Shareable URL
 
 **From list or view mode:**
-```javascript
-async function exportAsURL(record) {
+```typescript
+async function exportAsURL(record: TOTPRecord): Promise<void> {
   // Re-encrypt with same passphrase into URL format
   const url = await generateStatelessURL(record);
   copyToClipboard(url);
@@ -194,37 +194,37 @@ This allows transitioning stored TOTP to stateless URL for sharing with team.
 
 ## Testing Requirements
 
-### tests/indexeddb.spec.js
+### tests/indexeddb.spec.ts
 - Test database creation and schema
 - Test CRUD operations (create, read, update, delete)
 - Test encryption/decryption with IndexedDB storage
 - Test quota handling (what if storage full?)
 
-### tests/ui-list.spec.js
+### tests/ui-list.spec.ts
 - Display empty state → Show create form
 - Display list with multiple TOTPs
 - Test search/filter functionality
 - Test sorting options
 - Test delete confirmation
 
-### tests/ui-save.spec.js
+### tests/ui-save.spec.ts
 - Create with "Save to browser" → Verify in list
 - Create without save → Only URL generated
 - Test passphrase requirement when saving
 - Test passphrase hint storage
 
-### tests/export-import.spec.js
+### tests/export-import.spec.ts
 - Export single TOTP as URL → Verify matches Phase 1 format
 - Export all as JSON → Verify structure
 - Import JSON → Verify TOTPs restored
 - Test import with conflicts (same label)
 
-### tests/session.spec.js
+### tests/session.spec.ts
 - Enter passphrase → View TOTP → Navigate away → Return → No re-prompt
 - Test "Forget passphrase" clears session
 - Test sessionStorage cleared on browser close
 
-### tests/masterpassword.spec.js
+### tests/masterpassword.spec.ts
 - Tests appropriate to the master password functionality.
 
 ## Implementation Notes
@@ -232,15 +232,17 @@ This allows transitioning stored TOTP to stateless URL for sharing with team.
 ### IndexedDB Wrapper
 
 Create abstraction layer:
-```javascript
+```typescript
 class TOTPStorage {
-  async init() { /* Open database */ }
-  async add(totp) { /* Add record */ }
-  async getAll() { /* List all */ }
-  async getById(id) { /* Get one */ }
-  async update(id, data) { /* Update */ }
-  async delete(id) { /* Remove */ }
-  async search(query) { /* Filter */ }
+  private db: IDBDatabase | undefined;
+
+  async init(): Promise<void> { /* Open database */ }
+  async add(totp: Omit<TOTPRecord, 'id'>): Promise<number> { /* Add record */ }
+  async getAll(): Promise<TOTPRecord[]> { /* List all */ }
+  async getById(id: number): Promise<TOTPRecord | undefined> { /* Get one */ }
+  async update(id: number, data: Partial<TOTPRecord>): Promise<void> { /* Update */ }
+  async delete(id: number): Promise<void> { /* Remove */ }
+  async search(query: string): Promise<TOTPRecord[]> { /* Filter */ }
 }
 ```
 

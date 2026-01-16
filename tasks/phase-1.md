@@ -16,10 +16,11 @@ Everything after `#` never reaches the server.
 ## Technical Requirements
 
 ### Stack
-- **No framework** - Vanilla JavaScript
-- **Dependencies:** `otpauth` library via CDN (https://cdn.jsdelivr.net/npm/otpauth@9/dist/otpauth.umd.min.js)
+- **Framework:** Svelte with TypeScript
+- **Build Tool:** Vite
+- **Dependencies:** `otpauth` library (npm package)
 - **APIs:** Web Crypto API (built-in), Service Worker API
-- **Hosting:** GitHub Pages (static HTML)
+- **Hosting:** GitHub Pages (static build output)
 
 ### Browser Support
 - Modern browsers with Web Crypto API support (Chrome 37+, Firefox 34+, Safari 11+)
@@ -181,7 +182,7 @@ Alternative: Simple 5-word generator with common English words (ensure ~60+ bit 
 
 ### TOTP Code Generation
 Use `otpauth` library:
-```javascript
+```typescript
 import { TOTP } from 'otpauth';
 
 const totp = new TOTP({
@@ -191,21 +192,24 @@ const totp = new TOTP({
   algorithm: 'SHA1'
 });
 
-const code = totp.generate();
+const code: string = totp.generate();
 ```
 
 ### Auto-refresh Logic
-```javascript
+```typescript
 setInterval(() => {
   updateCode();
   updateCountdown();
 }, 1000);
 
-function updateCountdown() {
+function updateCountdown(): void {
   const now = Math.floor(Date.now() / 1000);
   const remaining = 30 - (now % 30);
-  document.getElementById('countdown').textContent = remaining;
-  
+  const countdownElement = document.getElementById('countdown');
+  if (countdownElement) {
+    countdownElement.textContent = remaining.toString();
+  }
+
   if (remaining === 30) {
     updateCode(); // Generate new code
   }
@@ -220,16 +224,26 @@ function updateCountdown() {
 ## File Structure
 
 ```
-index.html          (entire application)
-├── manifest.json   (inline in <head>)
-├── service-worker  (inline <script>)
-├── styles         (inline <style>)
-└── application    (inline <script type="module">)
+src/
+├── App.svelte              (main application component)
+├── main.ts                 (application entry point)
+├── components/
+│   ├── CreateForm.svelte   (TOTP creation form)
+│   ├── TotpDisplay.svelte  (TOTP code display)
+│   └── PassphrasePrompt.svelte
+├── lib/
+│   ├── crypto.ts           (encryption/decryption logic)
+│   ├── totp.ts             (TOTP generation)
+│   └── types.ts            (TypeScript type definitions)
+├── service-worker.ts       (PWA service worker)
+└── vite-env.d.ts           (Vite environment types)
+index.html                  (entry HTML)
+vite.config.ts              (Vite configuration)
+tsconfig.json               (TypeScript configuration)
+package.json                (dependencies)
 ```
 
-Single HTML file, ~15-20KB before compression.
-
-However, you may switch to non-inlined files if any file gets longer than tens of lines.
+The application will be built into a `dist/` directory for deployment.
 
 ## Testing Requirements
 
@@ -237,49 +251,50 @@ However, you may switch to non-inlined files if any file gets longer than tens o
 
 **Install:**
 ```bash
-npm init -y
 npm install -D @playwright/test
 npx playwright install
 ```
 
-**playwright.config.js:**
-```javascript
-module.exports = {
+**playwright.config.ts:**
+```typescript
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
   testDir: './tests',
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL: 'http://localhost:5173',
     headless: true,
   },
   webServer: {
-    command: 'python -m http.server 8080',
-    port: 8080,
+    command: 'npm run dev',
+    port: 5173,
     reuseExistingServer: true,
   },
-};
+});
 ```
 
 ### Test Scenarios
 
-**tests/encryption.spec.js:**
+**tests/encryption.spec.ts:**
 - Test PBKDF2 key derivation with known vectors
 - Test AES-GCM encryption/decryption roundtrip
 - Test empty passphrase mode
 - Test URL encoding/decoding
 
-**tests/totp-generation.spec.js:**
+**tests/totp-generation.spec.ts:**
 - Test TOTP code generation with RFC 6238 test vectors
 - Verify code changes every 30 seconds
 - Test different algorithms (SHA1, SHA256, SHA512)
 - Test different digit counts (6, 7, 8)
 
-**tests/ui-create.spec.js:**
+**tests/ui-create.spec.ts:**
 - Fill form with valid secret → verify URL generated
 - Test passphrase regeneration
 - Test custom passphrase with strength validation
 - Test validation errors (invalid Base32, short passphrase)
 - Test advanced options (digits, period, algorithm)
 
-**tests/ui-view.spec.js:**
+**tests/ui-view.spec.ts:**
 - Navigate to URL with fragment → verify TOTP displayed
 - Test passphrase prompt on encrypted URL
 - Test wrong passphrase → error shown
@@ -287,13 +302,13 @@ module.exports = {
 - Test auto-refresh after 30 seconds
 - Test copy button functionality
 
-**tests/pwa.spec.js:**
+**tests/pwa.spec.ts:**
 - Verify manifest.json served correctly
 - Verify service worker registers
 - Test offline mode (service worker caches resources)
 - Test install prompt (if testable)
 
-**tests/e2e.spec.js:**
+**tests/e2e.spec.ts:**
 - Full flow: Create → Copy URL → Open in new tab → Enter passphrase → See code
 - Create with empty passphrase → Open URL → Code displays immediately
 - Create with label → Verify label shows in view mode
@@ -311,13 +326,28 @@ Create a GitHub action to run the tests for PRs and post the resulting screensho
 
 ## Deployment
 
+**Build Process:**
+```bash
+npm run build  # Creates optimized dist/ directory
+```
+
 **GitHub Pages:**
-1. Create repo with `index.html`
-2. Enable Pages in Settings → Pages → Source: main branch
-3. Access at `https://username.github.io/repo-name/`
+1. Build the application: `npm run build`
+2. Deploy the `dist/` directory to GitHub Pages
+3. Enable Pages in Settings → Pages → Source: gh-pages branch or GitHub Actions
+4. Access at `https://username.github.io/repo-name/`
+
+**Vite Configuration for GitHub Pages:**
+```typescript
+// vite.config.ts
+export default defineConfig({
+  base: '/repo-name/',  // Set base path for GitHub Pages
+  // ... other config
+});
+```
 
 **Custom Domain:**
-1. Add `CNAME` file with domain totp.starmaze.dev
+1. Add `CNAME` file with domain totp.starmaze.dev to the `dist/` folder (or public/ folder to have Vite copy it)
 2. Configure DNS: `CNAME` record pointing to `username.github.io`
 3. Enable HTTPS in Pages settings
 
@@ -344,10 +374,12 @@ Create a GitHub action to run the tests for PRs and post the resulting screensho
 ## Success Criteria
 
 Phase 1 is complete when:
-- [ ] Single HTML file under 20KB (excluding CDN dependencies)
+- [ ] Application builds successfully with Vite
+- [ ] Build output is optimized and production-ready
 - [ ] All Playwright tests pass
 - [ ] PWA installs on mobile and desktop
 - [ ] Works offline after first load
 - [ ] Create → View flow works end-to-end
+- [ ] TypeScript compilation succeeds with no errors
 - [ ] All code is checked for duplication and refactoring is done to ensure no duplication exists
 - [ ] All unnecessary comments are removed, code should be self-documenting
