@@ -43,41 +43,24 @@ self.addEventListener('fetch', (event: FetchEvent) => {
     return;
   }
 
-  if (event.request.destination === 'document') {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const clone = response.clone();
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        if (networkResponse.ok) {
+          const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, clone);
           });
-          return response;
-        })
-        .catch(() => {
-          return caches.match(event.request).then((response) => {
-            if (response) {
-              return response;
-            }
-            return caches.match('/index.html') as Promise<Response>;
-          });
-        })
-    );
-  } else {
-    event.respondWith(
-      caches.match(event.request).then((response) => {
-        if (response) {
-          return response;
         }
-        return fetch(event.request).then((networkResponse) => {
-          if (networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, clone);
-            });
-          }
-          return networkResponse;
-        });
-      })
-    );
-  }
+        return networkResponse;
+      }).catch(() => {
+        if (event.request.destination === 'document') {
+          return caches.match('/index.html') as Promise<Response>;
+        }
+        throw new Error('Network request failed and no cache available');
+      });
+
+      return cachedResponse || fetchPromise;
+    })
+  );
 });

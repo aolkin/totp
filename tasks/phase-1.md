@@ -388,9 +388,11 @@ Phase 1 is complete when:
 
 ### PWA Caching (Phase 1 - Implemented)
 - ✅ manifest.json created with app metadata and icons
-- ✅ Service worker implemented with offline caching strategy
-  - Cache-first for static assets (JS, CSS)
-  - Network-first for HTML documents with offline fallback
+- ✅ Service worker implemented with offline-first caching strategy
+  - Offline-first (cache-first) for all resources
+  - Cached response served immediately when available
+  - Background network fetch updates cache for freshness
+  - Fallback to index.html for document requests when offline
   - Automatic cache versioning and cleanup
 - ✅ Service worker registration in main.ts
 - ✅ Vite build configuration updated to build and output service worker

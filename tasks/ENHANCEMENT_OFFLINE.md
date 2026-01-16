@@ -4,9 +4,10 @@
 
 Improve the offline experience for users who don't install the PWA, making it clear that the app works offline and providing better cache management.
 
-**Current State (Phase 1 - Basic Caching Implemented):**
-- ✅ Service worker caches files
-- ✅ Works offline after first visit
+**Current State (Phase 1 - Offline-First Caching Implemented):**
+- ✅ Service worker implements offline-first (cache-first) strategy for all resources
+- ✅ Works offline after first visit with instant loading from cache
+- ✅ Background network fetch keeps cache fresh when online
 - ❌ No user feedback about offline status (enhancement pending)
 - ❌ No cache persistence guarantees (enhancement pending)
 
@@ -175,57 +176,19 @@ function applyUpdate(): void {
 
 ## Service Worker Enhancements
 
-### Add Version Tracking
+### Version Tracking (✅ Implemented in Phase 1)
 
-```typescript
-const CACHE_VERSION = 'v1.0.5';
-const CACHE_NAME = `totp-cache-${CACHE_VERSION}`;
+Version tracking is already implemented with automatic cache cleanup on activation.
 
-self.addEventListener('install', (event: ExtendableEvent) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll([
-        '/',
-        '/index.html',
-        '/assets/index.js',  // Vite build output
-        '/assets/index.css'  // Vite build output
-      ]);
-    })
-  );
-});
-```
+### Offline-First Cache Strategy (✅ Implemented in Phase 1)
 
-### Smart Cache Strategy
+The current implementation uses an offline-first (cache-first) strategy for all resources:
+- Cached response served immediately when available (instant loading)
+- Background network fetch updates cache for freshness
+- Fallback to index.html for document requests when fully offline
+- All resources cached automatically after first fetch
 
-**Network-first for HTML (get updates):**
-```typescript
-self.addEventListener('fetch', (event: FetchEvent) => {
-  if (event.request.destination === 'document') {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
-          return response;
-        })
-        .catch(() => caches.match(event.request) as Promise<Response>)
-    );
-  }
-});
-```
-
-**Cache-first for assets (performance):**
-```typescript
-if (event.request.destination === 'script' ||
-    event.request.destination === 'style') {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => response || fetch(event.request))
-  );
-}
-```
+This provides optimal performance and offline reliability.
 
 
 ## Browser Compatibility
