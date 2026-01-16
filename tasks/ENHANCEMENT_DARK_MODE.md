@@ -6,11 +6,8 @@ Add dark mode support with automatic system preference detection and manual togg
 
 **Goals:**
 - Auto-detect system dark mode preference
-- Provide manual toggle override
 - Smooth transitions between modes
 - Maintain WCAG AA contrast ratios
-- Remember user preference
-- Support all phases (1, 2, 3)
 
 ## Implementation Strategy
 
@@ -32,57 +29,9 @@ window.matchMedia('(prefers-color-scheme: dark)')
 ```
 
 **Priority order:**
-1. Manual user toggle (if set)
-2. System preference
-3. Default to light
+1. System preference
+2. Default to light
 
-### 2. Manual Toggle
-
-**UI placement:**
-
-Top-right corner next to connection status:
-```
-[☀️ Light] ● Online
-[🌙 Dark]  ● Online
-```
-
-Alternative: Settings toggle
-```
-Appearance
-○ Light
-● Dark
-○ System (auto)
-```
-
-**Three-state toggle recommended:**
-- Light (force light)
-- Dark (force dark)
-- Auto (follow system)
-
-### 3. Preference Storage
-
-**Store in localStorage:**
-```javascript
-// Values: 'light', 'dark', 'auto'
-localStorage.setItem('theme', 'dark');
-```
-
-**On page load:**
-```javascript
-function initTheme() {
-  const saved = localStorage.getItem('theme') || 'auto';
-  
-  if (saved === 'auto') {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    applyTheme(prefersDark ? 'dark' : 'light');
-  } else {
-    applyTheme(saved);
-  }
-}
-
-// Call before page render to prevent flash
-initTheme();
-```
 
 ### 4. Theme Application
 
@@ -122,7 +71,6 @@ initTheme();
 ```javascript
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('theme', theme);
 }
 ```
 
