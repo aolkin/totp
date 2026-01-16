@@ -234,7 +234,7 @@ This allows transitioning stored TOTP to stateless URL for sharing with team.
 Create abstraction layer:
 ```typescript
 class TOTPStorage {
-  private db: IDBDatabase | null = null;
+  private db: IDBDatabase | undefined;
 
   async init(): Promise<void> { /* Open database */ }
   async add(totp: Omit<TOTPRecord, 'id'>): Promise<number> { /* Add record */ }

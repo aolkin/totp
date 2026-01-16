@@ -100,7 +100,7 @@ async function requestPersistentStorage(): Promise<void> {
 ```typescript
 interface CacheInfo {
   totalSize: number;
-  lastUpdate: string | null;
+  lastUpdate: string | undefined;
   itemCount: number;
 }
 

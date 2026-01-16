@@ -225,6 +225,7 @@ function stopCamera(): void {
   const stream = videoElement.srcObject as MediaStream | null;
   if (stream) {
     stream.getTracks().forEach(track => track.stop());
+    // Note: srcObject requires null (DOM API), exception to undefined-over-null rule
     videoElement.srcObject = null;
   }
 }
