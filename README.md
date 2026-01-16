@@ -1,6 +1,13 @@
 # totp
 A fully client-side browser-based TOTP generator
 
+## Features
+
+- 🔒 Client-side encryption (AES-256-GCM)
+- 🔑 Stateless architecture (secrets in URL)
+- 📱 Progressive Web App with offline support
+- 🌐 Works without internet after first load
+
 ## **MANDATORY: Coding Standards**
 
 ### Use `undefined` over `null`
