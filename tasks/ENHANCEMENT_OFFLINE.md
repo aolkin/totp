@@ -42,31 +42,6 @@ Show dismissible banner at top of page:
 - "Install" button triggers PWA install prompt
 - Green checkmark icon for positive framing
 
-### 2. Connection Status Indicator
-
-**Top-right corner badge:**
-```
-Online mode:  ● Online
-Offline mode: ○ Offline
-```
-
-**Visual design:**
-- Small, unobtrusive (10px circle + text)
-- Green dot when online
-- Gray dot when offline
-- Tooltip on hover: "All features work offline"
-
-**Implementation:**
-```javascript
-window.addEventListener('online', updateStatus);
-window.addEventListener('offline', updateStatus);
-
-function updateStatus() {
-  const isOnline = navigator.onLine;
-  statusBadge.className = isOnline ? 'online' : 'offline';
-  statusBadge.textContent = isOnline ? '● Online' : '○ Offline';
-}
-```
 
 ### 3. Persistent Storage Request
 
@@ -142,98 +117,6 @@ async function getCacheInfo() {
 }
 ```
 
-### 5. Manual Cache Refresh
-
-**"Refresh Cache" button functionality:**
-
-Force service worker to update cache immediately:
-```javascript
-async function refreshCache() {
-  const registration = await navigator.serviceWorker.getRegistration();
-  
-  if (registration) {
-    await registration.update();
-    localStorage.setItem('cache_last_update', Date.now());
-    showToast('Cache refreshed successfully');
-  }
-}
-```
-
-**Use cases:**
-- User knows there's an update
-- Periodic manual refresh (monthly?)
-- Before going offline for extended period
-
-### 6. Clear Cache Option
-
-**"Clear Cache" button:**
-
-Removes all cached resources:
-```javascript
-async function clearCache() {
-  const confirmed = confirm(
-    'Clear cache? App will require internet on next visit.'
-  );
-  
-  if (confirmed) {
-    const cacheNames = await caches.keys();
-    await Promise.all(
-      cacheNames.map(name => caches.delete(name))
-    );
-    
-    const registration = await navigator.serviceWorker.getRegistration();
-    if (registration) {
-      await registration.unregister();
-    }
-    
-    showToast('Cache cleared. Reload page to re-cache.');
-  }
-}
-```
-
-**When needed:**
-- Troubleshooting issues
-- Freeing storage space
-- Starting fresh
-
-### 7. Storage Quota Display
-
-**Show available storage:**
-```
-Storage: 42 KB used of 50 MB available
-```
-
-**Implementation:**
-```javascript
-if (navigator.storage && navigator.storage.estimate) {
-  const estimate = await navigator.storage.estimate();
-  const percentUsed = (estimate.usage / estimate.quota) * 100;
-  
-  displayQuota({
-    used: formatBytes(estimate.usage),
-    total: formatBytes(estimate.quota),
-    percent: percentUsed.toFixed(2)
-  });
-}
-```
-
-### 8. Offline Detection on TOTP View
-
-**When viewing TOTP while offline:**
-
-Show reassurance message:
-```
-┌─────────────────────────────────────┐
-│ ○ Offline                           │
-│ Your codes work without internet    │
-└─────────────────────────────────────┘
-
-       123 456
-     (refreshes in 18s)
-```
-
-This reduces anxiety about "is this working?"
-
 ### 9. Update Available Notification
 
 **When new version detected:**
@@ -273,27 +156,6 @@ function applyUpdate() {
   window.location.reload();
 }
 ```
-
-### 10. First-Time Offline Experience
-
-**Educational modal on first offline usage:**
-```
-┌─────────────────────────────────────┐
-│ You're Offline!                     │
-│                                      │
-│ Don't worry - all your TOTPs still  │
-│ work perfectly. This app is fully   │
-│ functional without internet.        │
-│                                      │
-│ ✓ Generate codes                    │
-│ ✓ View saved TOTPs (Phase 2)        │
-│ ✓ Create new TOTPs                  │
-│                                      │
-│ [x] Don't show again    [Got It!]   │
-└─────────────────────────────────────┘
-```
-
-Show once when offline state first detected.
 
 ## UI Location
 
@@ -355,66 +217,6 @@ if (event.request.destination === 'script' ||
 }
 ```
 
-## Testing Requirements
-
-### tests/offline.spec.js
-
-```javascript
-test('shows offline ready banner after service worker activation', async ({ page }) => {
-  await page.goto('/');
-  await page.waitForSelector('[data-testid="offline-ready-banner"]');
-  expect(await page.textContent('.banner')).toContain('Ready for Offline');
-});
-
-test('status indicator shows offline when disconnected', async ({ page, context }) => {
-  await page.goto('/');
-  await context.setOffline(true);
-  await page.waitForSelector('.status-badge.offline');
-  expect(await page.textContent('.status-badge')).toContain('Offline');
-});
-
-test('app works offline for TOTP generation', async ({ page, context }) => {
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
-  
-  // Go offline
-  await context.setOffline(true);
-  
-  // Create TOTP
-  await page.fill('#secret', 'JBSWY3DPEHPK3PXP');
-  await page.click('[data-testid="generate-button"]');
-  
-  // Verify code generated
-  const code = await page.textContent('[data-testid="totp-code"]');
-  expect(code).toMatch(/^\d{6}$/);
-});
-
-test('cache refresh updates service worker', async ({ page }) => {
-  await page.goto('/');
-  await page.click('[data-testid="refresh-cache-button"]');
-  await page.waitForSelector('.toast:has-text("Cache refreshed")');
-});
-
-test('storage quota displays correctly', async ({ page }) => {
-  await page.goto('/');
-  await page.click('[data-testid="settings-button"]');
-  const quota = await page.textContent('[data-testid="storage-quota"]');
-  expect(quota).toMatch(/\d+\s*(KB|MB)\s*used/);
-});
-```
-
-### Manual Testing Checklist
-
-- [ ] First visit shows offline ready banner
-- [ ] Status indicator changes online ↔ offline
-- [ ] App works fully offline (create, view TOTPs)
-- [ ] Cache refresh updates successfully
-- [ ] Clear cache removes all data
-- [ ] Storage quota displays accurate info
-- [ ] Update notification appears on new version
-- [ ] Persistent storage granted (check dev tools)
-- [ ] Works in incognito/private mode
-- [ ] Test on mobile (iOS Safari, Android Chrome)
 
 ## Browser Compatibility
 
@@ -435,27 +237,10 @@ test('storage quota displays correctly', async ({ page }) => {
 ## Success Criteria
 
 Enhancement is complete when:
-- [ ] Offline status clearly communicated to users
 - [ ] Persistent storage requested on first visit
-- [ ] Cache info panel shows accurate data
-- [ ] Manual cache refresh works
 - [ ] Update notifications appear correctly
 - [ ] App fully functional offline (verified via tests)
 - [ ] Works without requiring install
 - [ ] All Playwright tests pass
 - [ ] Tested across browsers/devices
 
-## User Benefits
-
-**Without this enhancement:**
-- Users don't know app works offline
-- May avoid using app when offline
-- No control over cache
-- Updates happen silently (confusing)
-
-**With this enhancement:**
-- Clear offline capability communication
-- Confidence to use app anywhere
-- Control over storage/updates
-- Better long-term cache persistence
-- Educational first-time experience
