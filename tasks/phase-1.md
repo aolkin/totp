@@ -61,6 +61,8 @@ The fragment contains Base64-encoded binary data:
 }
 ```
 
+**CONSIDER:** To keep the URLs as short as possible, should we minimize the size of this structure and avoid redundant data? (e.g., omit fields with default values, use shorter keys)
+
 ### Empty Passphrase Handling
 If user provides empty/no passphrase:
 - Use fixed string "NO_PASSPHRASE" as key material
@@ -76,7 +78,8 @@ If user provides empty/no passphrase:
    - Text input, monospace font
    - Placeholder: "aaaa bbbb cccc dddd"
    - Help text: "Enter the key provided by the service"
-   - Validation: Must match `^[A-Z2-7]+=*$` (Base32, spaces allowed and removed during processing)
+   - Validation: Must match `^[A-Z2-7]+=*$` (Base32)
+   - **CONSIDER:** Allow spaces in the input but remove them for processing. Ensure there is a test case for this.
 
 2. **Label** (optional)
    - Text input
@@ -94,6 +97,8 @@ If user provides empty/no passphrase:
    - Digits: dropdown (6, 7, 8) - default 6
    - Period: input (default 30 seconds)
    - Algorithm: dropdown (SHA1, SHA256, SHA512) - default SHA1
+
+**CONSIDER:** Is there value to user-selected algorithm, or should we just always use the secure option (SHA256/SHA512) for simplicity?
 
 **Submit Button:** "Generate TOTP URL"
 
