@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Build a fully client-side, stateless TOTP (Time-based One-Time Password) authenticator as a Progressive Web App. The entire application fits in a single HTML file deployable to GitHub Pages.
+Build a fully client-side, stateless TOTP (Time-based One-Time Password) authenticator as a Progressive Web App.
 
 **Core Concept:** TOTP secrets are encrypted client-side and embedded in the URL fragment. No server storage required. Zero server trust.
 
@@ -51,17 +51,30 @@ The fragment contains Base64-encoded binary data:
 ```
 
 ### Metadata (encrypted with secret)
+
+**URL Optimization:** Use short keys and omit default values to minimize URL length.
+
+Defaults: `digits=6`, `period=30`, `algorithm="SHA1"`
+
 ```json
 {
-  "secret": "JBSWY3DPEHPK3PXP",
-  "label": "GitHub - user@example.com",
-  "digits": 6,
-  "period": 30,
-  "algorithm": "SHA1"
+  "s": "JBSWY3DPEHPK3PXP",
+  "l": "GitHub - user@example.com"
 }
 ```
 
-To keep the URLs as short as possible, consider ways to minimize the size of the above structure and avoid any redundant data.
+Full structure (when non-default values are used):
+```json
+{
+  "s": "JBSWY3DPEHPK3PXP",
+  "l": "GitHub",
+  "d": 8,
+  "p": 60,
+  "a": "SHA256"
+}
+```
+
+Keys: `s`=secret, `l`=label, `d`=digits, `p`=period, `a`=algorithm
 
 ### Empty Passphrase Handling
 If user provides empty/no passphrase:
@@ -78,8 +91,9 @@ If user provides empty/no passphrase:
    - Text input, monospace font
    - Placeholder: "aaaa bbbb cccc dddd"
    - Help text: "Enter the key provided by the service"
-   - Validation: Must match `^[A-Z2-7]+=*$` (Base32)
-   - allow spaces in the input but remove them for processing. ensure there is a test case for this.
+   - Input handling: Accept spaces for user convenience, strip them before validation
+   - Validation: After removing spaces, must match `^[A-Z2-7]+=*$` (Base32)
+   - Test case required: "JBSW Y3DP EHPK 3PXP" → "JBSWY3DPEHPK3PXP"
 
 2. **Label** (optional)
    - Text input
@@ -97,8 +111,7 @@ If user provides empty/no passphrase:
    - Digits: dropdown (6, 7, 8) - default 6
    - Period: input (default 30 seconds)
    - Algorithm: dropdown (SHA1, SHA256, SHA512) - default SHA1
-
-consider if there is value to user-selected algorithm or if we should just always use the secure option for simplicity.
+   - Note: Algorithm selection is required for compatibility. The issuing service determines which algorithm to use, not the user. Most services use SHA1 (RFC 6238 standard), but some (e.g., AWS) require SHA256.
 
 **Submit Button:** "Generate TOTP URL"
 
@@ -138,83 +151,20 @@ consider if there is value to user-selected algorithm or if we should just alway
 
 ## PWA Implementation
 
-### manifest.json (inline in HTML)
-```json
-{
-  "name": "TOTP Authenticator",
-  "short_name": "TOTP",
-  "description": "Secure, stateless TOTP authenticator",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0066cc",
-  "icons": [
-    {
-      "src": "data:image/svg+xml,<svg>...</svg>",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "data:image/svg+xml,<svg>...</svg>",
-      "sizes": "512x512",
-      "type": "image/svg+xml"
-    }
-  ]
-}
-```
-
-### Service Worker
-- Cache HTML file for offline access
-- Cache otpauth library
-- Serve from cache, fallback to network
-- Update cache on new version
-
-### Install Prompt
-- Show "Install App" button if browser supports PWA
-- Handle `beforeinstallprompt` event
+PWA manifest and service worker are already implemented with offline-first caching. Future enhancements can include:
+- Install prompt UI
+- Offline status indicators
 
 ## Implementation Details
 
 ### Passphrase Generation
-Use BIP39 word list (2048 words, built-in or via CDN). Select 5 random words for ~64 bits entropy.
-
-Alternative: Simple 5-word generator with common English words (ensure ~60+ bit entropy).
+Use BIP39 word list or simple 5-word generator with ~60+ bit entropy.
 
 ### TOTP Code Generation
-Use `otpauth` library:
-```typescript
-import { TOTP } from 'otpauth';
-
-const totp = new TOTP({
-  secret: secretBase32,
-  digits: 6,
-  period: 30,
-  algorithm: 'SHA1'
-});
-
-const code: string = totp.generate();
-```
+Use `otpauth` library to generate codes with configurable digits, period, and algorithm.
 
 ### Auto-refresh Logic
-```typescript
-setInterval(() => {
-  updateCode();
-  updateCountdown();
-}, 1000);
-
-function updateCountdown(): void {
-  const now = Math.floor(Date.now() / 1000);
-  const remaining = 30 - (now % 30);
-  const countdownElement = document.getElementById('countdown');
-  if (countdownElement) {
-    countdownElement.textContent = remaining.toString();
-  }
-
-  if (remaining === 30) {
-    updateCode(); // Generate new code
-  }
-}
-```
+Update code and countdown every second. When countdown reaches 30, generate new code.
 
 ### Error Handling
 - Invalid Base32 secret: Show error on form submission
@@ -235,43 +185,12 @@ src/
 │   ├── crypto.ts           (encryption/decryption logic)
 │   ├── totp.ts             (TOTP generation)
 │   └── types.ts            (TypeScript type definitions)
-├── service-worker.ts       (PWA service worker)
-└── vite-env.d.ts           (Vite environment types)
-index.html                  (entry HTML)
-vite.config.ts              (Vite configuration)
-tsconfig.json               (TypeScript configuration)
-package.json                (dependencies)
+└── service-worker.ts       (PWA service worker - already implemented)
 ```
-
-The application will be built into a `dist/` directory for deployment.
 
 ## Testing Requirements
 
-### Playwright Setup
-
-**Install:**
-```bash
-npm install -D @playwright/test
-npx playwright install
-```
-
-**playwright.config.ts:**
-```typescript
-import { defineConfig } from '@playwright/test';
-
-export default defineConfig({
-  testDir: './tests',
-  use: {
-    baseURL: 'http://localhost:5173',
-    headless: true,
-  },
-  webServer: {
-    command: 'npm run dev',
-    port: 5173,
-    reuseExistingServer: true,
-  },
-});
-```
+Playwright is already configured. Create tests in `tests/` directory.
 
 ### Test Scenarios
 
@@ -280,6 +199,9 @@ export default defineConfig({
 - Test AES-GCM encryption/decryption roundtrip
 - Test empty passphrase mode
 - Test URL encoding/decoding
+- Test metadata serialization uses short keys (`s`, `l`, `d`, `p`, `a`)
+- Test default values are omitted from metadata
+- Test non-default values are included in metadata
 
 **tests/totp-generation.spec.ts:**
 - Test TOTP code generation with RFC 6238 test vectors
@@ -289,10 +211,12 @@ export default defineConfig({
 
 **tests/ui-create.spec.ts:**
 - Fill form with valid secret → verify URL generated
+- Test secret input with spaces → verify spaces stripped (e.g., "JBSW Y3DP EHPK 3PXP")
 - Test passphrase regeneration
 - Test custom passphrase with strength validation
 - Test validation errors (invalid Base32, short passphrase)
 - Test advanced options (digits, period, algorithm)
+- Test URL contains minimal metadata (defaults omitted)
 
 **tests/ui-view.spec.ts:**
 - Navigate to URL with fragment → verify TOTP displayed
@@ -313,43 +237,9 @@ export default defineConfig({
 - Create with empty passphrase → Open URL → Code displays immediately
 - Create with label → Verify label shows in view mode
 
-### Running Tests
-```bash
-npx playwright test
-npx playwright test --headed  # Watch tests run
-npx playwright test --debug   # Debug mode
-```
-
-### GitHub Actions
-
-Create a GitHub action to run the tests for PRs and post the resulting screenshots to the PR as comments.
-
 ## Deployment
 
-**Build Process:**
-```bash
-npm run build  # Creates optimized dist/ directory
-```
-
-**GitHub Pages:**
-1. Build the application: `npm run build`
-2. Deploy the `dist/` directory to GitHub Pages
-3. Enable Pages in Settings → Pages → Source: gh-pages branch or GitHub Actions
-4. Access at `https://username.github.io/repo-name/`
-
-**Vite Configuration for GitHub Pages:**
-```typescript
-// vite.config.ts
-export default defineConfig({
-  base: '/repo-name/',  // Set base path for GitHub Pages
-  // ... other config
-});
-```
-
-**Custom Domain:**
-1. Add `CNAME` file with domain totp.starmaze.dev to the `dist/` folder (or public/ folder to have Vite copy it)
-2. Configure DNS: `CNAME` record pointing to `username.github.io`
-3. Enable HTTPS in Pages settings
+The project is configured to deploy to GitHub Pages. Build with `npm run build` to create the optimized `site/` directory.
 
 ## Security Considerations
 
@@ -371,37 +261,51 @@ export default defineConfig({
 - Use HTTPS only (enforce in service worker)
 - Display clear warnings on empty passphrase
 
+## Implementation Status
+
+### Completed
+- ✅ Project setup with Svelte + Vite + TypeScript
+- ✅ GitHub Pages deployment configuration (outputs to `site/`)
+- ✅ PWA manifest with app metadata and icons
+- ✅ Service worker with offline-first caching strategy
+  - Automatic cache versioning based on build content hash
+  - Vite plugin for automatic cache manifest generation
+  - Pre-caching of all build assets on install
+- ✅ TypeScript configuration and type checking
+
+### To Implement
+- [ ] Cryptography library (`lib/crypto.ts`)
+  - PBKDF2 key derivation
+  - AES-256-GCM encryption/decryption
+  - URL encoding/decoding
+  - Metadata serialization with short keys (`s`, `l`, `d`, `p`, `a`)
+  - Omit fields with default values to minimize URL length
+- [ ] TOTP generation (`lib/totp.ts`)
+  - Integration with `otpauth` library
+  - Code generation and validation
+- [ ] UI Components
+  - `CreateForm.svelte` - TOTP creation form with passphrase generation
+    - Strip spaces from secret input before validation
+    - Support all algorithm options (SHA1, SHA256, SHA512)
+  - `TotpDisplay.svelte` - TOTP code display with countdown
+  - `PassphrasePrompt.svelte` - Unlock prompt for encrypted URLs
+- [ ] Main application logic (`App.svelte`)
+  - Route handling (create mode vs view mode)
+  - URL fragment parsing
+  - State management
+- [ ] Playwright test suite
+  - Encryption roundtrip tests
+  - TOTP generation tests
+  - UI flow tests (create/view)
+  - E2E tests
+- [ ] Code review for duplication and clarity
+
 ## Success Criteria
 
 Phase 1 is complete when:
-- [x] Application builds successfully with Vite
-- [x] Build output is optimized and production-ready
 - [ ] All Playwright tests pass
-- [x] PWA installs on mobile and desktop (manifest and service worker implemented)
-- [x] Works offline after first load (service worker caching implemented)
 - [ ] Create → View flow works end-to-end
-- [x] TypeScript compilation succeeds with no errors
-- [ ] All code is checked for duplication and refactoring is done to ensure no duplication exists
-- [ ] All unnecessary comments are removed, code should be self-documenting
-
-## Implementation Status
-
-### PWA Caching (Phase 1 - Implemented)
-- ✅ manifest.json created with app metadata and icons
-- ✅ Service worker implemented with offline-first caching strategy
-  - Offline-first (cache-first) for all resources
-  - Cached response served immediately when available
-  - Background network fetch updates cache for freshness
-  - Fallback to index.html for document requests when offline
-  - Automatic cache versioning based on build content hash
-  - Automatic cache cleanup on activation
-- ✅ Vite plugin for automatic cache manifest generation
-  - Collects all build output files (including hashed JS/CSS)
-  - Injects file list into service worker at build time
-  - Generates cache version from content hash (no manual versioning)
-  - All files pre-cached on service worker install
-- ✅ Service worker registration in main.ts
-- ✅ Vite build configuration updated to build and output service worker
-- ✅ PWA icons created (single SVG with sizes="any")
-- ⏸️ PWA UI elements (install prompt, offline indicators) - deferred
-- ⏸️ PWA tests - deferred
+- [ ] PWA installs on mobile and desktop
+- [ ] Works offline after first load
+- [ ] All code is reviewed for duplication
+- [ ] Code is self-documenting with minimal comments
