@@ -3,19 +3,19 @@
   import { encrypt, encodeToURL, isValidBase32, normalizeBase32 } from '../lib/crypto';
   import { DEFAULT_DIGITS, DEFAULT_PERIOD, DEFAULT_ALGORITHM, type TOTPConfig } from '../lib/types';
 
-  let secret = '';
-  let label = '';
-  let passphrase = generatePassphrase();
-  let isCustomPassphrase = false;
-  let showAdvanced = false;
-  let digits = DEFAULT_DIGITS;
-  let period = DEFAULT_PERIOD;
-  let algorithm: 'SHA1' | 'SHA256' | 'SHA512' = DEFAULT_ALGORITHM;
+  let secret = $state('');
+  let label = $state('');
+  let passphrase = $state(generatePassphrase());
+  let isCustomPassphrase = $state(false);
+  let showAdvanced = $state(false);
+  let digits = $state(DEFAULT_DIGITS);
+  let period = $state(DEFAULT_PERIOD);
+  let algorithm = $state<'SHA1' | 'SHA256' | 'SHA512'>(DEFAULT_ALGORITHM);
   
-  let generatedURL = '';
-  let savedPassphrase = '';
-  let error = '';
-  let showResult = false;
+  let generatedURL = $state('');
+  let savedPassphrase = $state('');
+  let error = $state('');
+  let showResult = $state(false);
 
   function regeneratePassphrase() {
     passphrase = generatePassphrase();
@@ -26,9 +26,9 @@
     isCustomPassphrase = true;
   }
 
-  $: strength = isCustomPassphrase ? calculateStrength(passphrase) : 4;
-  $: strengthLabel = getStrengthLabel(strength);
-  $: strengthColor = getStrengthColor(strength);
+  let strength = $derived(isCustomPassphrase ? calculateStrength(passphrase) : 4);
+  let strengthLabel = $derived(getStrengthLabel(strength));
+  let strengthColor = $derived(getStrengthColor(strength));
 
   async function handleSubmit() {
     error = '';
