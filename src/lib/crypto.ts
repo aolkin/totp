@@ -1,6 +1,8 @@
 import type { TOTPMetadata, TOTPConfig, EncryptedData } from './types';
 import { DEFAULT_DIGITS, DEFAULT_PERIOD, DEFAULT_ALGORITHM } from './types';
 
+export type { EncryptedData } from './types';
+
 const PBKDF2_ITERATIONS = 100000;
 const SALT_LENGTH = 16;
 const IV_LENGTH = 12;
