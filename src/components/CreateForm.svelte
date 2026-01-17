@@ -36,12 +36,12 @@
     const normalizedSecret = normalizeBase32(secret);
     
     if (!normalizedSecret) {
-      error = 'Please enter a TOTP code.';
+      error = 'Please enter a TOTP secret.';
       return;
     }
     
     if (!isValidBase32(normalizedSecret)) {
-      error = 'Invalid format. Please enter a valid Base32 code (letters A-Z and digits 2-7).';
+      error = 'Invalid format. Please enter a valid Base32 secret (letters A-Z and digits 2-7).';
       return;
     }
     
@@ -129,7 +129,7 @@
     <h2>Create TOTP URL</h2>
 
     <div class="form-group">
-      <label for="secret">TOTP Code *</label>
+      <label for="secret">TOTP Secret *</label>
       <input
         type="text"
         id="secret"
@@ -139,7 +139,7 @@
         autocomplete="off"
         spellcheck="false"
       />
-      <small>Enter the code provided by the service</small>
+      <small>Enter the secret key provided by the service</small>
     </div>
 
     <div class="form-group">

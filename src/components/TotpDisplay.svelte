@@ -46,12 +46,18 @@
     }
   }
 
+  function formatCode(code: string): string {
+    if (code.length === 6) {
+      return `${code.slice(0, 3)} ${code.slice(3)}`;
+    }
+    if (code.length === 8) {
+      return `${code.slice(0, 4)} ${code.slice(4)}`;
+    }
+    return code;
+  }
+
   let progress = $derived((timeRemaining / config.period) * 100);
-  let formattedCode = $derived(code.length === 6 
-    ? `${code.slice(0, 3)} ${code.slice(3)}` 
-    : code.length === 8 
-    ? `${code.slice(0, 4)} ${code.slice(4)}`
-    : code);
+  let formattedCode = $derived(formatCode(code));
 </script>
 
 <div class="totp-display">
