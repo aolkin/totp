@@ -8,7 +8,7 @@ Build a fully client-side, stateless TOTP (Time-based One-Time Password) authent
 
 **URL Format:**
 ```
-https://totp.starmaze.dev/#<base64-encoded-encrypted-data>
+https://yourdomain.com/#<base64-encoded-encrypted-data>
 ```
 
 Everything after `#` never reaches the server.
@@ -239,7 +239,7 @@ Playwright is already configured. Create tests in `tests/` directory.
 
 ## Deployment
 
-The project is configured to deploy to GitHub Pages at `totp.starmaze.dev`. Build with `npm run build` to create the optimized `site/` directory.
+The project is configured to deploy to GitHub Pages. Build with `npm run build` to create the optimized `site/` directory.
 
 ## Security Considerations
 
