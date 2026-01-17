@@ -1,3 +1,4 @@
+/// <reference lib="webworker" />
 // These placeholders are replaced at build time by vite.config.ts
 declare const __STATIC_ASSETS__: string[];
 
@@ -6,19 +7,19 @@ const CACHE_NAME = `totp-cache-${CACHE_VERSION}`;
 
 const STATIC_ASSETS: string[] = __STATIC_ASSETS__;
 
-declare const self: ServiceWorkerGlobalScope;
+const sw = self as unknown as ServiceWorkerGlobalScope;
 
-self.addEventListener('install', (event: ExtendableEvent) => {
+sw.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
       await cache.addAll(STATIC_ASSETS);
-      await self.skipWaiting();
+      await sw.skipWaiting();
     })()
   );
 });
 
-self.addEventListener('activate', (event: ExtendableEvent) => {
+sw.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       const cacheNames = await caches.keys();
@@ -27,19 +28,19 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
           .filter((name) => name.startsWith('totp-cache-') && name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       );
-      await self.clients.claim();
+      await sw.clients.claim();
     })()
   );
 });
 
-self.addEventListener('fetch', (event: FetchEvent) => {
+sw.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   if (event.request.method !== 'GET') {
     return;
   }
 
-  if (url.origin !== self.location.origin) {
+  if (url.origin !== sw.location.origin) {
     return;
   }
 
