@@ -10,25 +10,25 @@ declare const self: ServiceWorkerGlobalScope;
 
 self.addEventListener('install', (event: ExtendableEvent) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    }).then(() => {
-      return self.skipWaiting();
-    })
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.addAll(STATIC_ASSETS);
+      await self.skipWaiting();
+    })()
   );
 });
 
 self.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
+    (async () => {
+      const cacheNames = await caches.keys();
+      await Promise.all(
         cacheNames
           .filter((name) => name.startsWith('totp-cache-') && name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       );
-    }).then(() => {
-      return self.clients.claim();
-    })
+      await self.clients.claim();
+    })()
   );
 });
 
@@ -44,23 +44,26 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
-        if (networkResponse.ok) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        if (event.request.destination === 'document') {
-          return caches.match('/index.html') as Promise<Response>;
-        }
-        throw new Error('Network request failed and no cache available');
-      });
+    (async () => {
+      const cachedResponse = await caches.match(event.request);
 
-      return cachedResponse || fetchPromise;
-    })
+      const fetchPromise = (async () => {
+        try {
+          const networkResponse = await fetch(event.request);
+          if (networkResponse.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        } catch {
+          if (event.request.destination === 'document') {
+            return (await caches.match('/index.html')) as Response;
+          }
+          throw new Error('Network request failed and no cache available');
+        }
+      })();
+
+      return cachedResponse || (await fetchPromise);
+    })()
   );
 });
