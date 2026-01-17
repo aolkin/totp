@@ -46,12 +46,12 @@
     }
   }
 
-  $: progress = (timeRemaining / config.period) * 100;
-  $: formattedCode = code.length === 6 
+  let progress = $derived((timeRemaining / config.period) * 100);
+  let formattedCode = $derived(code.length === 6 
     ? `${code.slice(0, 3)} ${code.slice(3)}` 
     : code.length === 8 
     ? `${code.slice(0, 4)} ${code.slice(4)}`
-    : code;
+    : code);
 </script>
 
 <div class="totp-display">

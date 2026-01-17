@@ -98,16 +98,16 @@
     <h2>URL Generated</h2>
     
     <div class="result-section">
-      <label>Your TOTP URL:</label>
+      <span class="label-text">Your TOTP URL:</span>
       <div class="url-box">
-        <input type="text" readonly value={generatedURL} class="url-input" />
+        <input type="text" readonly value={generatedURL} class="url-input" aria-label="Generated TOTP URL" />
         <button type="button" onclick={copyURL} class="copy-btn">Copy</button>
       </div>
     </div>
 
     {#if savedPassphrase}
       <div class="result-section">
-        <label>Passphrase:</label>
+        <span class="label-text">Passphrase:</span>
         <code class="passphrase-display">{savedPassphrase}</code>
       </div>
     {:else}
@@ -248,7 +248,7 @@
     margin-bottom: 1rem;
   }
 
-  label {
+  label, .label-text {
     display: block;
     margin-bottom: 0.25rem;
     font-weight: 500;
