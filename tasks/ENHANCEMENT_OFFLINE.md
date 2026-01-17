@@ -124,7 +124,7 @@ async function getCacheInfo(): Promise<CacheInfo> {
       if (!response) return 0;
       const blob = await response.blob();
       return blob.size;
-    })
+    }),
   );
 
   const totalSize = sizes.reduce((a, b) => a + b, 0);
@@ -160,7 +160,7 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
           type: 'UPDATE_AVAILABLE',
         });
       });
-    })
+    }),
   );
 });
 ```

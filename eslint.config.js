@@ -48,7 +48,7 @@ export default tseslint.config(
   {
     rules: {
       // Enforce undefined over null (project standard)
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/prefer-nullish-coalescing': 'error',
 
       // Code quality
@@ -71,5 +71,5 @@ export default tseslint.config(
       'prefer-const': 'error',
       'no-var': 'error',
     },
-  }
+  },
 );

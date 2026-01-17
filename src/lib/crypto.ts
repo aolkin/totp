@@ -16,7 +16,7 @@ export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<C
     encoder.encode(keyMaterial),
     'PBKDF2',
     false,
-    ['deriveKey']
+    ['deriveKey'],
   );
 
   return crypto.subtle.deriveKey(
@@ -29,7 +29,7 @@ export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<C
     passwordKey,
     { name: 'AES-GCM', length: 256 },
     false,
-    ['encrypt', 'decrypt']
+    ['encrypt', 'decrypt'],
   );
 }
 
@@ -71,7 +71,7 @@ export async function decrypt(data: EncryptedData, passphrase: string): Promise<
   const plaintext = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv: data.iv.buffer as ArrayBuffer },
     key,
-    data.ciphertext.buffer as ArrayBuffer
+    data.ciphertext.buffer as ArrayBuffer,
   );
 
   const decoder = new TextDecoder();
@@ -116,7 +116,7 @@ export function decodeFromURL(fragment: string): EncryptedData {
 }
 
 export async function tryDecryptWithEmptyPassphrase(
-  data: EncryptedData
+  data: EncryptedData,
 ): Promise<TOTPConfig | undefined> {
   try {
     return await decrypt(data, '');
