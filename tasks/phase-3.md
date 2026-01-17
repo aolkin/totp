@@ -6,6 +6,8 @@ Add camera-based QR code scanning to the create form, allowing users to scan TOT
 
 **Goal:** Match the UX of mobile authenticator apps (Google Authenticator, Authy, etc.)
 
+**UI Framework:** Continue using Tailwind CSS and shadcn-svelte components established in Phase 1 for consistent styling and user experience.
+
 ## Technical Requirements
 
 ### Dependencies

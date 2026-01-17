@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
+
   interface Props {
     onUnlock: (passphrase: string) => void;
     error?: string;
@@ -13,87 +17,31 @@
   }
 </script>
 
-<div class="prompt">
-  <h2>Enter Passphrase</h2>
-  <p>This TOTP is protected with a passphrase.</p>
+<Card class="w-full max-w-md text-center">
+  <CardHeader>
+    <h2 class="text-2xl font-semibold">Enter Passphrase</h2>
+    <p class="text-muted-foreground">This TOTP is protected with a passphrase.</p>
+  </CardHeader>
+  <CardContent>
+    <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+      <div>
+        <Input
+          type="password"
+          bind:value={passphrase}
+          placeholder="Enter your passphrase"
+          autocomplete="off"
+        />
+      </div>
 
-  <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-    <div class="form-group">
-      <input
-        type="password"
-        bind:value={passphrase}
-        placeholder="Enter your passphrase"
-        autocomplete="off"
-      />
-    </div>
+      {#if error}
+        <div class="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+          {error}
+        </div>
+      {/if}
 
-    {#if error}
-      <div class="error">{error}</div>
-    {/if}
-
-    <button type="submit" class="btn-primary">
-      Unlock
-    </button>
-  </form>
-</div>
-
-<style>
-  .prompt {
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-  }
-
-  h2 {
-    margin-bottom: 0.5rem;
-    color: #333;
-  }
-
-  p {
-    color: #666;
-    margin-bottom: 1.5rem;
-  }
-
-  .form-group {
-    margin-bottom: 1rem;
-  }
-
-  input {
-    width: 100%;
-    padding: 0.875rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
-
-  input:focus {
-    outline: none;
-    border-color: #0066cc;
-    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-  }
-
-  .error {
-    padding: 0.75rem;
-    background: #fee;
-    border: 1px solid #fcc;
-    border-radius: 4px;
-    color: #c00;
-    margin-bottom: 1rem;
-  }
-
-  .btn-primary {
-    width: 100%;
-    padding: 0.875rem;
-    background: #0066cc;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-  }
-
-  .btn-primary:hover {
-    background: #0052a3;
-  }
-</style>
+      <Button type="submit" class="w-full">
+        Unlock
+      </Button>
+    </form>
+  </CardContent>
+</Card>

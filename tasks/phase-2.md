@@ -6,6 +6,8 @@ Add local browser storage to Phase 1, allowing users to save TOTP configurations
 
 **Key Principle:** Encrypted URLs remain stateless and shareable. Storage is an optional convenience feature for personal use.
 
+**UI Framework:** Continue using Tailwind CSS and shadcn-svelte components established in Phase 1 for consistent styling and user experience.
+
 ## Architecture Changes
 
 ### Dual Mode Operation

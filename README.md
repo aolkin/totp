@@ -7,6 +7,15 @@ A fully client-side browser-based TOTP generator
 - 🔑 Stateless architecture (secrets in URL)
 - 📱 Progressive Web App with offline support
 - 🌐 Works without internet after first load
+- 🎨 Modern UI with Tailwind CSS and shadcn-svelte
+
+## Tech Stack
+
+- **Framework:** Svelte 5 with TypeScript
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS with shadcn-svelte component library
+- **Deployment:** GitHub Pages
+- **PWA:** Service Worker with offline-first caching
 
 ## **MANDATORY: Coding Standards**
 
