@@ -1,11 +1,7 @@
 /// <reference lib="webworker" />
-// These placeholders are replaced at build time by vite.config.ts
-declare const __STATIC_ASSETS__: string[];
+import { CACHE_VERSION, STATIC_ASSETS } from 'virtual:sw-manifest';
 
-const CACHE_VERSION = '__CACHE_VERSION__';
 const CACHE_NAME = `totp-cache-${CACHE_VERSION}`;
-
-const STATIC_ASSETS: string[] = __STATIC_ASSETS__;
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
