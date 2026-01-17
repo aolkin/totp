@@ -51,17 +51,30 @@ The fragment contains Base64-encoded binary data:
 ```
 
 ### Metadata (encrypted with secret)
+
+**URL Optimization:** Use short keys and omit default values to minimize URL length.
+
+Defaults: `digits=6`, `period=30`, `algorithm="SHA1"`
+
 ```json
 {
-  "secret": "JBSWY3DPEHPK3PXP",
-  "label": "GitHub - user@example.com",
-  "digits": 6,
-  "period": 30,
-  "algorithm": "SHA1"
+  "s": "JBSWY3DPEHPK3PXP",
+  "l": "GitHub - user@example.com"
 }
 ```
 
-**CONSIDER:** To keep the URLs as short as possible, should we minimize the size of this structure and avoid redundant data? (e.g., omit fields with default values, use shorter keys)
+Full structure (when non-default values are used):
+```json
+{
+  "s": "JBSWY3DPEHPK3PXP",
+  "l": "GitHub",
+  "d": 8,
+  "p": 60,
+  "a": "SHA256"
+}
+```
+
+Keys: `s`=secret, `l`=label, `d`=digits, `p`=period, `a`=algorithm
 
 ### Empty Passphrase Handling
 If user provides empty/no passphrase:
@@ -78,8 +91,9 @@ If user provides empty/no passphrase:
    - Text input, monospace font
    - Placeholder: "aaaa bbbb cccc dddd"
    - Help text: "Enter the key provided by the service"
-   - Validation: Must match `^[A-Z2-7]+=*$` (Base32)
-   - **CONSIDER:** Allow spaces in the input but remove them for processing. Ensure there is a test case for this.
+   - Input handling: Accept spaces for user convenience, strip them before validation
+   - Validation: After removing spaces, must match `^[A-Z2-7]+=*$` (Base32)
+   - Test case required: "JBSW Y3DP EHPK 3PXP" → "JBSWY3DPEHPK3PXP"
 
 2. **Label** (optional)
    - Text input
@@ -97,8 +111,7 @@ If user provides empty/no passphrase:
    - Digits: dropdown (6, 7, 8) - default 6
    - Period: input (default 30 seconds)
    - Algorithm: dropdown (SHA1, SHA256, SHA512) - default SHA1
-
-**CONSIDER:** Is there value to user-selected algorithm, or should we just always use the secure option (SHA256/SHA512) for simplicity?
+   - Note: Algorithm selection is required for compatibility. The issuing service determines which algorithm to use, not the user. Most services use SHA1 (RFC 6238 standard), but some (e.g., AWS) require SHA256.
 
 **Submit Button:** "Generate TOTP URL"
 
@@ -186,6 +199,9 @@ Playwright is already configured. Create tests in `tests/` directory.
 - Test AES-GCM encryption/decryption roundtrip
 - Test empty passphrase mode
 - Test URL encoding/decoding
+- Test metadata serialization uses short keys (`s`, `l`, `d`, `p`, `a`)
+- Test default values are omitted from metadata
+- Test non-default values are included in metadata
 
 **tests/totp-generation.spec.ts:**
 - Test TOTP code generation with RFC 6238 test vectors
@@ -195,10 +211,12 @@ Playwright is already configured. Create tests in `tests/` directory.
 
 **tests/ui-create.spec.ts:**
 - Fill form with valid secret → verify URL generated
+- Test secret input with spaces → verify spaces stripped (e.g., "JBSW Y3DP EHPK 3PXP")
 - Test passphrase regeneration
 - Test custom passphrase with strength validation
 - Test validation errors (invalid Base32, short passphrase)
 - Test advanced options (digits, period, algorithm)
+- Test URL contains minimal metadata (defaults omitted)
 
 **tests/ui-view.spec.ts:**
 - Navigate to URL with fragment → verify TOTP displayed
@@ -260,11 +278,15 @@ The project is configured to deploy to GitHub Pages at `totp.starmaze.dev`. Buil
   - PBKDF2 key derivation
   - AES-256-GCM encryption/decryption
   - URL encoding/decoding
+  - Metadata serialization with short keys (`s`, `l`, `d`, `p`, `a`)
+  - Omit fields with default values to minimize URL length
 - [ ] TOTP generation (`lib/totp.ts`)
   - Integration with `otpauth` library
   - Code generation and validation
 - [ ] UI Components
   - `CreateForm.svelte` - TOTP creation form with passphrase generation
+    - Strip spaces from secret input before validation
+    - Support all algorithm options (SHA1, SHA256, SHA512)
   - `TotpDisplay.svelte` - TOTP code display with countdown
   - `PassphrasePrompt.svelte` - Unlock prompt for encrypted URLs
 - [ ] Main application logic (`App.svelte`)
