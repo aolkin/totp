@@ -10,7 +10,7 @@
     onCreateNew: () => void;
   }
 
-  let { config, onCreateNew }: Props = $props();
+  const { config, onCreateNew }: Props = $props();
 
   let code = $state('');
   let timeRemaining = $state(0);
@@ -58,8 +58,8 @@
     return code;
   }
 
-  let progress = $derived((timeRemaining / config.period) * 100);
-  let formattedCode = $derived(formatCode(code));
+  const progress = $derived((timeRemaining / config.period) * 100);
+  const formattedCode = $derived(formatCode(code));
 </script>
 
 <Card class="w-full max-w-md">
@@ -100,19 +100,17 @@
           class="transition-all duration-300"
         />
       </svg>
-      <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-medium">
+      <span
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-medium"
+      >
         {timeRemaining}s
       </span>
     </div>
 
     <div class="w-full space-y-2">
-      <Button class="w-full" onclick={copyCode}>
-        Copy Code
-      </Button>
+      <Button class="w-full" onclick={copyCode}>Copy Code</Button>
 
-      <Button variant="ghost" class="w-full text-sm" onclick={onCreateNew}>
-        Create New TOTP
-      </Button>
+      <Button variant="ghost" class="w-full text-sm" onclick={onCreateNew}>Create New TOTP</Button>
     </div>
   </CardContent>
 </Card>

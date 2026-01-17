@@ -1,0 +1,21 @@
+# Build outputs
+site/
+dist/
+build/
+.svelte-kit/
+
+# Dependencies
+node_modules/
+
+# Test outputs
+playwright-report/
+test-results/
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Generated files
+*.min.js
+*.min.css

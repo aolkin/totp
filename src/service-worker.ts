@@ -1,5 +1,9 @@
 /// <reference lib="webworker" />
-import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching';
+import {
+  precacheAndRoute,
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+} from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 
 declare let self: ServiceWorkerGlobalScope;

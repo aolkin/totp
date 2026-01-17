@@ -3,7 +3,12 @@
   import CreateForm from './components/CreateForm.svelte';
   import TotpDisplay from './components/TotpDisplay.svelte';
   import PassphrasePrompt from './components/PassphrasePrompt.svelte';
-  import { decodeFromURL, decrypt, tryDecryptWithEmptyPassphrase, type EncryptedData } from './lib/crypto';
+  import {
+    decodeFromURL,
+    decrypt,
+    tryDecryptWithEmptyPassphrase,
+    type EncryptedData,
+  } from './lib/crypto';
   import type { TOTPConfig } from './lib/types';
   import { Button } from '$lib/components/ui/button';
 
@@ -16,14 +21,19 @@
   let errorMessage = $state('');
 
   onMount(() => {
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    void handleHashChange();
+    const handler = () => {
+      void handleHashChange();
+    };
+    window.addEventListener('hashchange', handler);
+    return () => {
+      window.removeEventListener('hashchange', handler);
+    };
   });
 
   async function handleHashChange() {
     const hash = window.location.hash.slice(1);
-    
+
     if (!hash) {
       mode = 'create';
       config = undefined;
@@ -33,7 +43,7 @@
 
     try {
       encryptedData = decodeFromURL(hash);
-      
+
       const result = await tryDecryptWithEmptyPassphrase(encryptedData);
       if (result) {
         config = result;
@@ -50,7 +60,7 @@
 
   async function handleUnlock(passphrase: string) {
     if (!encryptedData) return;
-    
+
     try {
       config = await decrypt(encryptedData, passphrase);
       mode = 'display';
