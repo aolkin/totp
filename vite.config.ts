@@ -1,84 +1,34 @@
-import { defineConfig, Plugin } from 'vite';
+import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { resolve } from 'path';
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
-import { join } from 'path';
-import { createHash } from 'crypto';
-
-function injectServiceWorkerManifest(): Plugin {
-  return {
-    name: 'inject-sw-manifest',
-    apply: 'build',
-    closeBundle() {
-      const outDir = 'site';
-      const swPath = join(outDir, 'service-worker.js');
-
-      const collectFiles = (dir: string, baseDir: string = dir): string[] => {
-        const files: string[] = [];
-        const entries = readdirSync(dir);
-
-        for (const entry of entries) {
-          const fullPath = join(dir, entry);
-          const stat = statSync(fullPath);
-
-          if (stat.isDirectory()) {
-            files.push(...collectFiles(fullPath, baseDir));
-          } else {
-            const relativePath = '/' + fullPath.substring(baseDir.length + 1);
-            files.push(relativePath);
-          }
-        }
-
-        return files;
-      };
-
-      const allFiles = collectFiles(outDir);
-
-      if (allFiles.includes('/index.html') && !allFiles.includes('/')) {
-        allFiles.push('/');
-      }
-
-      const hash = createHash('sha256');
-      hash.update(allFiles.sort().join('\n'));
-      const cacheVersion = hash.digest('hex').substring(0, 8);
-
-      let swContent = readFileSync(swPath, 'utf-8');
-
-      swContent = swContent.replace(
-        '__CACHE_VERSION__',
-        cacheVersion
-      );
-      swContent = swContent.replace(
-        '__STATIC_ASSETS__',
-        JSON.stringify(allFiles)
-      );
-
-      writeFileSync(swPath, swContent);
-
-      console.log(`Service worker updated with ${allFiles.length} files, cache version: ${cacheVersion}`);
-    }
-  };
-}
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  plugins: [svelte(), injectServiceWorkerManifest()],
+  plugins: [
+    svelte(),
+    VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'service-worker.ts',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        globIgnores: ['registerSW.js'],
+      },
+      injectRegister: null, // Don't generate registerSW.js
+      manifest: false, // We already have public/manifest.json
+      devOptions: {
+        enabled: false,
+      },
+    })
+  ],
   base: '/',
+  resolve: {
+    alias: {
+      $lib: resolve(__dirname, './src/lib'),
+    },
+  },
   build: {
     outDir: 'site',
     emptyOutDir: true,
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html'),
-        sw: resolve(__dirname, 'src/service-worker.ts'),
-      },
-      output: {
-        entryFileNames: (chunkInfo) => {
-          if (chunkInfo.name === 'sw') {
-            return 'service-worker.js';
-          }
-          return 'assets/[name]-[hash].js';
-        },
-      },
-    },
   },
 });

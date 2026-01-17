@@ -5,6 +5,7 @@
   import PassphrasePrompt from './components/PassphrasePrompt.svelte';
   import { decodeFromURL, decrypt, tryDecryptWithEmptyPassphrase, type EncryptedData } from './lib/crypto';
   import type { TOTPConfig } from './lib/types';
+  import { Button } from '$lib/components/ui/button';
 
   type AppMode = 'create' | 'prompt' | 'display' | 'error';
 
@@ -64,12 +65,12 @@
   }
 </script>
 
-<main>
-  <header>
-    <h1>TOTP Authenticator</h1>
+<main class="flex min-h-screen flex-col items-center p-4 font-sans">
+  <header class="mb-8 text-center">
+    <h1 class="text-2xl font-semibold">TOTP Authenticator</h1>
   </header>
 
-  <div class="content">
+  <div class="flex w-full justify-center p-4">
     {#if mode === 'create'}
       <CreateForm />
     {:else if mode === 'prompt'}
@@ -77,63 +78,10 @@
     {:else if mode === 'display' && config}
       <TotpDisplay {config} onCreateNew={handleCreateNew} />
     {:else if mode === 'error'}
-      <div class="error-page">
-        <p>{errorMessage}</p>
-        <button onclick={handleCreateNew}>Go Back</button>
+      <div class="text-center p-8">
+        <p class="text-destructive mb-4">{errorMessage}</p>
+        <Button onclick={handleCreateNew}>Go Back</Button>
       </div>
     {/if}
   </div>
 </main>
-
-<style>
-  main {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    padding: 1rem;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: #fafafa;
-  }
-
-  header {
-    margin-bottom: 2rem;
-    text-align: center;
-  }
-
-  h1 {
-    font-size: 1.5rem;
-    color: #333;
-    margin: 0;
-  }
-
-  .content {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    padding: 1rem;
-  }
-
-  .error-page {
-    text-align: center;
-    padding: 2rem;
-  }
-
-  .error-page p {
-    color: #c00;
-    margin-bottom: 1rem;
-  }
-
-  .error-page button {
-    padding: 0.75rem 1.5rem;
-    background: #0066cc;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .error-page button:hover {
-    background: #0052a3;
-  }
-</style>
