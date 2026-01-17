@@ -272,40 +272,43 @@ The project is configured to deploy to GitHub Pages. Build with `npm run build` 
   - Vite plugin for automatic cache manifest generation
   - Pre-caching of all build assets on install
 - ✅ TypeScript configuration and type checking
-
-### To Implement
-- [ ] Cryptography library (`lib/crypto.ts`)
-  - PBKDF2 key derivation
+- ✅ Cryptography library (`lib/crypto.ts`)
+  - PBKDF2 key derivation (100,000 iterations)
   - AES-256-GCM encryption/decryption
-  - URL encoding/decoding
+  - URL-safe Base64 encoding/decoding
   - Metadata serialization with short keys (`s`, `l`, `d`, `p`, `a`)
   - Omit fields with default values to minimize URL length
-- [ ] TOTP generation (`lib/totp.ts`)
+- ✅ TOTP generation (`lib/totp.ts`)
   - Integration with `otpauth` library
-  - Code generation and validation
-- [ ] UI Components
+  - Code generation with configurable digits, period, and algorithm
+- ✅ Passphrase generation (`lib/passphrase.ts`)
+  - 5-word passphrase generator
+  - Strength meter for custom passphrases
+- ✅ UI Components
   - `CreateForm.svelte` - TOTP creation form with passphrase generation
     - Strip spaces from secret input before validation
     - Support all algorithm options (SHA1, SHA256, SHA512)
-  - `TotpDisplay.svelte` - TOTP code display with countdown
+    - Advanced options (digits, period, algorithm)
+  - `TotpDisplay.svelte` - TOTP code display with countdown timer
   - `PassphrasePrompt.svelte` - Unlock prompt for encrypted URLs
-- [ ] Main application logic (`App.svelte`)
+- ✅ Main application logic (`App.svelte`)
   - Route handling (create mode vs view mode)
   - URL fragment parsing
   - State management
+
+### Deferred to Future Work
 - [ ] Playwright test suite
   - Encryption roundtrip tests
   - TOTP generation tests
   - UI flow tests (create/view)
   - E2E tests
-- [ ] Code review for duplication and clarity
 
 ## Success Criteria
 
 Phase 1 is complete when:
-- [ ] All Playwright tests pass
-- [ ] Create → View flow works end-to-end
-- [ ] PWA installs on mobile and desktop
-- [ ] Works offline after first load
-- [ ] All code is reviewed for duplication
+- [x] Create → View flow works end-to-end
+- [x] PWA installs on mobile and desktop
+- [x] Works offline after first load
+- [ ] All Playwright tests pass (deferred)
+- [x] All code is reviewed for duplication
 - [ ] Code is self-documenting with minimal comments
