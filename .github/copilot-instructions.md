@@ -14,6 +14,8 @@ This is a **fully client-side browser-based TOTP (Time-based One-Time Password) 
 - **Frontend Framework**: Svelte 5 (with runes API: `$state`, `$derived`, etc.)
 - **Language**: TypeScript (strict mode enabled)
 - **Build Tool**: Vite 7
+- **Styling**: Tailwind CSS v3 with shadcn-svelte component library
+- **PWA**: vite-plugin-pwa with Workbox for service worker management
 - **Testing**: Playwright (end-to-end tests)
 - **Type Checking**: svelte-check with TypeScript
 - **Deployment**: GitHub Pages (builds to `site/` directory)
@@ -48,17 +50,22 @@ npm run check
 ```
 ├── src/
 │   ├── components/         # Svelte components
-│   ├── lib/               # Core utilities and business logic
-│   │   ├── crypto.ts      # Encryption/decryption, URL encoding
-│   │   ├── totp.ts        # TOTP generation logic
-│   │   ├── passphrase.ts  # Passphrase generation
-│   │   └── types.ts       # TypeScript type definitions
-│   ├── App.svelte         # Root component
-│   ├── main.ts            # Application entry point
-│   └── service-worker.ts  # PWA service worker
-├── public/                # Static assets
-├── site/                  # Build output (GitHub Pages deployment, gitignored)
-└── tasks/                 # Work items and todos
+│   ├── lib/
+│   │   ├── components/ui/  # shadcn-svelte UI components
+│   │   ├── utils/          # Utility functions (including cn for Tailwind)
+│   │   ├── crypto.ts       # Encryption/decryption, URL encoding
+│   │   ├── totp.ts         # TOTP generation logic
+│   │   ├── passphrase.ts   # Passphrase generation
+│   │   └── types.ts        # TypeScript type definitions
+│   ├── App.svelte          # Root component
+│   ├── app.css             # Global styles and Tailwind directives
+│   ├── main.ts             # Application entry point
+│   └── service-worker.ts   # PWA service worker
+├── public/                 # Static assets
+├── site/                   # Build output (GitHub Pages deployment, gitignored)
+├── tasks/                  # Work items and todos
+├── tailwind.config.js      # Tailwind configuration
+└── components.json         # shadcn-svelte configuration
 ```
 
 ## Coding Standards
@@ -110,6 +117,14 @@ let doubled = $derived(count * 2);
 let count = 0;
 $: doubled = count * 2;
 ```
+
+### Tailwind CSS Guidelines
+
+- Use Tailwind utility classes for styling
+- Use the `cn()` utility from `$lib/utils` to merge class names with tailwind-merge
+- Follow shadcn-svelte patterns for component composition
+- Prefer Tailwind utilities over custom CSS when possible
+- Use CSS variables for theme colors (defined in `app.css`)
 
 ### Code Style
 
@@ -177,23 +192,7 @@ The encrypted data contains:
 
 ## Working with Types
 
-All types are defined in `src/lib/types.ts`. Key interfaces:
-
-```typescript
-interface TOTPConfig {
-  secret: string;      // Base32-encoded secret
-  label: string;       // Display label
-  digits: number;      // Code length (typically 6)
-  period: number;      // Refresh period in seconds (typically 30)
-  algorithm: 'SHA1' | 'SHA256' | 'SHA512';
-}
-
-interface EncryptedData {
-  salt: Uint8Array;
-  iv: Uint8Array;
-  ciphertext: Uint8Array;
-}
-```
+All types are defined in `src/lib/types.ts`. Refer to that file for the canonical type definitions including `TOTPConfig`, `TOTPMetadata`, `EncryptedData`, and default constants.
 
 ## Testing Guidelines
 
@@ -211,7 +210,9 @@ interface EncryptedData {
 2. Use PascalCase naming
 3. Use Svelte 5 runes (`$state`, `$props`, `$derived`)
 4. Use TypeScript with proper types
-5. Follow the project's code style
+5. Style with Tailwind CSS utility classes
+6. Leverage shadcn-svelte UI components from `$lib/components/ui/` when appropriate
+7. Use the `cn()` utility to merge conditional classes
 
 ### Adding a new utility function
 
@@ -250,10 +251,11 @@ When making changes:
 
 ## PWA and Service Worker
 
-- Service worker is built as part of the Vite build process
-- Cache version is auto-generated based on file hashes
-- Static assets list is injected at build time
-- Service worker enables offline functionality - don't break it!
+- PWA functionality is managed by `vite-plugin-pwa` using the `injectManifest` strategy
+- Service worker source is `src/service-worker.ts` and uses Workbox for caching
+- The service worker is built and injected automatically during the Vite build process
+- Offline-first caching strategy ensures the app works without internet
+- Don't modify PWA configuration without understanding the offline implications
 
 ## Documentation
 
