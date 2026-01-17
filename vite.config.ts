@@ -13,7 +13,6 @@ function injectServiceWorkerManifest(): Plugin {
       const outDir = 'site';
       const swPath = join(outDir, 'service-worker.js');
 
-      // Collect all files to cache
       const collectFiles = (dir: string, baseDir: string = dir): string[] => {
         const files: string[] = [];
         const entries = readdirSync(dir);
@@ -35,15 +34,12 @@ function injectServiceWorkerManifest(): Plugin {
 
       const allFiles = collectFiles(outDir);
 
-      // Generate cache version from file list hash
       const hash = createHash('sha256');
       hash.update(allFiles.sort().join('\n'));
       const cacheVersion = hash.digest('hex').substring(0, 8);
 
-      // Read service worker
       let swContent = readFileSync(swPath, 'utf-8');
 
-      // Replace placeholders
       swContent = swContent.replace(
         '__CACHE_VERSION__',
         cacheVersion
@@ -53,7 +49,6 @@ function injectServiceWorkerManifest(): Plugin {
         JSON.stringify(allFiles)
       );
 
-      // Write back
       writeFileSync(swPath, swContent);
 
       console.log(`Service worker updated with ${allFiles.length} files, cache version: ${cacheVersion}`);
