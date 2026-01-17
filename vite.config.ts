@@ -9,12 +9,12 @@ function injectServiceWorkerManifest(): Plugin {
   return {
     name: 'inject-sw-manifest',
     apply: 'build',
-    closeBundle() {
+    writeBundle() {
       const outDir = 'site';
       const swPath = join(outDir, 'service-worker.js');
 
       // Check if the service worker file exists
-      if (!existsSync(outDir) || !existsSync(swPath)) {
+      if (!existsSync(swPath)) {
         console.log('Service worker not yet built, skipping manifest injection');
         return;
       }
