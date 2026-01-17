@@ -2,7 +2,9 @@
   import type { HTMLInputAttributes } from 'svelte/elements';
   import { cn } from '$lib/utils';
 
-  type $$Props = HTMLInputAttributes;
+  type $$Props = Omit<HTMLInputAttributes, 'class'> & {
+    class?: string;
+  };
 
   let className: string | undefined = undefined;
   export { className as class };

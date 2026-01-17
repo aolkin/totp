@@ -2,7 +2,8 @@
   import type { HTMLButtonAttributes } from 'svelte/elements';
   import { cn } from '$lib/utils';
 
-  type $$Props = HTMLButtonAttributes & {
+  type $$Props = Omit<HTMLButtonAttributes, 'class'> & {
+    class?: string;
     variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
     size?: 'default' | 'sm' | 'lg' | 'icon';
   };

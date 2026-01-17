@@ -2,7 +2,9 @@
   import type { HTMLLabelAttributes } from 'svelte/elements';
   import { cn } from '$lib/utils';
 
-  type $$Props = HTMLLabelAttributes;
+  type $$Props = Omit<HTMLLabelAttributes, 'class'> & {
+    class?: string;
+  };
 
   let className: string | undefined = undefined;
   export { className as class };

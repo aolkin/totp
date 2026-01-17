@@ -2,7 +2,8 @@
   import type { HTMLAttributes } from 'svelte/elements';
   import { cn } from '$lib/utils';
 
-  type $$Props = HTMLAttributes<HTMLDivElement> & {
+  type $$Props = Omit<HTMLAttributes<HTMLDivElement>, 'class'> & {
+    class?: string;
     value?: number;
     max?: number;
   };

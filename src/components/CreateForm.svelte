@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    generatePassphrase,
-    calculateStrength,
-    getStrengthLabel,
-    getStrengthColor,
-  } from '../lib/passphrase';
+  import { generatePassphrase, calculateStrength, getStrengthLabel } from '../lib/passphrase';
   import { encrypt, encodeToURL, isValidBase32, normalizeBase32 } from '../lib/crypto';
   import { DEFAULT_DIGITS, DEFAULT_PERIOD, DEFAULT_ALGORITHM, type TOTPConfig } from '../lib/types';
   import { Button } from '$lib/components/ui/button';
@@ -38,7 +33,6 @@
 
   const strength = $derived(isCustomPassphrase ? calculateStrength(passphrase) : 4);
   const strengthLabel = $derived(getStrengthLabel(strength));
-  const _strengthColor = $derived(getStrengthColor(strength));
 
   async function handleSubmit() {
     error = '';
