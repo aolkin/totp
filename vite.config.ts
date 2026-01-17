@@ -34,6 +34,10 @@ function injectServiceWorkerManifest(): Plugin {
 
       const allFiles = collectFiles(outDir);
 
+      if (allFiles.includes('/index.html') && !allFiles.includes('/')) {
+        allFiles.push('/');
+      }
+
       const hash = createHash('sha256');
       hash.update(allFiles.sort().join('\n'));
       const cacheVersion = hash.digest('hex').substring(0, 8);

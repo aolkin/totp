@@ -57,7 +57,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
           return networkResponse;
         } catch {
           if (event.request.destination === 'document') {
-            return (await caches.match('/index.html')) as Response;
+            return (await caches.match('/')) as Response;
           }
           throw new Error('Network request failed and no cache available');
         }
