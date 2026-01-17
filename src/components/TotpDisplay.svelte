@@ -2,6 +2,8 @@
   import { onMount, onDestroy } from 'svelte';
   import { generateTOTPCode, getTimeRemaining } from '../lib/totp';
   import type { TOTPConfig } from '../lib/types';
+  import { Button } from '$lib/components/ui/button';
+  import { Card, CardContent } from '$lib/components/ui/card';
 
   interface Props {
     config: TOTPConfig;
@@ -60,151 +62,57 @@
   let formattedCode = $derived(formatCode(code));
 </script>
 
-<div class="totp-display">
-  {#if config.label}
-    <div class="label">{config.label}</div>
-  {/if}
+<Card class="w-full max-w-md">
+  <CardContent class="flex flex-col items-center p-8 space-y-6">
+    {#if config.label}
+      <div class="text-xl text-muted-foreground text-center">{config.label}</div>
+    {/if}
 
-  <div class="code" onclick={copyCode} role="button" tabindex="0" onkeydown={(e) => e.key === 'Enter' && copyCode()}>
-    {formattedCode}
-  </div>
+    <div
+      class="font-mono text-5xl md:text-6xl font-bold tracking-widest bg-muted px-6 py-4 rounded-lg cursor-pointer select-all hover:bg-muted/80 transition-colors"
+      onclick={copyCode}
+      role="button"
+      tabindex="0"
+      onkeydown={(e) => e.key === 'Enter' && copyCode()}
+    >
+      {formattedCode}
+    </div>
 
-  <div class="timer">
-    <svg class="countdown-ring" viewBox="0 0 36 36">
-      <path
-        class="ring-bg"
-        d="M18 2.0845
-          a 15.9155 15.9155 0 0 1 0 31.831
-          a 15.9155 15.9155 0 0 1 0 -31.831"
-        fill="none"
-        stroke="#e0e0e0"
-        stroke-width="3"
-      />
-      <path
-        class="ring-progress"
-        d="M18 2.0845
-          a 15.9155 15.9155 0 0 1 0 31.831
-          a 15.9155 15.9155 0 0 1 0 -31.831"
-        fill="none"
-        stroke="#0066cc"
-        stroke-width="3"
-        stroke-dasharray="{progress}, 100"
-      />
-    </svg>
-    <span class="seconds">{timeRemaining}s</span>
-  </div>
+    <div class="relative w-16 h-16">
+      <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+        <path
+          d="M18 2.0845
+            a 15.9155 15.9155 0 0 1 0 31.831
+            a 15.9155 15.9155 0 0 1 0 -31.831"
+          fill="none"
+          stroke="hsl(var(--muted))"
+          stroke-width="3"
+        />
+        <path
+          d="M18 2.0845
+            a 15.9155 15.9155 0 0 1 0 31.831
+            a 15.9155 15.9155 0 0 1 0 -31.831"
+          fill="none"
+          stroke="hsl(var(--primary))"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-dasharray="{progress}, 100"
+          class="transition-all duration-300"
+        />
+      </svg>
+      <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-medium">
+        {timeRemaining}s
+      </span>
+    </div>
 
-  <button class="copy-btn" onclick={copyCode}>
-    Copy Code
-  </button>
+    <div class="w-full space-y-2">
+      <Button class="w-full" onclick={copyCode}>
+        Copy Code
+      </Button>
 
-  <button class="create-new-btn" onclick={onCreateNew}>
-    Create New TOTP
-  </button>
-</div>
-
-<style>
-  .totp-display {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2rem;
-    width: 100%;
-    max-width: 400px;
-  }
-
-  .label {
-    font-size: 1.25rem;
-    color: #666;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-
-  .code {
-    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-    font-size: 3rem;
-    font-weight: bold;
-    letter-spacing: 0.1em;
-    color: #333;
-    padding: 1rem 1.5rem;
-    background: #f5f5f5;
-    border-radius: 8px;
-    cursor: pointer;
-    user-select: all;
-    margin-bottom: 1.5rem;
-  }
-
-  .code:hover {
-    background: #e8e8e8;
-  }
-
-  .timer {
-    position: relative;
-    width: 60px;
-    height: 60px;
-    margin-bottom: 1.5rem;
-  }
-
-  .countdown-ring {
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-  }
-
-  .ring-bg {
-    stroke: #e0e0e0;
-  }
-
-  .ring-progress {
-    stroke: #0066cc;
-    stroke-linecap: round;
-    transition: stroke-dasharray 0.3s ease;
-  }
-
-  .seconds {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1rem;
-    font-weight: 500;
-    color: #333;
-  }
-
-  .copy-btn {
-    width: 100%;
-    padding: 0.875rem;
-    background: #0066cc;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    margin-bottom: 0.5rem;
-  }
-
-  .copy-btn:hover {
-    background: #0052a3;
-  }
-
-  .create-new-btn {
-    width: 100%;
-    padding: 0.75rem;
-    background: none;
-    color: #0066cc;
-    border: none;
-    font-size: 0.875rem;
-    cursor: pointer;
-  }
-
-  .create-new-btn:hover {
-    text-decoration: underline;
-  }
-
-  @media (max-width: 480px) {
-    .code {
-      font-size: 2.5rem;
-    }
-  }
-</style>
+      <Button variant="ghost" class="w-full text-sm" onclick={onCreateNew}>
+        Create New TOTP
+      </Button>
+    </div>
+  </CardContent>
+</Card>

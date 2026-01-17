@@ -18,7 +18,8 @@ Everything after `#` never reaches the server.
 ### Stack
 - **Framework:** Svelte with TypeScript
 - **Build Tool:** Vite
-- **Dependencies:** `otpauth` library (npm package)
+- **Styling:** Tailwind CSS with shadcn-svelte component library
+- **Dependencies:** `otpauth` library (npm package), `tailwindcss`, `shadcn-svelte`, `clsx`, `tailwind-merge`
 - **APIs:** Web Crypto API (built-in), Service Worker API
 - **Hosting:** GitHub Pages (static build output)
 
@@ -177,14 +178,23 @@ Update code and countdown every second. When countdown reaches 30, generate new 
 src/
 ├── App.svelte              (main application component)
 ├── main.ts                 (application entry point)
+├── app.css                 (Tailwind CSS configuration and theme variables)
 ├── components/
-│   ├── CreateForm.svelte   (TOTP creation form)
-│   ├── TotpDisplay.svelte  (TOTP code display)
-│   └── PassphrasePrompt.svelte
+│   ├── CreateForm.svelte   (TOTP creation form with shadcn-svelte components)
+│   ├── TotpDisplay.svelte  (TOTP code display with shadcn-svelte components)
+│   └── PassphrasePrompt.svelte (passphrase prompt with shadcn-svelte components)
 ├── lib/
 │   ├── crypto.ts           (encryption/decryption logic)
 │   ├── totp.ts             (TOTP generation)
-│   └── types.ts            (TypeScript type definitions)
+│   ├── types.ts            (TypeScript type definitions)
+│   ├── utils/
+│   │   └── index.ts        (shadcn-svelte utility functions)
+│   └── components/ui/      (shadcn-svelte UI components)
+│       ├── button/
+│       ├── input/
+│       ├── label/
+│       ├── card/
+│       └── progress/
 └── service-worker.ts       (PWA service worker - already implemented)
 ```
 
@@ -265,13 +275,18 @@ The project is configured to deploy to GitHub Pages. Build with `npm run build` 
 
 ### Completed
 - ✅ Project setup with Svelte + Vite + TypeScript
+- ✅ Tailwind CSS and shadcn-svelte integration
+  - Tailwind CSS configured with custom theme variables
+  - shadcn-svelte component library installed
+  - Custom UI components (Button, Input, Label, Card, Progress)
+  - Responsive design with mobile-first approach
 - ✅ GitHub Pages deployment configuration (outputs to `site/`)
 - ✅ PWA manifest with app metadata and icons
 - ✅ Service worker with offline-first caching strategy
   - Automatic cache versioning based on build content hash
   - Vite plugin for automatic cache manifest generation
   - Pre-caching of all build assets on install
-- ✅ TypeScript configuration and type checking
+- ✅ TypeScript configuration and type checking with path aliases ($lib)
 - ✅ Cryptography library (`lib/crypto.ts`)
   - PBKDF2 key derivation (100,000 iterations)
   - AES-256-GCM encryption/decryption
@@ -284,7 +299,7 @@ The project is configured to deploy to GitHub Pages. Build with `npm run build` 
 - ✅ Passphrase generation (`lib/passphrase.ts`)
   - 5-word passphrase generator
   - Strength meter for custom passphrases
-- ✅ UI Components
+- ✅ UI Components (styled with Tailwind CSS and shadcn-svelte)
   - `CreateForm.svelte` - TOTP creation form with passphrase generation
     - Strip spaces from secret input before validation
     - Support all algorithm options (SHA1, SHA256, SHA512)

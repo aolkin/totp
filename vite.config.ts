@@ -1,7 +1,7 @@
 import { defineConfig, Plugin } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { resolve } from 'path';
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
 
@@ -12,6 +12,12 @@ function injectServiceWorkerManifest(): Plugin {
     closeBundle() {
       const outDir = 'site';
       const swPath = join(outDir, 'service-worker.js');
+
+      // Check if the service worker file exists
+      if (!existsSync(outDir) || !existsSync(swPath)) {
+        console.log('Service worker not yet built, skipping manifest injection');
+        return;
+      }
 
       const collectFiles = (dir: string, baseDir: string = dir): string[] => {
         const files: string[] = [];
@@ -63,6 +69,11 @@ function injectServiceWorkerManifest(): Plugin {
 export default defineConfig({
   plugins: [svelte(), injectServiceWorkerManifest()],
   base: '/',
+  resolve: {
+    alias: {
+      $lib: resolve(__dirname, './src/lib'),
+    },
+  },
   build: {
     outDir: 'site',
     emptyOutDir: true,
