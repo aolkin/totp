@@ -1,8 +1,11 @@
+import type { Algorithm } from './types';
+import { isValidBase32 } from './crypto';
+
 export interface OTPAuthData {
   label: string;
   secret: string;
   issuer: string;
-  algorithm: 'SHA1' | 'SHA256' | 'SHA512';
+  algorithm: Algorithm;
   digits: number;
   period: number;
 }
@@ -24,6 +27,11 @@ export function parseOTPAuthURL(url: string): OTPAuthData {
   const secret = params.get('secret');
   if (!secret) {
     throw new Error('Invalid URL: missing required secret parameter');
+  }
+
+  const normalizedSecret = secret.toUpperCase().replace(/\s/g, '');
+  if (!isValidBase32(normalizedSecret)) {
+    throw new Error('Invalid URL: secret is not valid Base32');
   }
 
   const algorithmParam = params.get('algorithm')?.toUpperCase();
@@ -56,7 +64,7 @@ export function parseOTPAuthURL(url: string): OTPAuthData {
 
   return {
     label,
-    secret: secret.toUpperCase().replace(/\s/g, ''),
+    secret: normalizedSecret,
     issuer: params.get('issuer') ?? '',
     algorithm,
     digits,

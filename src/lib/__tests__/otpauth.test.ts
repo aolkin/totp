@@ -119,6 +119,11 @@ describe('OTP Auth URL Parser', () => {
       expect(() => parseOTPAuthURL(url)).toThrow('period must be between 15 and 120 seconds');
     });
 
+    it('should throw for invalid Base32 secret', () => {
+      const url = 'otpauth://totp/Service?secret=INVALID!@#';
+      expect(() => parseOTPAuthURL(url)).toThrow('secret is not valid Base32');
+    });
+
     it('should throw for malformed URL', () => {
       const url = 'not-a-valid-url';
       expect(() => parseOTPAuthURL(url)).toThrow();
