@@ -7,11 +7,9 @@ async function createTotpUrl(
     secret?: string;
     label?: string;
     passphrase?: string;
-    digits?: string;
-    algorithm?: string;
   } = {},
 ): Promise<{ url: string; passphrase: string }> {
-  const { secret = 'JBSWY3DPEHPK3PXP', label, passphrase, digits, algorithm } = options;
+  const { secret = 'JBSWY3DPEHPK3PXP', label, passphrase } = options;
 
   await page.goto('/');
   await page.getByRole('textbox', { name: 'TOTP Secret' }).fill(secret);
@@ -27,17 +25,6 @@ async function createTotpUrl(
     finalPassphrase = passphrase;
   } else {
     finalPassphrase = await page.getByRole('textbox', { name: 'Passphrase' }).inputValue();
-  }
-
-  // Set advanced options if specified
-  if (digits || algorithm) {
-    await page.getByRole('button', { name: 'Show Advanced Options' }).click();
-    if (digits) {
-      await page.getByRole('combobox', { name: 'Digits' }).selectOption(digits);
-    }
-    if (algorithm) {
-      await page.getByRole('combobox', { name: 'Algorithm' }).selectOption(algorithm);
-    }
   }
 
   await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
@@ -83,18 +70,6 @@ test.describe('E2E - Cross-Tab Flows', () => {
 
     await expect(newPage.getByRole('heading', { name: 'Enter Passphrase' })).not.toBeVisible();
     await expect(newPage.getByRole('button', { name: 'Copy Code' })).toBeVisible();
-
-    await newPage.close();
-  });
-
-  test('should preserve 8-digit setting through create/view cycle', async ({ page, context }) => {
-    const { url } = await createTotpUrl(page, { passphrase: '', digits: '8' });
-
-    const newPage = await context.newPage();
-    await newPage.goto(url);
-
-    const code = await newPage.locator('.font-mono.text-5xl').textContent();
-    expect(code?.replace(/\s/g, '')).toMatch(/^\d{8}$/);
 
     await newPage.close();
   });

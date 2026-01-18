@@ -53,20 +53,12 @@ test.describe('UI - Create Form', () => {
   });
 
   test.describe('Advanced options', () => {
-    test('should toggle advanced options visibility', async ({ page }) => {
+    test('should toggle and allow changing advanced settings', async ({ page }) => {
       await page.getByRole('button', { name: 'Show Advanced Options' }).click();
 
       await expect(page.getByRole('combobox', { name: 'Digits' })).toBeVisible();
       await expect(page.getByRole('spinbutton', { name: 'Period' })).toBeVisible();
       await expect(page.getByRole('combobox', { name: 'Algorithm' })).toBeVisible();
-
-      await page.getByRole('button', { name: 'Hide Advanced Options' }).click();
-
-      await expect(page.getByRole('combobox', { name: 'Digits' })).not.toBeVisible();
-    });
-
-    test('should allow changing advanced settings', async ({ page }) => {
-      await page.getByRole('button', { name: 'Show Advanced Options' }).click();
 
       await page.getByRole('combobox', { name: 'Digits' }).selectOption('8');
       await page.getByRole('combobox', { name: 'Algorithm' }).selectOption('SHA256');
@@ -75,6 +67,10 @@ test.describe('UI - Create Form', () => {
       expect(await page.getByRole('combobox', { name: 'Digits' }).inputValue()).toBe('8');
       expect(await page.getByRole('combobox', { name: 'Algorithm' }).inputValue()).toBe('SHA256');
       expect(await page.getByRole('spinbutton', { name: 'Period' }).inputValue()).toBe('60');
+
+      await page.getByRole('button', { name: 'Hide Advanced Options' }).click();
+
+      await expect(page.getByRole('combobox', { name: 'Digits' })).not.toBeVisible();
     });
   });
 
