@@ -65,6 +65,14 @@ This project uses:
 
 Pre-commit hooks will automatically run linting and formatting on your staged files before each commit.
 
+### Testing Philosophy
+
+Tests focus on **our code, not library code**. Unit tests verify our own logic; they don't re-test third-party libraries (like `otpauth` for TOTP or Web Crypto API).
+
+- Unit tests (`src/lib/__tests__/`) use Vitest for fast, isolated testing of core logic
+- E2E tests (`tests/`) use Playwright for user-facing functionality
+- Prefer fewer, higher-value tests over many granular tests
+
 ## **MANDATORY: Coding Standards**
 
 ### Use `undefined` over `null`
