@@ -33,14 +33,23 @@ npm run build
 # Preview production build
 npm run preview
 
-# Run Playwright tests
+# Run all tests (unit + E2E)
 npm test
 
-# Run Playwright tests in headed mode
-npm run test:headed
+# Run only unit tests (Vitest)
+npm run test:unit
 
-# Debug Playwright tests
-npm run test:debug
+# Watch mode for unit tests
+npm run test:unit:watch
+
+# Run only E2E tests (Playwright)
+npm run test:e2e
+
+# Run E2E tests in headed mode
+npm run test:e2e:headed
+
+# Debug E2E tests
+npm run test:e2e:debug
 
 # Type checking
 npm run check

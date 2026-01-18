@@ -33,8 +33,14 @@ npm run build
 # Preview production build
 npm run preview
 
-# Run tests
+# Run all tests (unit + E2E)
 npm test
+
+# Run only unit tests
+npm run test:unit
+
+# Run only E2E tests
+npm run test:e2e
 
 # Type checking
 npm run check
