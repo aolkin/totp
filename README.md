@@ -9,6 +9,21 @@ A fully client-side browser-based TOTP generator
 - 📱 Progressive Web App with offline support
 - 🌐 Works without internet after first load
 - 🎨 Modern UI with Tailwind CSS and shadcn-svelte
+- ⚙️ Cache management and offline status indicator
+- 🔄 Automatic update notifications
+
+## Offline Support
+
+This app is designed to work fully offline after the first visit:
+
+- **First Visit:** Service worker caches the entire app for offline use
+- **Offline Ready Banner:** Shows once to confirm the app works offline
+- **Persistent Storage:** Automatically requests persistent storage to prevent cache eviction
+- **Cache Information:** View cache status, size, and age via settings (⚙️ icon)
+- **Update Notifications:** Get notified when a new version is available
+- **Manual Controls:** Refresh or clear cache via the settings panel
+
+The app can optionally be installed as a PWA for the best experience, but installation is not required for offline functionality.
 
 ## Tech Stack
 
