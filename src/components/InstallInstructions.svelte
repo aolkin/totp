@@ -9,12 +9,6 @@
 
   const { visible = false, onClose }: Props = $props();
 
-  let open = $state(false);
-
-  $effect(() => {
-    open = visible;
-  });
-
   const userAgent = navigator.userAgent.toLowerCase();
   const isIOS =
     userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('ipod');
@@ -30,14 +24,13 @@
   }
 
   function handleOpenChange(newOpen: boolean) {
-    open = newOpen;
     if (!newOpen && onClose) {
       onClose();
     }
   }
 </script>
 
-<Dialog.Root {open} onOpenChange={handleOpenChange}>
+<Dialog.Root open={visible} onOpenChange={handleOpenChange}>
   <Dialog.Content>
     <Dialog.Header>
       <Dialog.Title>Install This App</Dialog.Title>
