@@ -325,14 +325,14 @@ class TOTPStorage {
 
 Phase 2 is complete when:
 
-- [ ] Can save TOTPs to IndexedDB
-- [ ] List view displays all saved TOTPs
-- [ ] Can view saved TOTPs with passphrase
-- [ ] Can export saved TOTPs as shareable URLs
-- [ ] Can delete saved TOTPs
-- [ ] Search and sorting work
-- [ ] Export/import JSON backup works
-- [ ] All code is checked for duplication and refactoring is done to ensure no duplication exists
-- [ ] All unnecessary comments are removed, code should be self-documenting
-- [ ] All tests pass
-- [ ] Phase 1 URLs still work (backwards compatible)
+- [x] Can save TOTPs to IndexedDB
+- [x] List view displays all saved TOTPs
+- [x] Can view saved TOTPs with passphrase
+- [x] Can export saved TOTPs as shareable URLs
+- [x] Can delete saved TOTPs
+- [x] Search and sorting work
+- [x] Export/import JSON backup works
+- [x] All code is checked for duplication and refactoring is done to ensure no duplication exists
+- [x] All unnecessary comments are removed, code should be self-documenting
+- [x] All tests pass
+- [x] Phase 1 URLs still work (backwards compatible)
