@@ -96,4 +96,4 @@
   </div>
 {/if}
 
-<InstallInstructions visible={showInstructions} onClose={() => (showInstructions = false)} />
+<InstallInstructions bind:visible={showInstructions} />
