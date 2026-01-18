@@ -33,17 +33,6 @@ export default tseslint.config(
     },
   },
   {
-    // Relax type-aware rules for Playwright tests
-    files: ['tests/**/*.ts'],
-    rules: {
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-return': 'off',
-      '@typescript-eslint/no-unsafe-argument': 'off',
-    },
-  },
-  {
     ignores: [
       'site/**',
       'dist/**',
@@ -81,6 +70,34 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'prefer-const': 'error',
       'no-var': 'error',
+    },
+  },
+  {
+    // Relax type-aware rules for Playwright tests
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+    },
+  },
+  {
+    // Relax rules for shadcn-svelte UI components (third-party library code)
+    // These are CLI-generated components that follow shadcn-svelte conventions
+    files: ['src/lib/components/ui/**/*.svelte', 'src/lib/components/ui/**/*.ts'],
+    rules: {
+      // Svelte 5 runes use 'let' with $props() - this is correct and intentional
+      'prefer-const': 'off',
+      // Custom element warnings not relevant for this app
+      'svelte/valid-compile': 'off',
+      // TypeScript strict checks relaxed for library components
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/no-useless-default-assignment': 'off',
     },
   },
 );
