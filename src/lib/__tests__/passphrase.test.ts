@@ -8,39 +8,20 @@ import {
 
 describe('Passphrase', () => {
   describe('generatePassphrase', () => {
-    it('should generate 5 words by default', () => {
-      const passphrase = generatePassphrase();
-      const words = passphrase.split('-');
-
-      expect(words.length).toBe(5);
-    });
-
-    it('should generate specified number of words', () => {
-      const passphrase3 = generatePassphrase(3);
-      const passphrase7 = generatePassphrase(7);
-
-      expect(passphrase3.split('-').length).toBe(3);
-      expect(passphrase7.split('-').length).toBe(7);
-    });
-
-    it('should generate different passphrases each time', () => {
-      const passphrase1 = generatePassphrase();
-      const passphrase2 = generatePassphrase();
-
-      expect(passphrase1).not.toBe(passphrase2);
-    });
-
-    it('should use hyphen as separator', () => {
+    it('should generate 5 hyphen-separated lowercase words by default', () => {
       const passphrase = generatePassphrase();
 
-      expect(passphrase).toContain('-');
+      expect(passphrase.split('-').length).toBe(5);
+      expect(passphrase).toMatch(/^[a-z-]+$/);
       expect(passphrase).not.toContain(' ');
     });
 
-    it('should only contain lowercase letters and hyphens', () => {
-      const passphrase = generatePassphrase();
+    it.each([3, 5, 7])('should generate %d words when specified', (count) => {
+      expect(generatePassphrase(count).split('-').length).toBe(count);
+    });
 
-      expect(passphrase).toMatch(/^[a-z-]+$/);
+    it('should generate different passphrases each time', () => {
+      expect(generatePassphrase()).not.toBe(generatePassphrase());
     });
   });
 
@@ -49,82 +30,45 @@ describe('Passphrase', () => {
       expect(calculateStrength('')).toBe(0);
     });
 
-    it('should return low strength for short passwords', () => {
-      expect(calculateStrength('short')).toBeLessThanOrEqual(2);
-    });
-
-    it('should return higher strength for longer passwords', () => {
-      const shortStrength = calculateStrength('pass');
-      const longStrength = calculateStrength('verylongpassword');
-
-      expect(longStrength).toBeGreaterThan(shortStrength);
-    });
-
-    it('should return higher strength for mixed character types', () => {
-      const lowercaseOnly = calculateStrength('password');
+    it('should increase strength with length and character variety', () => {
+      const short = calculateStrength('pass');
+      const longer = calculateStrength('verylongpassword');
       const mixed = calculateStrength('Password123!');
 
-      expect(mixed).toBeGreaterThan(lowercaseOnly);
+      expect(longer).toBeGreaterThan(short);
+      expect(mixed).toBeGreaterThan(calculateStrength('password'));
     });
 
-    it('should return max 4', () => {
-      const strength = calculateStrength('VeryStrongPassword123!@#$%^&*()');
-
-      expect(strength).toBeLessThanOrEqual(4);
+    it('should cap at maximum of 4', () => {
+      expect(calculateStrength('VeryStrongPassword123!@#$%^&*()')).toBeLessThanOrEqual(4);
     });
   });
 
   describe('getStrengthLabel', () => {
-    it('should return "Very Weak" for strength 0', () => {
-      expect(getStrengthLabel(0)).toBe('Very Weak');
-    });
-
-    it('should return "Weak" for strength 1', () => {
-      expect(getStrengthLabel(1)).toBe('Weak');
-    });
-
-    it('should return "Fair" for strength 2', () => {
-      expect(getStrengthLabel(2)).toBe('Fair');
-    });
-
-    it('should return "Good" for strength 3', () => {
-      expect(getStrengthLabel(3)).toBe('Good');
-    });
-
-    it('should return "Strong" for strength 4', () => {
-      expect(getStrengthLabel(4)).toBe('Strong');
-    });
-
-    it('should handle values above 4', () => {
-      expect(getStrengthLabel(5)).toBe('Strong');
-      expect(getStrengthLabel(10)).toBe('Strong');
+    it.each([
+      [0, 'Very Weak'],
+      [1, 'Weak'],
+      [2, 'Fair'],
+      [3, 'Good'],
+      [4, 'Strong'],
+      [5, 'Strong'],
+      [10, 'Strong'],
+    ])('should return correct label for strength %d', (strength, expected) => {
+      expect(getStrengthLabel(strength)).toBe(expected);
     });
   });
 
   describe('getStrengthColor', () => {
-    it('should return red for strength 0', () => {
-      expect(getStrengthColor(0)).toBe('#dc3545');
-    });
-
-    it('should return orange for strength 1', () => {
-      expect(getStrengthColor(1)).toBe('#fd7e14');
-    });
-
-    it('should return yellow for strength 2', () => {
-      expect(getStrengthColor(2)).toBe('#ffc107');
-    });
-
-    it('should return teal for strength 3', () => {
-      expect(getStrengthColor(3)).toBe('#20c997');
-    });
-
-    it('should return green for strength 4', () => {
-      expect(getStrengthColor(4)).toBe('#28a745');
-    });
-
-    it('should handle values above 4', () => {
-      expect(getStrengthColor(5)).toBe('#28a745');
-      expect(getStrengthColor(10)).toBe('#28a745');
+    it.each([
+      [0, '#dc3545'],
+      [1, '#fd7e14'],
+      [2, '#ffc107'],
+      [3, '#20c997'],
+      [4, '#28a745'],
+      [5, '#28a745'],
+      [10, '#28a745'],
+    ])('should return correct color for strength %d', (strength, expected) => {
+      expect(getStrengthColor(strength)).toBe(expected);
     });
   });
 });

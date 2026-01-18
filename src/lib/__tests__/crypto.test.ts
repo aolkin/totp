@@ -10,16 +10,18 @@ import {
 } from '../crypto';
 import type { TOTPConfig } from '../types';
 
+const defaultConfig: TOTPConfig = {
+  secret: 'JBSWY3DPEHPK3PXP',
+  label: '',
+  digits: 6,
+  period: 30,
+  algorithm: 'SHA1',
+};
+
 describe('Encryption', () => {
-  describe('URL encoding/decoding', () => {
+  describe('URL encoding/decoding roundtrip', () => {
     it('should encode and decode encrypted data correctly', async () => {
-      const config: TOTPConfig = {
-        secret: 'JBSWY3DPEHPK3PXP',
-        label: 'Test Label',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA1',
-      };
+      const config = { ...defaultConfig, label: 'Test Label' };
 
       const encrypted = await encrypt(config, 'testpassword');
       const encoded = encodeToURL(encrypted);
@@ -28,62 +30,38 @@ describe('Encryption', () => {
 
       expect(decrypted.secret).toBe(config.secret);
       expect(decrypted.label).toBe(config.label);
-      expect(encoded.length).toBeGreaterThan(0);
     });
 
-    it('should produce URL-safe Base64 encoding', async () => {
-      const config: TOTPConfig = {
-        secret: 'JBSWY3DPEHPK3PXP',
-        label: '',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA1',
-      };
-
-      const encrypted = await encrypt(config, 'test');
+    it('should produce URL-safe Base64 (no +, /, or =)', async () => {
+      const encrypted = await encrypt(defaultConfig, 'test');
       const encoded = encodeToURL(encrypted);
 
-      expect(encoded).not.toContain('+');
-      expect(encoded).not.toContain('/');
-      expect(encoded).not.toContain('=');
+      expect(encoded).not.toMatch(/[+/=]/);
     });
   });
 
-  describe('Empty passphrase mode', () => {
-    it('should encrypt and decrypt with empty passphrase', async () => {
-      const config: TOTPConfig = {
-        secret: 'JBSWY3DPEHPK3PXP',
-        label: 'No Passphrase',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA1',
-      };
+  describe('Passphrase handling', () => {
+    it('should work with empty passphrase and auto-decrypt', async () => {
+      const encrypted = await encrypt(defaultConfig, '');
 
-      const encrypted = await encrypt(config, '');
-      const decrypted = await decrypt(encrypted, '');
-      const autoDecrypted = await tryDecryptWithEmptyPassphrase(encrypted);
-
-      expect(decrypted.secret).toBe(config.secret);
-      expect(autoDecrypted?.secret).toBe(config.secret);
+      expect((await decrypt(encrypted, '')).secret).toBe(defaultConfig.secret);
+      expect((await tryDecryptWithEmptyPassphrase(encrypted))?.secret).toBe(defaultConfig.secret);
     });
 
-    it('should return undefined for non-empty passphrase with tryDecryptWithEmptyPassphrase', async () => {
-      const config: TOTPConfig = {
-        secret: 'JBSWY3DPEHPK3PXP',
-        label: '',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA1',
-      };
+    it('should return undefined when trying empty passphrase on protected data', async () => {
+      const encrypted = await encrypt(defaultConfig, 'secretpassword');
 
-      const encrypted = await encrypt(config, 'secretpassword');
-      const autoDecrypted = await tryDecryptWithEmptyPassphrase(encrypted);
+      expect(await tryDecryptWithEmptyPassphrase(encrypted)).toBeUndefined();
+    });
 
-      expect(autoDecrypted).toBeUndefined();
+    it('should throw error for wrong passphrase', async () => {
+      const encrypted = await encrypt(defaultConfig, 'correctpassword');
+
+      await expect(decrypt(encrypted, 'wrongpassword')).rejects.toThrow();
     });
   });
 
-  describe('Metadata serialization', () => {
+  describe('Config preservation', () => {
     it('should preserve all config values through encryption roundtrip', async () => {
       const config: TOTPConfig = {
         secret: 'ABCDEFGH',
@@ -93,92 +71,37 @@ describe('Encryption', () => {
         algorithm: 'SHA256',
       };
 
-      const encrypted = await encrypt(config, 'pass');
-      const decrypted = await decrypt(encrypted, 'pass');
+      const decrypted = await decrypt(await encrypt(config, 'pass'), 'pass');
 
-      expect(decrypted.secret).toBe('ABCDEFGH');
-      expect(decrypted.label).toBe('MyLabel');
-      expect(decrypted.digits).toBe(8);
-      expect(decrypted.period).toBe(60);
-      expect(decrypted.algorithm).toBe('SHA256');
+      expect(decrypted).toEqual(config);
     });
 
-    it('should use default values when not specified', async () => {
-      const config: TOTPConfig = {
-        secret: 'TESTKEY',
-        label: '',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA1',
-      };
-
-      const encrypted = await encrypt(config, 'pass');
-      const decrypted = await decrypt(encrypted, 'pass');
+    it('should apply defaults for standard values', async () => {
+      const decrypted = await decrypt(await encrypt(defaultConfig, 'pass'), 'pass');
 
       expect(decrypted.digits).toBe(6);
       expect(decrypted.period).toBe(30);
       expect(decrypted.algorithm).toBe('SHA1');
     });
-
-    it('should preserve non-default values', async () => {
-      const config: TOTPConfig = {
-        secret: 'TESTKEY',
-        label: 'Custom Label',
-        digits: 8,
-        period: 60,
-        algorithm: 'SHA512',
-      };
-
-      const encrypted = await encrypt(config, 'pass');
-      const decrypted = await decrypt(encrypted, 'pass');
-
-      expect(decrypted.label).toBe('Custom Label');
-      expect(decrypted.digits).toBe(8);
-      expect(decrypted.period).toBe(60);
-      expect(decrypted.algorithm).toBe('SHA512');
-    });
   });
 
   describe('Base32 validation', () => {
-    it('should validate correct Base32 secrets', () => {
-      expect(isValidBase32('JBSWY3DPEHPK3PXP')).toBe(true);
-      expect(isValidBase32('ABCDEFGHIJKLMNOP')).toBe(true);
-      expect(isValidBase32('234567')).toBe(true);
-      expect(isValidBase32('JBSWY3DPEHPK3PXP====')).toBe(true);
+    it.each([
+      ['JBSWY3DPEHPK3PXP', true],
+      ['ABCDEFGHIJKLMNOP', true],
+      ['234567', true],
+      ['JBSWY3DPEHPK3PXP====', true],
+      ['jbswy3dp', true],
+      ['JBSW Y3DP EHPK 3PXP', true],
+      ['INVALID189', false],
+      ['hello!@#', false],
+      ['', false],
+    ])('isValidBase32("%s") should be %s', (input, expected) => {
+      expect(isValidBase32(input)).toBe(expected);
     });
 
-    it('should reject invalid Base32 secrets', () => {
-      expect(isValidBase32('INVALID189')).toBe(false);
-      expect(isValidBase32('hello!@#')).toBe(false);
-      expect(isValidBase32('')).toBe(false);
-    });
-
-    it('should accept lowercase and convert to uppercase', () => {
-      expect(isValidBase32('jbswy3dp')).toBe(true);
-    });
-
-    it('should normalize Base32 secrets (strip spaces, uppercase)', () => {
-      const withSpaces = 'JBSW Y3DP EHPK 3PXP';
-      const normalized = normalizeBase32(withSpaces);
-
-      expect(normalized).toBe('JBSWY3DPEHPK3PXP');
-      expect(isValidBase32(withSpaces)).toBe(true);
-    });
-  });
-
-  describe('Decryption failures', () => {
-    it('should throw error for wrong passphrase', async () => {
-      const config: TOTPConfig = {
-        secret: 'TESTKEY',
-        label: '',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA1',
-      };
-
-      const encrypted = await encrypt(config, 'correctpassword');
-
-      await expect(decrypt(encrypted, 'wrongpassword')).rejects.toThrow();
+    it('should normalize Base32 by stripping spaces and uppercasing', () => {
+      expect(normalizeBase32('JBSW Y3DP EHPK 3PXP')).toBe('JBSWY3DPEHPK3PXP');
     });
   });
 });

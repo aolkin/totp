@@ -3,119 +3,50 @@ import { generateTOTPCode, getTimeRemaining } from '../totp';
 import type { TOTPConfig } from '../types';
 
 describe('TOTP Generation', () => {
-  describe('Code generation', () => {
-    it('should generate 6-digit code for SHA1', () => {
-      const config: TOTPConfig = {
-        secret: 'GEZDGNBVGY3TQOJQ',
-        label: '',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA1',
-      };
+  describe('Code generation for different algorithms', () => {
+    it.each(['SHA1', 'SHA256', 'SHA512'] as const)(
+      'should generate valid 6-digit code for %s',
+      (algorithm) => {
+        const config: TOTPConfig = {
+          secret: 'GEZDGNBVGY3TQOJQ',
+          label: '',
+          digits: 6,
+          period: 30,
+          algorithm,
+        };
 
-      const code = generateTOTPCode(config);
-
-      expect(code).toMatch(/^\d{6}$/);
-    });
-
-    it('should generate 6-digit code for SHA256', () => {
-      const config: TOTPConfig = {
-        secret: 'GEZDGNBVGY3TQOJQ',
-        label: '',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA256',
-      };
-
-      const code = generateTOTPCode(config);
-
-      expect(code).toMatch(/^\d{6}$/);
-    });
-
-    it('should generate 6-digit code for SHA512', () => {
-      const config: TOTPConfig = {
-        secret: 'GEZDGNBVGY3TQOJQ',
-        label: '',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA512',
-      };
-
-      const code = generateTOTPCode(config);
-
-      expect(code).toMatch(/^\d{6}$/);
-    });
+        const code = generateTOTPCode(config);
+        expect(code).toMatch(/^\d{6}$/);
+      },
+    );
   });
 
   describe('Different digit counts', () => {
-    it('should generate 6-digit codes', () => {
+    it.each([6, 7, 8])('should generate %d-digit codes', (digits) => {
       const config: TOTPConfig = {
         secret: 'JBSWY3DPEHPK3PXP',
         label: '',
-        digits: 6,
+        digits,
         period: 30,
         algorithm: 'SHA1',
       };
 
       const code = generateTOTPCode(config);
-
-      expect(code).toMatch(/^\d{6}$/);
-    });
-
-    it('should generate 7-digit codes', () => {
-      const config: TOTPConfig = {
-        secret: 'JBSWY3DPEHPK3PXP',
-        label: '',
-        digits: 7,
-        period: 30,
-        algorithm: 'SHA1',
-      };
-
-      const code = generateTOTPCode(config);
-
-      expect(code).toMatch(/^\d{7}$/);
-    });
-
-    it('should generate 8-digit codes', () => {
-      const config: TOTPConfig = {
-        secret: 'JBSWY3DPEHPK3PXP',
-        label: '',
-        digits: 8,
-        period: 30,
-        algorithm: 'SHA1',
-      };
-
-      const code = generateTOTPCode(config);
-
-      expect(code).toMatch(/^\d{8}$/);
+      expect(code).toMatch(new RegExp(`^\\d{${String(digits)}}$`));
     });
   });
 
   describe('Time remaining calculation', () => {
-    it('should calculate time remaining within period for 30 seconds', () => {
-      const remaining = getTimeRemaining(30);
+    it.each([15, 30, 60])('should return value between 1 and %d for period %d', (period) => {
+      const remaining = getTimeRemaining(period);
 
       expect(remaining).toBeGreaterThan(0);
-      expect(remaining).toBeLessThanOrEqual(30);
-    });
-
-    it('should calculate time remaining within period for 60 seconds', () => {
-      const remaining = getTimeRemaining(60);
-
-      expect(remaining).toBeGreaterThan(0);
-      expect(remaining).toBeLessThanOrEqual(60);
-    });
-
-    it('should calculate time remaining within period for 15 seconds', () => {
-      const remaining = getTimeRemaining(15);
-
-      expect(remaining).toBeGreaterThan(0);
-      expect(remaining).toBeLessThanOrEqual(15);
+      expect(remaining).toBeLessThanOrEqual(period);
     });
   });
 
-  describe('Code consistency within time period', () => {
-    it('should generate the same code within the same time period', () => {
+  describe('Code behavior', () => {
+    it('should generate consistent codes within same time period', () => {
       const config: TOTPConfig = {
         secret: 'JBSWY3DPEHPK3PXP',
         label: '',
@@ -124,33 +55,14 @@ describe('TOTP Generation', () => {
         algorithm: 'SHA1',
       };
 
-      const code1 = generateTOTPCode(config);
-      const code2 = generateTOTPCode(config);
-
-      expect(code1).toBe(code2);
+      expect(generateTOTPCode(config)).toBe(generateTOTPCode(config));
     });
-  });
 
-  describe('Different secrets produce different codes', () => {
     it('should generate different codes for different secrets', () => {
-      const config1: TOTPConfig = {
-        secret: 'JBSWY3DPEHPK3PXP',
-        label: '',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA1',
-      };
+      const baseConfig = { label: '', digits: 6, period: 30, algorithm: 'SHA1' as const };
 
-      const config2: TOTPConfig = {
-        secret: 'ABCDEFGHIJKLMNOP',
-        label: '',
-        digits: 6,
-        period: 30,
-        algorithm: 'SHA1',
-      };
-
-      const code1 = generateTOTPCode(config1);
-      const code2 = generateTOTPCode(config2);
+      const code1 = generateTOTPCode({ ...baseConfig, secret: 'JBSWY3DPEHPK3PXP' });
+      const code2 = generateTOTPCode({ ...baseConfig, secret: 'ABCDEFGHIJKLMNOP' });
 
       expect(code1).not.toBe(code2);
     });

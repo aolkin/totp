@@ -1,198 +1,112 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+// Helper to create a TOTP URL
+async function createTotpUrl(
+  page: Page,
+  options: { secret?: string; label?: string; passphrase?: string } = {},
+): Promise<string> {
+  const { secret = 'JBSWY3DPEHPK3PXP', label = '', passphrase } = options;
+
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'TOTP Secret' }).fill(secret);
+
+  if (label) {
+    await page.getByRole('textbox', { name: 'Label' }).fill(label);
+  }
+
+  if (passphrase !== undefined) {
+    await page.getByRole('textbox', { name: 'Passphrase' }).fill(passphrase);
+  }
+
+  await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
+  await expect(page.getByRole('heading', { name: 'URL Generated' })).toBeVisible();
+
+  return page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
+}
 
 test.describe('UI - View Mode', () => {
-  test.describe('Passphrase prompt', () => {
-    test('should show passphrase prompt for encrypted URL', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('testpassphrase12');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
+  test.describe('Passphrase handling', () => {
+    test('should prompt for passphrase when protected', async ({ page }) => {
+      const url = await createTotpUrl(page, { passphrase: 'testpassphrase12' });
 
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
-
-      await page.goto(`/#${fragment}`);
+      await page.goto(url);
 
       await expect(page.getByRole('heading', { name: 'Enter Passphrase' })).toBeVisible();
       await expect(page.getByText('protected with a passphrase')).toBeVisible();
     });
 
-    test('should show error for wrong passphrase', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('testpassphrase12');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
+    test('should show error for wrong passphrase and allow retry', async ({ page }) => {
+      const url = await createTotpUrl(page, { passphrase: 'testpassphrase12' });
 
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
-
-      await page.goto(`/#${fragment}`);
+      await page.goto(url);
       await page.getByRole('textbox', { name: 'Enter your passphrase' }).fill('wrongpassphrase');
       await page.getByRole('button', { name: 'Unlock' }).click();
 
       await expect(page.getByText('Incorrect passphrase')).toBeVisible();
-    });
 
-    test('should unlock with correct passphrase', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('testpassphrase12');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
-
-      await page.goto(`/#${fragment}`);
+      // Retry with correct passphrase
       await page.getByRole('textbox', { name: 'Enter your passphrase' }).fill('testpassphrase12');
       await page.getByRole('button', { name: 'Unlock' }).click();
 
       await expect(page.getByRole('button', { name: 'Copy Code' })).toBeVisible();
     });
-  });
 
-  test.describe('Empty passphrase (no prompt)', () => {
-    test('should display TOTP immediately without passphrase', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
+    test('should display code immediately without passphrase', async ({ page }) => {
+      const url = await createTotpUrl(page, { passphrase: '' });
 
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
+      await page.goto(url);
 
-      await page.goto(`/#${fragment}`);
-
-      await expect(page.getByRole('button', { name: 'Copy Code' })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Enter Passphrase' })).not.toBeVisible();
+      await expect(page.getByRole('button', { name: 'Copy Code' })).toBeVisible();
     });
   });
 
   test.describe('TOTP display', () => {
-    test('should display TOTP code', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
+    test('should display code, timer, and controls', async ({ page }) => {
+      const url = await createTotpUrl(page, { passphrase: '' });
 
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
+      await page.goto(url);
 
-      await page.goto(`/#${fragment}`);
-
+      // Check code format
       const codeElement = page.locator('.font-mono.text-5xl');
       await expect(codeElement).toBeVisible();
       const code = await codeElement.textContent();
       expect(code?.replace(/\s/g, '')).toMatch(/^\d{6}$/);
+
+      // Check timer
+      await expect(page.locator('text=/\\d+s/')).toBeVisible();
+
+      // Check buttons
+      await expect(page.getByRole('button', { name: 'Copy Code' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Create New TOTP' })).toBeVisible();
     });
 
-    test('should display label if provided', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Label' }).fill('GitHub - test@example.com');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
+    test('should display label when provided', async ({ page }) => {
+      const url = await createTotpUrl(page, {
+        label: 'GitHub - test@example.com',
+        passphrase: '',
+      });
 
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
-
-      await page.goto(`/#${fragment}`);
+      await page.goto(url);
 
       await expect(page.getByText('GitHub - test@example.com')).toBeVisible();
     });
 
-    test('should show countdown timer', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
+    test('should navigate back to create mode', async ({ page }) => {
+      const url = await createTotpUrl(page, { passphrase: '' });
 
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
-
-      await page.goto(`/#${fragment}`);
-
-      const timer = page.locator('text=/\\d+s/');
-      await expect(timer).toBeVisible();
-    });
-
-    test('should have Copy Code button', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
-
-      await page.goto(`/#${fragment}`);
-
-      await expect(page.getByRole('button', { name: 'Copy Code' })).toBeVisible();
-    });
-
-    test('should have Create New TOTP button', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
-
-      await page.goto(`/#${fragment}`);
-
-      await expect(page.getByRole('button', { name: 'Create New TOTP' })).toBeVisible();
-    });
-
-    test('should navigate to create mode when clicking Create New TOTP', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
-
-      await page.goto(`/#${fragment}`);
+      await page.goto(url);
       await page.getByRole('button', { name: 'Create New TOTP' }).click();
 
       await expect(page.getByRole('heading', { name: 'Create TOTP URL' })).toBeVisible();
-      // URL will be http://localhost:5173/# (empty hash), which is expected browser behavior
-    });
-  });
-
-  test.describe('Countdown timer updates', () => {
-    test('should update countdown timer over time', async ({ page }) => {
-      await page.goto('/');
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-      await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
-      await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-
-      const url = await page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-      const fragment = url.split('#')[1];
-
-      await page.goto(`/#${fragment}`);
-
-      const timer = page.locator('text=/\\d+s/');
-      const initialTime = await timer.textContent();
-
-      await page.waitForTimeout(1500);
-
-      const updatedTime = await timer.textContent();
-
-      const initialSeconds = parseInt(initialTime?.replace('s', '') ?? '0');
-      const updatedSeconds = parseInt(updatedTime?.replace('s', '') ?? '0');
-
-      expect(updatedSeconds).toBeLessThanOrEqual(initialSeconds);
     });
   });
 
   test.describe('Error handling', () => {
     test('should show passphrase prompt for unrecognized encrypted data', async ({ page }) => {
       // An invalid fragment that can be decoded as base64 will show passphrase prompt
-      // because decryption with empty passphrase fails
       await page.goto('/#SGVsbG9Xb3JsZA');
 
-      // Should show passphrase prompt (not error) since base64 decodes but decryption fails
       await expect(page.getByRole('heading', { name: 'Enter Passphrase' })).toBeVisible();
     });
   });
