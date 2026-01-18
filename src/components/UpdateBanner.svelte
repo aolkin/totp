@@ -39,7 +39,7 @@
     <Card class="mx-auto max-w-2xl border-blue-500 bg-blue-50">
       <CardContent class="p-6">
         <div class="flex items-start gap-4">
-          <div class="flex-shrink-0 text-2xl">🔄</div>
+          <div class="shrink-0 text-2xl">🔄</div>
           <div class="flex-1">
             <h2 class="text-lg font-semibold text-blue-900 mb-2">Update Available</h2>
             <p class="text-sm text-blue-800 mb-4">New version with improvements is available.</p>
@@ -50,7 +50,7 @@
           </div>
           <button
             onclick={handleDismiss}
-            class="flex-shrink-0 text-blue-700 hover:text-blue-900"
+            class="shrink-0 text-blue-700 hover:text-blue-900"
             aria-label="Close"
           >
             ✕
