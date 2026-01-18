@@ -342,14 +342,12 @@ The project is configured to deploy to GitHub Pages. Build with `npm run build` 
   - URL fragment parsing
   - State management
 
-### Deferred to Future Work
+### Completed
 
-- [ ] Playwright test suite
-  - Encryption roundtrip tests
-  - TOTP generation tests
-  - UI flow tests (create/view)
-  - E2E tests
-  - **Note:** When adding tests, uncomment the Playwright steps in `.github/workflows/pr-validation.yml`
+- ✅ Test suite implemented
+  - Unit tests with Vitest (crypto, totp, passphrase)
+  - E2E tests with Playwright (UI create/view flows)
+  - Tests enabled in CI workflow
 
 ## Success Criteria
 
@@ -358,6 +356,6 @@ Phase 1 is complete when:
 - [x] Create → View flow works end-to-end
 - [x] PWA installs on mobile and desktop
 - [x] Works offline after first load
-- [ ] All Playwright tests pass (deferred)
+- [x] All tests pass
 - [x] All code is reviewed for duplication
-- [ ] Code is self-documenting with minimal comments
+- [x] Code is self-documenting with minimal comments

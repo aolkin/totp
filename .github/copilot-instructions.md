@@ -33,14 +33,23 @@ npm run build
 # Preview production build
 npm run preview
 
-# Run Playwright tests
+# Run all tests (unit + E2E)
 npm test
 
-# Run Playwright tests in headed mode
-npm run test:headed
+# Run only unit tests (Vitest)
+npm run test:unit
 
-# Debug Playwright tests
-npm run test:debug
+# Watch mode for unit tests
+npm run test:unit:watch
+
+# Run only E2E tests (Playwright)
+npm run test:e2e
+
+# Run E2E tests in headed mode
+npm run test:e2e:headed
+
+# Debug E2E tests
+npm run test:e2e:debug
 
 # Type checking
 npm run check
@@ -230,11 +239,29 @@ All types are defined in `src/lib/types.ts`. Refer to that file for the canonica
 
 ## Testing Guidelines
 
-- Tests are located in `tests/` directory (Playwright e2e tests)
+### Testing Philosophy
+
+**Focus on testing our code, not library code.** Unit tests should verify our own logic and integration points, not re-test functionality provided by third-party libraries (like `otpauth` for TOTP generation or Web Crypto API for encryption).
+
+- ✅ Test our encryption/decryption roundtrip logic
+- ✅ Test our passphrase generation logic
+- ✅ Test our time remaining calculation
+- ✅ Test user-facing flows via E2E tests
+- ❌ Don't test that TOTP algorithms produce correct codes (that's testing `otpauth`)
+- ❌ Don't test simple lookup functions in isolation (test them via E2E flows)
+
+### Test Structure
+
+- **Unit tests** (`src/lib/__tests__/`): Vitest tests for our core logic
+- **E2E tests** (`tests/`): Playwright tests for user-facing functionality
+
+### Writing Tests
+
 - Write tests that verify user-facing functionality
 - Test both happy paths and error cases
 - Always test encryption/decryption round trips
-- Verify PWA offline functionality
+- Prefer fewer, higher-value tests over many granular tests
+- Consolidate related assertions into single tests when logical
 
 ## Common Tasks
 

@@ -33,6 +33,17 @@ export default tseslint.config(
     },
   },
   {
+    // Relax type-aware rules for Playwright tests
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+    },
+  },
+  {
     ignores: [
       'site/**',
       'dist/**',
