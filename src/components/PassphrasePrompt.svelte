@@ -8,7 +8,7 @@
     error?: string;
   }
 
-  let { onUnlock, error = '' }: Props = $props();
+  const { onUnlock, error = '' }: Props = $props();
 
   let passphrase = $state('');
 
@@ -23,7 +23,13 @@
     <p class="text-muted-foreground">This TOTP is protected with a passphrase.</p>
   </CardHeader>
   <CardContent>
-    <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+    <form
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
+      }}
+      class="space-y-4"
+    >
       <div>
         <Input
           type="password"
@@ -34,14 +40,14 @@
       </div>
 
       {#if error}
-        <div class="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+        <div
+          class="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm"
+        >
           {error}
         </div>
       {/if}
 
-      <Button type="submit" class="w-full">
-        Unlock
-      </Button>
+      <Button type="submit" class="w-full">Unlock</Button>
     </form>
   </CardContent>
 </Card>

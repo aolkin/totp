@@ -8,10 +8,7 @@ const SALT_LENGTH = 16;
 const IV_LENGTH = 12;
 const NO_PASSPHRASE_KEY = 'NO_PASSPHRASE';
 
-export async function deriveKey(
-  passphrase: string,
-  salt: Uint8Array
-): Promise<CryptoKey> {
+export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const keyMaterial = passphrase || NO_PASSPHRASE_KEY;
   const encoder = new TextEncoder();
   const passwordKey = await crypto.subtle.importKey(
@@ -19,7 +16,7 @@ export async function deriveKey(
     encoder.encode(keyMaterial),
     'PBKDF2',
     false,
-    ['deriveKey']
+    ['deriveKey'],
   );
 
   return crypto.subtle.deriveKey(
@@ -32,14 +29,11 @@ export async function deriveKey(
     passwordKey,
     { name: 'AES-GCM', length: 256 },
     false,
-    ['encrypt', 'decrypt']
+    ['encrypt', 'decrypt'],
   );
 }
 
-export async function encrypt(
-  config: TOTPConfig,
-  passphrase: string
-): Promise<EncryptedData> {
+export async function encrypt(config: TOTPConfig, passphrase: string): Promise<EncryptedData> {
   const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
   const key = await deriveKey(passphrase, salt);
@@ -62,11 +56,7 @@ export async function encrypt(
   const encoder = new TextEncoder();
   const plaintext = encoder.encode(JSON.stringify(metadata));
 
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    plaintext
-  );
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext);
 
   return {
     salt,
@@ -75,24 +65,21 @@ export async function encrypt(
   };
 }
 
-export async function decrypt(
-  data: EncryptedData,
-  passphrase: string
-): Promise<TOTPConfig> {
+export async function decrypt(data: EncryptedData, passphrase: string): Promise<TOTPConfig> {
   const key = await deriveKey(passphrase, data.salt);
 
   const plaintext = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv: data.iv.buffer as ArrayBuffer },
     key,
-    data.ciphertext.buffer as ArrayBuffer
+    data.ciphertext.buffer as ArrayBuffer,
   );
 
   const decoder = new TextDecoder();
-  const metadata: TOTPMetadata = JSON.parse(decoder.decode(plaintext));
+  const metadata = JSON.parse(decoder.decode(plaintext)) as TOTPMetadata;
 
   return {
     secret: metadata.s,
-    label: metadata.l || '',
+    label: metadata.l ?? '',
     digits: metadata.d ?? DEFAULT_DIGITS,
     period: metadata.p ?? DEFAULT_PERIOD,
     algorithm: metadata.a ?? DEFAULT_ALGORITHM,
@@ -100,9 +87,7 @@ export async function decrypt(
 }
 
 export function encodeToURL(data: EncryptedData): string {
-  const combined = new Uint8Array(
-    data.salt.length + data.iv.length + data.ciphertext.length
-  );
+  const combined = new Uint8Array(data.salt.length + data.iv.length + data.ciphertext.length);
   combined.set(data.salt, 0);
   combined.set(data.iv, data.salt.length);
   combined.set(data.ciphertext, data.salt.length + data.iv.length);
@@ -131,7 +116,7 @@ export function decodeFromURL(fragment: string): EncryptedData {
 }
 
 export async function tryDecryptWithEmptyPassphrase(
-  data: EncryptedData
+  data: EncryptedData,
 ): Promise<TOTPConfig | undefined> {
   try {
     return await decrypt(data, '');

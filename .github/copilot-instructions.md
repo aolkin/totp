@@ -19,6 +19,7 @@ This is a **fully client-side browser-based TOTP (Time-based One-Time Password) 
 - **Testing**: Playwright (end-to-end tests)
 - **Type Checking**: svelte-check with TypeScript
 - **Deployment**: GitHub Pages (builds to `site/` directory)
+- **Code Quality**: ESLint v9 (flat config), Prettier, Husky v9 pre-commit hooks
 
 ## Build, Test, and Development Commands
 
@@ -43,6 +44,14 @@ npm run test:debug
 
 # Type checking
 npm run check
+
+# Linting
+npm run lint          # Check for linting issues
+npm run lint:fix      # Auto-fix linting issues
+
+# Formatting
+npm run format        # Format all files with Prettier
+npm run format:check  # Check if files are formatted correctly
 ```
 
 ## Project Structure
@@ -79,15 +88,15 @@ This is the most important coding standard in this project. TypeScript's natural
 ```typescript
 // ✅ Good
 let value: string | undefined;
-function find(): User | undefined { 
+function find(): User | undefined {
   return undefined; // or omit return statement
 }
 const result = data?.optionalField; // undefined if not present
 
 // ❌ Bad
 let value: string | null = null;
-function find(): User | null { 
-  return null; 
+function find(): User | null {
+  return null;
 }
 ```
 
@@ -134,6 +143,30 @@ $: doubled = count * 2;
 - **Line length**: Keep lines reasonable (aim for <100 chars when practical)
 - **Comments**: Only add comments when necessary to explain complex logic. Code should be self-documenting when possible.
 
+### Code Quality Tools
+
+This project uses modern code quality tools to maintain consistency:
+
+- **ESLint v9**: Configured with flat config format (`eslint.config.js`)
+  - TypeScript ESLint for type-aware linting
+  - Svelte ESLint plugin for Svelte-specific rules
+  - Integrated with Prettier to avoid conflicts
+  - Run with `npm run lint` or auto-fix with `npm run lint:fix`
+
+- **Prettier v3**: Automatic code formatting
+  - Configured in `.prettierrc`
+  - Includes Svelte plugin for `.svelte` files
+  - Run with `npm run format` or check with `npm run format:check`
+
+- **Pre-commit Hooks**: Husky v9 + lint-staged
+  - Automatically runs on staged files before commit
+  - Runs ESLint with auto-fix and Prettier formatting
+  - Configuration in `package.json` under `lint-staged`
+
+- **GitHub Actions**: Automated PR validation (`.github/workflows/pr-validation.yml`)
+  - Runs linting, formatting checks, type checking, build, and tests
+  - Ensures all PRs meet quality standards before merging
+
 ### Naming Conventions
 
 - **Files**: kebab-case for all files (`totp-display.ts`, `create-form.svelte`)
@@ -169,6 +202,7 @@ $: doubled = count * 2;
 ### Stateless Design
 
 The application is stateless by design:
+
 - No cookies, localStorage, or sessionStorage for secrets
 - All TOTP configuration is encrypted and encoded in the URL hash
 - Passphrase (if any) is only held in memory during the session
@@ -180,7 +214,7 @@ https://example.com/#<base64url-encoded-encrypted-data>
 
 The encrypted data contains:
 - Salt (16 bytes)
-- IV (12 bytes)  
+- IV (12 bytes)
 - Ciphertext (variable length)
 ```
 
@@ -244,10 +278,13 @@ All types are defined in `src/lib/types.ts`. Refer to that file for the canonica
 When making changes:
 
 1. **Minimal changes**: Only modify what's necessary to address the issue
-2. **Test your changes**: Run `npm run build` and `npm test` before submitting
+2. **Lint and format**: Run `npm run lint:fix` and `npm run format` before committing
 3. **Type check**: Run `npm run check` to ensure TypeScript types are correct
-4. **Preserve functionality**: Don't break existing features
-5. **Review git diff**: Ensure only intended changes are included
+4. **Test your changes**: Run `npm run build` and `npm test` before submitting
+5. **Preserve functionality**: Don't break existing features
+6. **Review git diff**: Ensure only intended changes are included
+
+Note: Pre-commit hooks will automatically lint and format staged files, but it's good practice to run these commands manually during development.
 
 ## PWA and Service Worker
 

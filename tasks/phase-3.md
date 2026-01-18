@@ -13,24 +13,29 @@ Add camera-based QR code scanning to the create form, allowing users to scan TOT
 ### Dependencies
 
 Add QR code library via CDN:
+
 - **jsQR** (~30KB) - Pure JavaScript QR decoder
   - CDN: https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js (make sure to use the latest stable version)
-  
+
 Alternative: **qr-scanner** (~15KB, better performance)
-  - CDN: https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js (use the latest stable version of this unless there's a really good reason not to)
+
+- CDN: https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js (use the latest stable version of this unless there's a really good reason not to)
 
 ### Browser APIs
+
 - **getUserMedia** - Camera access
 - **Canvas API** - Video frame capture for QR parsing
 
 ### TOTP URL Format (otpauth://)
 
 QR codes contain URLs in this format:
+
 ```
 otpauth://totp/Label?secret=SECRET&issuer=Issuer&algorithm=SHA1&digits=6&period=30
 ```
 
 **Components:**
+
 - `totp` - Type (always "totp" for TOTP)
 - `Label` - Account identifier (e.g., "GitHub:user@example.com")
 - `secret` - Base32 secret (required)
@@ -40,6 +45,7 @@ otpauth://totp/Label?secret=SECRET&issuer=Issuer&algorithm=SHA1&digits=6&period=
 - `period` - Time step (optional, default 30)
 
 **Parser example:**
+
 ```typescript
 interface OTPAuthData {
   label: string;
@@ -67,7 +73,7 @@ function parseOTPAuthURL(url: string): OTPAuthData {
     issuer: params.get('issuer') || '',
     algorithm: (params.get('algorithm') as OTPAuthData['algorithm']) || 'SHA1',
     digits: parseInt(params.get('digits') || '6') || 6,
-    period: parseInt(params.get('period') || '30') || 30
+    period: parseInt(params.get('period') || '30') || 30,
   };
 }
 ```
@@ -77,6 +83,7 @@ function parseOTPAuthURL(url: string): OTPAuthData {
 ### Create Form Enhancement
 
 **Add scan button next to secret input:**
+
 ```
 ┌─────────────────────────────────────┐
 │ TOTP Secret                         │
@@ -87,6 +94,7 @@ function parseOTPAuthURL(url: string): OTPAuthData {
 ```
 
 **On "Scan QR" click:**
+
 1. Request camera permission
 2. Show camera preview modal
 3. Continuously scan for QR codes
@@ -95,6 +103,7 @@ function parseOTPAuthURL(url: string): OTPAuthData {
 ### Camera Modal
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────┐
 │  ┌─────────────────────────────┐   │
@@ -111,6 +120,7 @@ function parseOTPAuthURL(url: string): OTPAuthData {
 ```
 
 **Elements:**
+
 - Full-width video preview
 - Scanning reticle overlay (animated square)
 - Status text: "Scanning..." / "QR Code Detected!"
@@ -120,11 +130,13 @@ function parseOTPAuthURL(url: string): OTPAuthData {
 ### Mobile Considerations
 
 **Camera selection:**
+
 - Default to rear camera on mobile
 - Toggle button to switch front/rear
 - Desktop: Use first available camera
 
 **Permissions:**
+
 - Clear error if permission denied
 - "Open Settings" link on mobile
 - Fallback to manual entry
@@ -139,8 +151,8 @@ async function startCamera(): Promise<void> {
     video: {
       facingMode: 'environment', // Rear camera on mobile
       width: { ideal: 1280 },
-      height: { ideal: 720 }
-    }
+      height: { ideal: 720 },
+    },
   };
 
   try {
@@ -226,7 +238,7 @@ function handleQRCodeDetected(data: string): void {
 function stopCamera(): void {
   const stream = videoElement.srcObject as MediaStream | null;
   if (stream) {
-    stream.getTracks().forEach(track => track.stop());
+    stream.getTracks().forEach((track) => track.stop());
     // Note: srcObject requires null (DOM API), exception to undefined-over-null rule
     videoElement.srcObject = null;
   }
@@ -238,37 +250,44 @@ function stopCamera(): void {
 ## Error Handling
 
 ### Permission Denied
+
 - Show clear message with instructions
 - Provide "Try Again" button
 - Link to browser help for permissions
 
 ### No Camera Available
+
 - Desktop without webcam: Hide scan button
 - Mobile: Should never happen, show error
 
 ### Invalid QR Code
+
 - Not an otpauth:// URL: "This is not a TOTP QR code"
 - Malformed URL: "Invalid QR code format"
 - Missing secret: "QR code missing required secret"
 
 ### Camera Errors
+
 - Camera in use by another app: "Camera unavailable"
 - Hardware error: "Camera access failed"
 
 ## Security Considerations
 
 ### Privacy
+
 - Camera access only when scanning
 - Stop stream immediately after scan
 - No video/image recording or storage
 - Clear permission prompt before camera access
 
 ### Validation
+
 - Verify otpauth:// protocol
 - Validate Base32 secret format
 - Sanitize label and issuer (XSS prevention)
 
 ### Phishing Prevention
+
 - Display issuer prominently after scan
 - Warn if issuer doesn't match expected service
 - Example: Scanning "Google" QR on "Facebook" setup page
@@ -278,6 +297,7 @@ function stopCamera(): void {
 ### tests/qr-scan.spec.ts
 
 **Mock camera access:**
+
 ```javascript
 test('should request camera permission', async ({ page }) => {
   await page.goto('/');
@@ -288,11 +308,13 @@ test('should request camera permission', async ({ page }) => {
 ```
 
 **Mock QR code detection:**
+
 - Generate test QR codes with known values
 - Inject mock getUserMedia stream
 - Verify form auto-fill with correct values
 
 **Test cases:**
+
 - Valid TOTP QR code → Fields populated correctly
 - Invalid QR code (wrong format) → Error shown
 - Permission denied → Error message displayed
@@ -302,6 +324,7 @@ test('should request camera permission', async ({ page }) => {
 ### tests/otpauth-parser.spec.ts
 
 Test URL parsing with various formats:
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -328,6 +351,7 @@ test('reject invalid protocol', () => {
 ```
 
 ### tests/camera-ui.spec.ts
+
 - Modal opens on scan button click
 - Modal closes on cancel
 - Modal closes after successful scan
@@ -337,12 +361,14 @@ test('reject invalid protocol', () => {
 ### Manual Testing
 
 **Test with real services:**
+
 1. GitHub 2FA setup → Scan QR → Verify works
 2. Google Account 2FA → Scan QR → Verify works
 3. AWS Console → Scan QR → Verify works
 4. Discord → Scan QR → Verify works
 
 **Browser compatibility:**
+
 - Chrome/Edge (desktop + mobile)
 - Firefox (desktop + mobile)
 - Safari (desktop + iOS)
@@ -350,11 +376,13 @@ test('reject invalid protocol', () => {
 ## Accessibility
 
 ### Screen Reader Support
+
 - Announce camera modal open/close
 - Announce scan success/failure
 - Keyboard navigation for cancel button
 
 ### Keyboard Users
+
 - Escape key to close modal
 - Tab to cancel button
 - Enter on scan button opens modal
@@ -362,11 +390,13 @@ test('reject invalid protocol', () => {
 ## Performance
 
 ### Video Processing
+
 - Target 10-15 FPS for scanning (balance accuracy vs CPU)
 - Reduce canvas resolution if device struggles
 - Pause other animations during scan
 
 ### Library Size
+
 - jsQR: ~30KB (simple, reliable)
 - qr-scanner: ~15KB (faster, more complex)
 - Choose based on performance testing
@@ -374,6 +404,7 @@ test('reject invalid protocol', () => {
 ## Success Criteria
 
 Phase 3 is complete when:
+
 - [ ] Scan button opens camera modal
 - [ ] Camera stream displays in preview
 - [ ] QR codes detected and parsed correctly

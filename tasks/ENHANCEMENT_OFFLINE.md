@@ -5,6 +5,7 @@
 Improve the offline experience for users who don't install the PWA, making it clear that the app works offline and providing better cache management.
 
 **Current State (Phase 1 - Offline-First Caching Implemented):**
+
 - ✅ Service worker implements offline-first (cache-first) strategy for all resources
 - ✅ Works offline after first visit with instant loading from cache
 - ✅ Background network fetch keeps cache fresh when online
@@ -12,6 +13,7 @@ Improve the offline experience for users who don't install the PWA, making it cl
 - ❌ No cache persistence guarantees (enhancement pending)
 
 **Enhanced State:**
+
 - Clear offline status indicators
 - Persistent storage request
 - Cache age display
@@ -25,6 +27,7 @@ Improve the offline experience for users who don't install the PWA, making it cl
 **On Service Worker Activation (first time only):**
 
 Show dismissible banner at top of page:
+
 ```
 ┌─────────────────────────────────────┐
 │ ✓ App Ready for Offline Use         │
@@ -38,17 +41,18 @@ Show dismissible banner at top of page:
 ```
 
 **Implementation:**
+
 - Show once per browser (store dismissed state in localStorage)
 - Auto-hide after 10 seconds if not interacted with
 - "Install" button triggers PWA install prompt
 - Green checkmark icon for positive framing
-
 
 ### 3. Persistent Storage Request
 
 **On first visit after service worker activated:**
 
 Request persistent storage to prevent cache eviction:
+
 ```typescript
 async function requestPersistentStorage(): Promise<void> {
   if (navigator.storage && navigator.storage.persist) {
@@ -66,17 +70,20 @@ async function requestPersistentStorage(): Promise<void> {
 ```
 
 **User prompt (if browser shows permission):**
+
 - Most browsers grant silently
 - Chrome may show: "Allow [site] to store data on this device?"
 - We explain beforehand with banner
 
 **Fallback for browsers without API:**
+
 - Just rely on service worker cache
 - Show "Install app for guaranteed storage" suggestion
 
 ### 4. Cache Information Panel
 
 **In settings/about section:**
+
 ```
 ┌─────────────────────────────────────┐
 │ Offline Status                      │
@@ -91,6 +98,7 @@ async function requestPersistentStorage(): Promise<void> {
 ```
 
 **Details shown:**
+
 - Cache status (ready/not ready)
 - Last cache update time
 - Approximate size
@@ -98,6 +106,7 @@ async function requestPersistentStorage(): Promise<void> {
 - Manual controls
 
 **Implementation:**
+
 ```typescript
 interface CacheInfo {
   totalSize: number;
@@ -115,7 +124,7 @@ async function getCacheInfo(): Promise<CacheInfo> {
       if (!response) return 0;
       const blob = await response.blob();
       return blob.size;
-    })
+    }),
   );
 
   const totalSize = sizes.reduce((a, b) => a + b, 0);
@@ -130,6 +139,7 @@ async function getCacheInfo(): Promise<CacheInfo> {
 **When new version detected:**
 
 Show banner:
+
 ```
 ┌─────────────────────────────────────┐
 │ 🔄 Update Available                 │
@@ -139,6 +149,7 @@ Show banner:
 ```
 
 **Service worker implementation:**
+
 ```typescript
 self.addEventListener('activate', (event: ExtendableEvent) => {
   // New service worker activated
@@ -146,15 +157,16 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
     self.clients.matchAll().then((clients) => {
       clients.forEach((client) => {
         client.postMessage({
-          type: 'UPDATE_AVAILABLE'
+          type: 'UPDATE_AVAILABLE',
         });
       });
-    })
+    }),
   );
 });
 ```
 
 **Client side:**
+
 ```typescript
 navigator.serviceWorker?.addEventListener('message', (event: MessageEvent) => {
   if (event.data.type === 'UPDATE_AVAILABLE') {
@@ -179,6 +191,7 @@ function applyUpdate(): void {
 ### Automatic Cache Versioning (✅ Implemented in Phase 1)
 
 Implemented via Vite plugin that automatically:
+
 - Collects all build output files (including hashed filenames from Vite)
 - Generates cache version from SHA256 hash of all file paths (8 chars)
 - Injects both version and file list into service worker at build time
@@ -190,6 +203,7 @@ No manual version management needed - every build gets a unique cache version.
 ### Offline-First Cache Strategy (✅ Implemented in Phase 1)
 
 The current implementation uses an offline-first (cache-first) strategy for all resources:
+
 - All build output files pre-cached on install (HTML, JS, CSS, icons, manifest)
 - Cached response served immediately when available (instant loading)
 - Background network fetch updates cache for freshness
@@ -197,30 +211,32 @@ The current implementation uses an offline-first (cache-first) strategy for all 
 
 This provides optimal performance and offline reliability.
 
-
 ## Browser Compatibility
 
 **Full support:**
+
 - Chrome 67+ (desktop/Android)
 - Edge 79+
 - Firefox 87+
 - Safari 14+ (macOS/iOS)
 
 **Partial support:**
+
 - Safari 11-13: No persistent storage API
 - Firefox 44-86: Limited service worker features
 
 **Graceful degradation:**
+
 - Older browsers: App still works, just always requires internet
 - Show warning: "For offline use, update your browser"
 
 ## Success Criteria
 
 Enhancement is complete when:
+
 - [ ] Persistent storage requested on first visit
 - [ ] Update notifications appear correctly
 - [ ] App fully functional offline (verified via tests)
 - [ ] Works without requiring install
 - [ ] All Playwright tests pass
 - [ ] Tested across browsers/devices
-

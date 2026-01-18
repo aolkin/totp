@@ -19,7 +19,7 @@ export default defineConfig({
       devOptions: {
         enabled: false,
       },
-    })
+    }),
   ],
   base: '/',
   resolve: {

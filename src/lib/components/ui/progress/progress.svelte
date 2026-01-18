@@ -2,15 +2,16 @@
   import type { HTMLAttributes } from 'svelte/elements';
   import { cn } from '$lib/utils';
 
-  type $$Props = HTMLAttributes<HTMLDivElement> & {
+  type $$Props = Omit<HTMLAttributes<HTMLDivElement>, 'class'> & {
+    class?: string;
     value?: number;
     max?: number;
   };
 
   let className: string | undefined = undefined;
   export { className as class };
-  export let value: number = 0;
-  export let max: number = 100;
+  export let value = 0;
+  export let max = 100;
 
   $: percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 </script>

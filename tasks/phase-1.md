@@ -7,6 +7,7 @@ Build a fully client-side, stateless TOTP (Time-based One-Time Password) authent
 **Core Concept:** TOTP secrets are encrypted client-side and embedded in the URL fragment. No server storage required. Zero server trust.
 
 **URL Format:**
+
 ```
 https://yourdomain.com/#<base64-encoded-encrypted-data>
 ```
@@ -16,6 +17,7 @@ Everything after `#` never reaches the server.
 ## Technical Requirements
 
 ### Stack
+
 - **Framework:** Svelte with TypeScript
 - **Build Tool:** Vite
 - **Styling:** Tailwind CSS with shadcn-svelte component library
@@ -24,12 +26,14 @@ Everything after `#` never reaches the server.
 - **Hosting:** GitHub Pages (static build output)
 
 ### Browser Support
+
 - Modern browsers with Web Crypto API support (Chrome 37+, Firefox 34+, Safari 11+)
 - Service Worker support for PWA functionality (gracefully degrade if unavailable)
 
 ## Cryptography Specification
 
 ### Key Derivation
+
 ```
 PBKDF2-SHA256
 - Iterations: 100,000
@@ -38,6 +42,7 @@ PBKDF2-SHA256
 ```
 
 ### Encryption
+
 ```
 AES-256-GCM
 - IV: 12 bytes (randomly generated)
@@ -46,7 +51,9 @@ AES-256-GCM
 ```
 
 ### URL Structure
+
 The fragment contains Base64-encoded binary data:
+
 ```
 [16 bytes salt][12 bytes IV][N bytes ciphertext][16 bytes auth tag]
 ```
@@ -65,6 +72,7 @@ Defaults: `digits=6`, `period=30`, `algorithm="SHA1"`
 ```
 
 Full structure (when non-default values are used):
+
 ```json
 {
   "s": "JBSWY3DPEHPK3PXP",
@@ -78,7 +86,9 @@ Full structure (when non-default values are used):
 Keys: `s`=secret, `l`=label, `d`=digits, `p`=period, `a`=algorithm
 
 ### Empty Passphrase Handling
+
 If user provides empty/no passphrase:
+
 - Use fixed string "NO_PASSPHRASE" as key material
 - This provides URL-only security (128-bit entropy from URL randomness)
 - Display warning: "Anyone with this URL can access the TOTP code"
@@ -88,6 +98,7 @@ If user provides empty/no passphrase:
 ### Create Mode (Default)
 
 **Form Fields:**
+
 1. **TOTP Secret** (required)
    - Text input, monospace font
    - Placeholder: "aaaa bbbb cccc dddd"
@@ -117,6 +128,7 @@ If user provides empty/no passphrase:
 **Submit Button:** "Generate TOTP URL"
 
 **Result Display:**
+
 - Show generated URL in copyable text box
 - Show passphrase separately (if not empty)
 - Clear warning: "Save this URL and passphrase. They cannot be recovered."
@@ -125,18 +137,21 @@ If user provides empty/no passphrase:
 ### View Mode (URL with fragment)
 
 **On page load with fragment:**
+
 1. Parse fragment, extract salt/IV/ciphertext
 2. Check if passphrase needed (try decrypt with empty passphrase first)
 3. If decryption fails, show passphrase prompt
 4. On successful decrypt, show TOTP display
 
 **Passphrase Prompt:**
+
 - Single password input field
 - "Unlock" button
 - Error message on wrong passphrase: "Incorrect passphrase"
 - No retry limit (client-side only, no server to rate-limit)
 
 **TOTP Display:**
+
 - Large, centered 6-digit code (font-size: 4rem, monospace)
 - Label above code (if provided)
 - Countdown timer with circle meter showing seconds until next code (30 - (now % 30))
@@ -145,6 +160,7 @@ If user provides empty/no passphrase:
 - "Create New TOTP" link back to create mode
 
 ### Responsive Design
+
 - Mobile-first approach
 - Viewport meta tag for proper mobile rendering
 - Touch-friendly tap targets (min 44px)
@@ -153,21 +169,26 @@ If user provides empty/no passphrase:
 ## PWA Implementation
 
 PWA manifest and service worker are already implemented with offline-first caching. Future enhancements can include:
+
 - Install prompt UI
 - Offline status indicators
 
 ## Implementation Details
 
 ### Passphrase Generation
+
 Use BIP39 word list or simple 5-word generator with ~60+ bit entropy.
 
 ### TOTP Code Generation
+
 Use `otpauth` library to generate codes with configurable digits, period, and algorithm.
 
 ### Auto-refresh Logic
+
 Update code and countdown every second. When countdown reaches 30, generate new code.
 
 ### Error Handling
+
 - Invalid Base32 secret: Show error on form submission
 - Decryption failure: Show passphrase prompt or error
 - Missing Web Crypto API: Show "Browser not supported" message
@@ -205,6 +226,7 @@ Playwright is already configured. Create tests in `tests/` directory.
 ### Test Scenarios
 
 **tests/encryption.spec.ts:**
+
 - Test PBKDF2 key derivation with known vectors
 - Test AES-GCM encryption/decryption roundtrip
 - Test empty passphrase mode
@@ -214,12 +236,14 @@ Playwright is already configured. Create tests in `tests/` directory.
 - Test non-default values are included in metadata
 
 **tests/totp-generation.spec.ts:**
+
 - Test TOTP code generation with RFC 6238 test vectors
 - Verify code changes every 30 seconds
 - Test different algorithms (SHA1, SHA256, SHA512)
 - Test different digit counts (6, 7, 8)
 
 **tests/ui-create.spec.ts:**
+
 - Fill form with valid secret → verify URL generated
 - Test secret input with spaces → verify spaces stripped (e.g., "JBSW Y3DP EHPK 3PXP")
 - Test passphrase regeneration
@@ -229,6 +253,7 @@ Playwright is already configured. Create tests in `tests/` directory.
 - Test URL contains minimal metadata (defaults omitted)
 
 **tests/ui-view.spec.ts:**
+
 - Navigate to URL with fragment → verify TOTP displayed
 - Test passphrase prompt on encrypted URL
 - Test wrong passphrase → error shown
@@ -237,12 +262,14 @@ Playwright is already configured. Create tests in `tests/` directory.
 - Test copy button functionality
 
 **tests/pwa.spec.ts:**
+
 - Verify manifest.json served correctly
 - Verify service worker registers
 - Test offline mode (service worker caches resources)
 - Test install prompt (if testable)
 
 **tests/e2e.spec.ts:**
+
 - Full flow: Create → Copy URL → Open in new tab → Enter passphrase → See code
 - Create with empty passphrase → Open URL → Code displays immediately
 - Create with label → Verify label shows in view mode
@@ -254,18 +281,21 @@ The project is configured to deploy to GitHub Pages. Build with `npm run build` 
 ## Security Considerations
 
 **Strengths:**
+
 - Zero server trust (everything client-side)
 - Strong encryption (AES-256-GCM)
 - High entropy URLs (128+ bits)
 - Optional passphrase adds defense-in-depth
 
 **Weaknesses:**
+
 - URL leak = secret leak (if no passphrase)
 - No passphrase recovery (by design)
 - Client-side crypto assumes browser integrity
 - Phishing risk (fake site could steal secrets)
 
 **Mitigation:**
+
 - Warn users about URL security
 - Encourage passphrase use for shared TOTPs
 - Use HTTPS only (enforce in service worker)
@@ -274,6 +304,7 @@ The project is configured to deploy to GitHub Pages. Build with `npm run build` 
 ## Implementation Status
 
 ### Completed
+
 - ✅ Project setup with Svelte + Vite + TypeScript
 - ✅ Tailwind CSS and shadcn-svelte integration
   - Tailwind CSS configured with custom theme variables
@@ -312,15 +343,18 @@ The project is configured to deploy to GitHub Pages. Build with `npm run build` 
   - State management
 
 ### Deferred to Future Work
+
 - [ ] Playwright test suite
   - Encryption roundtrip tests
   - TOTP generation tests
   - UI flow tests (create/view)
   - E2E tests
+  - **Note:** When adding tests, uncomment the Playwright steps in `.github/workflows/pr-validation.yml`
 
 ## Success Criteria
 
 Phase 1 is complete when:
+
 - [x] Create → View flow works end-to-end
 - [x] PWA installs on mobile and desktop
 - [x] Works offline after first load

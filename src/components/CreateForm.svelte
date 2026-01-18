@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { generatePassphrase, calculateStrength, getStrengthLabel, getStrengthColor } from '../lib/passphrase';
+  import { generatePassphrase, calculateStrength, getStrengthLabel } from '../lib/passphrase';
   import { encrypt, encodeToURL, isValidBase32, normalizeBase32 } from '../lib/crypto';
   import { DEFAULT_DIGITS, DEFAULT_PERIOD, DEFAULT_ALGORITHM, type TOTPConfig } from '../lib/types';
   import { Button } from '$lib/components/ui/button';
@@ -16,7 +16,7 @@
   let digits = $state(DEFAULT_DIGITS);
   let period = $state(DEFAULT_PERIOD);
   let algorithm = $state<'SHA1' | 'SHA256' | 'SHA512'>(DEFAULT_ALGORITHM);
-  
+
   let generatedURL = $state('');
   let savedPassphrase = $state('');
   let error = $state('');
@@ -31,25 +31,24 @@
     isCustomPassphrase = true;
   }
 
-  let strength = $derived(isCustomPassphrase ? calculateStrength(passphrase) : 4);
-  let strengthLabel = $derived(getStrengthLabel(strength));
-  let strengthColor = $derived(getStrengthColor(strength));
+  const strength = $derived(isCustomPassphrase ? calculateStrength(passphrase) : 4);
+  const strengthLabel = $derived(getStrengthLabel(strength));
 
   async function handleSubmit() {
     error = '';
-    
+
     const normalizedSecret = normalizeBase32(secret);
-    
+
     if (!normalizedSecret) {
       error = 'Please enter a TOTP secret.';
       return;
     }
-    
+
     if (!isValidBase32(normalizedSecret)) {
       error = 'Invalid format. Please enter a valid Base32 secret (letters A-Z and digits 2-7).';
       return;
     }
-    
+
     if (isCustomPassphrase && passphrase.length > 0 && passphrase.length < 12) {
       error = 'Custom passphrase must be at least 12 characters.';
       return;
@@ -69,7 +68,7 @@
       generatedURL = `${window.location.origin}${window.location.pathname}#${fragment}`;
       savedPassphrase = passphrase;
       showResult = true;
-    } catch (e) {
+    } catch {
       error = 'Failed to generate URL. Please try again.';
     }
   }
@@ -121,7 +120,9 @@
       {#if savedPassphrase}
         <div class="space-y-2">
           <Label>Passphrase:</Label>
-          <code class="block p-3 bg-muted rounded-md font-mono text-sm break-all">{savedPassphrase}</code>
+          <code class="block p-3 bg-muted rounded-md font-mono text-sm break-all"
+            >{savedPassphrase}</code
+          >
         </div>
       {:else}
         <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
@@ -144,7 +145,13 @@
       <h2 class="text-2xl font-semibold">Create TOTP URL</h2>
     </CardHeader>
     <CardContent>
-      <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+      <form
+        onsubmit={(e) => {
+          e.preventDefault();
+          void handleSubmit();
+        }}
+        class="space-y-4"
+      >
         <div class="space-y-2">
           <Label for="secret">TOTP Secret *</Label>
           <Input
@@ -161,12 +168,7 @@
 
         <div class="space-y-2">
           <Label for="label">Label (optional)</Label>
-          <Input
-            type="text"
-            id="label"
-            bind:value={label}
-            placeholder="Service - account"
-          />
+          <Input type="text" id="label" bind:value={label} placeholder="Service - account" />
           <p class="text-sm text-muted-foreground">A description to identify this TOTP</p>
         </div>
 
@@ -197,7 +199,7 @@
           type="button"
           variant="ghost"
           class="w-full text-sm"
-          onclick={() => showAdvanced = !showAdvanced}
+          onclick={() => (showAdvanced = !showAdvanced)}
         >
           {showAdvanced ? 'Hide' : 'Show'} Advanced Options
         </Button>
@@ -206,7 +208,11 @@
           <div class="p-4 bg-muted rounded-md space-y-4">
             <div class="space-y-2">
               <Label for="digits">Digits</Label>
-              <select id="digits" bind:value={digits} class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <select
+                id="digits"
+                bind:value={digits}
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
                 <option value={6}>6</option>
                 <option value={7}>7</option>
                 <option value={8}>8</option>
@@ -215,18 +221,16 @@
 
             <div class="space-y-2">
               <Label for="period">Period (seconds)</Label>
-              <Input
-                type="number"
-                id="period"
-                bind:value={period}
-                min="15"
-                max="120"
-              />
+              <Input type="number" id="period" bind:value={period} min="15" max="120" />
             </div>
 
             <div class="space-y-2">
               <Label for="algorithm">Algorithm</Label>
-              <select id="algorithm" bind:value={algorithm} class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <select
+                id="algorithm"
+                bind:value={algorithm}
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
                 <option value="SHA1">SHA1</option>
                 <option value="SHA256">SHA256</option>
                 <option value="SHA512">SHA512</option>
@@ -236,14 +240,14 @@
         {/if}
 
         {#if error}
-          <div class="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+          <div
+            class="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm"
+          >
             {error}
           </div>
         {/if}
 
-        <Button type="submit" class="w-full">
-          Generate TOTP URL
-        </Button>
+        <Button type="submit" class="w-full">Generate TOTP URL</Button>
       </form>
     </CardContent>
   </Card>
