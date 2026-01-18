@@ -1,5 +1,18 @@
 # Phase 2: IndexedDB Persistence
 
+## Status: UI Components Ready ✅
+
+All necessary shadcn-svelte UI components have been added (Jan 2026). Implementation can now proceed.
+
+**Added Components:**
+- ✅ checkbox - For "Save to browser" option
+- ✅ select - For sorting dropdown  
+- ✅ separator - For dividing list items
+- ✅ badge - For displaying tags/hints
+- ✅ alert - For warnings
+- ✅ sonner - For toast notifications
+- ✅ dropdown-menu - For action menus on each TOTP item
+
 ## Overview
 
 Add local browser storage to Phase 1, allowing users to save TOTP configurations and access them from the root domain without needing to bookmark individual URLs.
