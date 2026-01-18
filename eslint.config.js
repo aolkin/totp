@@ -33,17 +33,6 @@ export default tseslint.config(
     },
   },
   {
-    // Relax type-aware rules for Playwright tests
-    files: ['tests/**/*.ts'],
-    rules: {
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-return': 'off',
-      '@typescript-eslint/no-unsafe-argument': 'off',
-    },
-  },
-  {
     ignores: [
       'site/**',
       'dist/**',
@@ -81,6 +70,31 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'prefer-const': 'error',
       'no-var': 'error',
+    },
+  },
+  {
+    // Relax type-aware rules for Playwright tests
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+    },
+  },
+  {
+    // Relax rules for shadcn-svelte UI components (CLI-generated code)
+    files: ['src/lib/components/ui/**/*.svelte'],
+    rules: {
+      // shadcn-svelte uses `let` for $props() destructuring with $bindable values
+      'prefer-const': 'off',
+      // Rest props pattern is standard in shadcn-svelte
+      'svelte/valid-compile': ['error', { ignoreWarnings: true }],
+      // TypeScript strictness relaxations for generated component patterns
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/restrict-template-expressions': 'off',
     },
   },
 );

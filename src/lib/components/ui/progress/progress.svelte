@@ -1,27 +1,25 @@
 <script lang="ts">
-  import type { HTMLAttributes } from 'svelte/elements';
-  import { cn } from '$lib/utils';
+	import { Progress as ProgressPrimitive, type WithoutChildrenOrChild } from "bits-ui";
+	import { cn } from "$lib/utils";
 
-  type $$Props = Omit<HTMLAttributes<HTMLDivElement>, 'class'> & {
-    class?: string;
-    value?: number;
-    max?: number;
-  };
-
-  let className: string | undefined = undefined;
-  export { className as class };
-  export let value = 0;
-  export let max = 100;
-
-  $: percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+	let {
+		ref = $bindable(null),
+		class: className,
+		max = 100,
+		value,
+		...restProps
+	}: WithoutChildrenOrChild<ProgressPrimitive.RootProps> = $props();
 </script>
 
-<div
-  class={cn('relative h-4 w-full overflow-hidden rounded-full bg-secondary', className)}
-  {...$$restProps}
+<ProgressPrimitive.Root
+	bind:ref
+	class={cn("bg-secondary relative h-4 w-full overflow-hidden rounded-full", className)}
+	{value}
+	{max}
+	{...restProps}
 >
-  <div
-    class="h-full w-full flex-1 bg-primary transition-all"
-    style="transform: translateX(-{100 - percentage}%)"
-  ></div>
-</div>
+	<div
+		class="bg-primary h-full w-full flex-1 transition-all"
+		style={`transform: translateX(-${100 - (100 * (value ?? 0)) / (max ?? 1)}%)`}
+	></div>
+</ProgressPrimitive.Root>
