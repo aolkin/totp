@@ -4,10 +4,9 @@
 
   interface Props {
     visible?: boolean;
-    onClose?: () => void;
   }
 
-  const { visible = false, onClose }: Props = $props();
+  let { visible = $bindable(false) }: Props = $props();
 
   const userAgent = navigator.userAgent.toLowerCase();
   const isIOS =
@@ -24,9 +23,7 @@
   }
 
   function handleOpenChange(newOpen: boolean) {
-    if (!newOpen && onClose) {
-      onClose();
-    }
+    visible = newOpen;
   }
 </script>
 
