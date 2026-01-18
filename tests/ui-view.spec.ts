@@ -1,22 +1,10 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { createTotpUrl } from './helpers';
 
 test.describe('UI - View Mode', () => {
-  // Helper to create a TOTP URL inline (avoids duplication with e2e.spec.ts)
-  async function generateUrl(page: Page, passphrase: string, label?: string): Promise<string> {
-    await page.goto('/');
-    await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
-    if (label) {
-      await page.getByRole('textbox', { name: 'Label' }).fill(label);
-    }
-    await page.getByRole('textbox', { name: 'Passphrase' }).fill(passphrase);
-    await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-    await expect(page.getByRole('heading', { name: 'URL Generated' })).toBeVisible();
-    return page.getByRole('textbox', { name: 'Generated TOTP URL' }).inputValue();
-  }
-
   test.describe('Passphrase handling', () => {
     test('should prompt for passphrase when protected', async ({ page }) => {
-      const url = await generateUrl(page, 'testpassphrase12');
+      const { url } = await createTotpUrl(page, { passphrase: 'testpassphrase12' });
 
       await page.goto(url);
 
@@ -25,7 +13,7 @@ test.describe('UI - View Mode', () => {
     });
 
     test('should show error for wrong passphrase and allow retry', async ({ page }) => {
-      const url = await generateUrl(page, 'testpassphrase12');
+      const { url } = await createTotpUrl(page, { passphrase: 'testpassphrase12' });
 
       await page.goto(url);
       await page.getByRole('textbox', { name: 'Enter your passphrase' }).fill('wrongpassphrase');
@@ -41,7 +29,7 @@ test.describe('UI - View Mode', () => {
     });
 
     test('should display code immediately without passphrase', async ({ page }) => {
-      const url = await generateUrl(page, '');
+      const { url } = await createTotpUrl(page, { passphrase: '' });
 
       await page.goto(url);
 
@@ -52,7 +40,7 @@ test.describe('UI - View Mode', () => {
 
   test.describe('TOTP display', () => {
     test('should display code, timer, and controls', async ({ page }) => {
-      const url = await generateUrl(page, '');
+      const { url } = await createTotpUrl(page, { passphrase: '' });
 
       await page.goto(url);
 
@@ -71,7 +59,10 @@ test.describe('UI - View Mode', () => {
     });
 
     test('should display label when provided', async ({ page }) => {
-      const url = await generateUrl(page, '', 'GitHub - test@example.com');
+      const { url } = await createTotpUrl(page, {
+        passphrase: '',
+        label: 'GitHub - test@example.com',
+      });
 
       await page.goto(url);
 
@@ -79,7 +70,7 @@ test.describe('UI - View Mode', () => {
     });
 
     test('should navigate back to create mode', async ({ page }) => {
-      const url = await generateUrl(page, '');
+      const { url } = await createTotpUrl(page, { passphrase: '' });
 
       await page.goto(url);
       await page.getByRole('button', { name: 'Create New TOTP' }).click();
