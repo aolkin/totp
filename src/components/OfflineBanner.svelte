@@ -3,14 +3,9 @@
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent } from '$lib/components/ui/card';
 
-  interface Props {
-    onInstall?: () => void;
-  }
-
-  const { onInstall }: Props = $props();
-
   let visible = $state(false);
   let autoHideTimeout: ReturnType<typeof setTimeout> | undefined = undefined;
+  let deferredPrompt = $state<Event | undefined>(undefined);
 
   onMount(() => {
     // Check if already dismissed
@@ -35,10 +30,18 @@
       );
     }
 
+    // Listen for PWA install prompt
+    const beforeInstallHandler = (e: Event) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    };
+    window.addEventListener('beforeinstallprompt', beforeInstallHandler);
+
     return () => {
       if (autoHideTimeout) {
         clearTimeout(autoHideTimeout);
       }
+      window.removeEventListener('beforeinstallprompt', beforeInstallHandler);
     };
   });
 
@@ -47,11 +50,19 @@
     localStorage.setItem('offline_banner_dismissed', 'true');
   }
 
-  function handleInstall() {
+  async function handleInstall() {
     handleDismiss();
-    if (onInstall) {
-      onInstall();
+    if (deferredPrompt) {
+      const prompt = deferredPrompt as BeforeInstallPromptEvent;
+      await prompt.prompt();
+      await prompt.userChoice;
+      deferredPrompt = undefined;
     }
+  }
+
+  interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
   }
 </script>
 
@@ -69,7 +80,7 @@
             </p>
             <div class="flex gap-2 flex-wrap">
               <Button onclick={handleDismiss} variant="outline" size="sm">Got It</Button>
-              {#if onInstall}
+              {#if deferredPrompt}
                 <Button onclick={handleInstall} size="sm">Install for Best Experience</Button>
               {/if}
             </div>

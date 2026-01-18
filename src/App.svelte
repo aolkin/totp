@@ -23,7 +23,6 @@
   let promptError = $state('');
   let errorMessage = $state('');
   let showSettings = $state(false);
-  let deferredPrompt = $state<Event | undefined>(undefined);
 
   onMount(() => {
     void handleHashChange();
@@ -32,16 +31,8 @@
     };
     window.addEventListener('hashchange', handler);
 
-    // Listen for beforeinstallprompt event for PWA installation
-    const beforeInstallHandler = (e: Event) => {
-      e.preventDefault();
-      deferredPrompt = e;
-    };
-    window.addEventListener('beforeinstallprompt', beforeInstallHandler);
-
     return () => {
       window.removeEventListener('hashchange', handler);
-      window.removeEventListener('beforeinstallprompt', beforeInstallHandler);
     };
   });
 
@@ -88,27 +79,13 @@
     window.location.hash = '';
   }
 
-  async function handleInstall() {
-    if (deferredPrompt) {
-      const prompt = deferredPrompt as BeforeInstallPromptEvent;
-      await prompt.prompt();
-      await prompt.userChoice;
-      deferredPrompt = undefined;
-    }
-  }
-
   function handleUpdate() {
     window.location.reload();
-  }
-
-  interface BeforeInstallPromptEvent extends Event {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
   }
 </script>
 
 <!-- Offline ready banner -->
-<OfflineBanner onInstall={deferredPrompt ? handleInstall : undefined} />
+<OfflineBanner />
 
 <!-- Update available banner -->
 <UpdateBanner onUpdate={handleUpdate} />
