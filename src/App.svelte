@@ -3,6 +3,9 @@
   import CreateForm from './components/CreateForm.svelte';
   import TotpDisplay from './components/TotpDisplay.svelte';
   import PassphrasePrompt from './components/PassphrasePrompt.svelte';
+  import OfflineBanner from './components/OfflineBanner.svelte';
+  import UpdateBanner from './components/UpdateBanner.svelte';
+  import CacheInfo from './components/CacheInfo.svelte';
   import {
     decodeFromURL,
     decrypt,
@@ -19,6 +22,7 @@
   let encryptedData = $state<EncryptedData | undefined>(undefined);
   let promptError = $state('');
   let errorMessage = $state('');
+  let showSettings = $state(false);
 
   onMount(() => {
     void handleHashChange();
@@ -26,6 +30,7 @@
       void handleHashChange();
     };
     window.addEventListener('hashchange', handler);
+
     return () => {
       window.removeEventListener('hashchange', handler);
     };
@@ -73,12 +78,32 @@
   function handleCreateNew() {
     window.location.hash = '';
   }
+
+  function handleUpdate() {
+    window.location.reload();
+  }
 </script>
 
+<OfflineBanner />
+<UpdateBanner onUpdate={handleUpdate} />
+
 <main class="flex min-h-screen flex-col items-center p-4 font-sans">
-  <header class="mb-8 text-center">
+  <header class="mb-8 text-center relative w-full max-w-2xl">
     <h1 class="text-2xl font-semibold">TOTP Authenticator</h1>
+    <button
+      onclick={() => (showSettings = !showSettings)}
+      class="absolute right-0 top-0 text-sm text-muted-foreground hover:text-foreground"
+      aria-label="Settings"
+    >
+      ⚙️
+    </button>
   </header>
+
+  {#if showSettings}
+    <div class="w-full max-w-2xl mb-8">
+      <CacheInfo />
+    </div>
+  {/if}
 
   <div class="flex w-full justify-center p-4">
     {#if mode === 'create'}
