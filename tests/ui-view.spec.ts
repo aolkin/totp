@@ -45,7 +45,7 @@ test.describe('UI - View Mode', () => {
       await page.goto(url);
 
       // Check code format
-      const codeElement = page.locator('.font-mono.text-5xl');
+      const codeElement = page.locator('.font-mono.text-4xl');
       await expect(codeElement).toBeVisible();
       const code = await codeElement.textContent();
       expect(code?.replace(/\s/g, '')).toMatch(/^\d{6}$/);

@@ -69,7 +69,7 @@
     {/if}
 
     <div
-      class="font-mono text-5xl md:text-6xl font-bold tracking-widest bg-muted px-6 py-4 rounded-lg cursor-pointer select-all hover:bg-muted/80 transition-colors"
+      class="font-mono text-4xl sm:text-5xl md:text-6xl font-bold tracking-wider sm:tracking-widest bg-muted px-4 sm:px-6 py-4 rounded-lg cursor-pointer select-all hover:bg-muted/80 transition-colors whitespace-nowrap"
       onclick={copyCode}
       role="button"
       tabindex="0"
@@ -85,7 +85,7 @@
             a 15.9155 15.9155 0 0 1 0 31.831
             a 15.9155 15.9155 0 0 1 0 -31.831"
           fill="none"
-          stroke="hsl(var(--muted))"
+          stroke="var(--muted)"
           stroke-width="3"
         />
         <path
@@ -93,7 +93,7 @@
             a 15.9155 15.9155 0 0 1 0 31.831
             a 15.9155 15.9155 0 0 1 0 -31.831"
           fill="none"
-          stroke="hsl(var(--primary))"
+          stroke="var(--primary)"
           stroke-width="3"
           stroke-linecap="round"
           stroke-dasharray="{progress}, 100"
