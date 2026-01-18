@@ -97,6 +97,7 @@
                 <span class="text-yellow-600">Not persistent</span>
               {/if}
             </div>
+            <div>Build: <code class="text-xs">{__COMMIT_HASH__.substring(0, 7)}</code></div>
           </div>
 
           <div class="flex gap-2 pt-2">
