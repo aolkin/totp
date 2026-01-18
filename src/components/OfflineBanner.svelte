@@ -2,10 +2,12 @@
   import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent } from '$lib/components/ui/card';
+  import InstallInstructions from './InstallInstructions.svelte';
 
   let visible = $state(false);
   let autoHideTimeout: ReturnType<typeof setTimeout> | undefined = undefined;
   let deferredPrompt = $state<Event | undefined>(undefined);
+  let showInstructions = $state(false);
 
   onMount(() => {
     // Check if already dismissed
@@ -51,12 +53,16 @@
   }
 
   async function handleInstall() {
-    handleDismiss();
     if (deferredPrompt) {
+      // Chrome/Edge: Use native install prompt
+      handleDismiss();
       const prompt = deferredPrompt as BeforeInstallPromptEvent;
       await prompt.prompt();
       await prompt.userChoice;
       deferredPrompt = undefined;
+    } else {
+      // Safari/Firefox: Show manual instructions
+      showInstructions = true;
     }
   }
 
@@ -80,9 +86,7 @@
             </p>
             <div class="flex gap-2 flex-wrap">
               <Button onclick={handleDismiss} variant="outline" size="sm">Got It</Button>
-              {#if deferredPrompt}
-                <Button onclick={handleInstall} size="sm">Install for Best Experience</Button>
-              {/if}
+              <Button onclick={handleInstall} size="sm">Install for Best Experience</Button>
             </div>
           </div>
           <button
@@ -97,3 +101,6 @@
     </Card>
   </div>
 {/if}
+
+<!-- Install instructions modal -->
+<InstallInstructions visible={showInstructions} onClose={() => (showInstructions = false)} />
