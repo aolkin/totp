@@ -32,19 +32,6 @@
     };
     window.addEventListener('hashchange', handler);
 
-    // Listen for service worker messages
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener(
-        'message',
-        (event: MessageEvent<{ type?: string }>) => {
-          if (event.data.type === 'SW_ACTIVATED') {
-            // Service worker activated - banner will show automatically
-            localStorage.setItem('cache_last_update', new Date().toISOString());
-          }
-        },
-      );
-    }
-
     // Listen for beforeinstallprompt event for PWA installation
     const beforeInstallHandler = (e: Event) => {
       e.preventDefault();

@@ -10,23 +10,36 @@
   const { onInstall }: Props = $props();
 
   let visible = $state(false);
+  let autoHideTimeout: ReturnType<typeof setTimeout> | undefined = undefined;
 
   onMount(() => {
-    // Check if banner has been dismissed before
+    // Check if already dismissed
     const dismissed = localStorage.getItem('offline_banner_dismissed');
+    if (dismissed) return;
 
-    if (!dismissed) {
-      visible = true;
+    // Listen for service worker activation
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener(
+        'message',
+        (event: MessageEvent<{ type?: string }>) => {
+          if (event.data.type === 'SW_ACTIVATED') {
+            visible = true;
+            localStorage.setItem('cache_last_update', new Date().toISOString());
 
-      // Auto-hide after 10 seconds
-      const timeout = setTimeout(() => {
-        handleDismiss();
-      }, 10000);
-
-      return () => {
-        clearTimeout(timeout);
-      };
+            // Auto-hide after 10 seconds
+            autoHideTimeout = setTimeout(() => {
+              handleDismiss();
+            }, 10000);
+          }
+        },
+      );
     }
+
+    return () => {
+      if (autoHideTimeout) {
+        clearTimeout(autoHideTimeout);
+      }
+    };
   });
 
   function handleDismiss() {
