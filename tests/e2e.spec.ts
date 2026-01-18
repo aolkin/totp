@@ -18,7 +18,7 @@ test.describe('E2E - Cross-Tab Flows', () => {
     await expect(newPage.getByRole('button', { name: 'Copy Code' })).toBeVisible();
     await expect(newPage.getByText('GitHub - test@example.com')).toBeVisible();
 
-    const code = await newPage.locator('.font-mono.text-5xl').textContent();
+    const code = await newPage.locator('.font-mono.text-4xl').textContent();
     expect(code?.replace(/\s/g, '')).toMatch(/^\d{6}$/);
 
     await newPage.close();
