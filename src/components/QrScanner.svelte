@@ -110,8 +110,13 @@
   }
 
   onMount(() => {
-    void checkCameraCount();
-    void startScanner();
+    checkCameraCount().catch(() => {
+      hasMultipleCameras = false;
+    });
+    startScanner().catch(() => {
+      error = 'Failed to initialize camera';
+      scanning = false;
+    });
 
     return () => {
       stopScanner();

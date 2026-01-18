@@ -1,7 +1,13 @@
 <script lang="ts">
   import { generatePassphrase, calculateStrength, getStrengthLabel } from '../lib/passphrase';
   import { encrypt, encodeToURL, isValidBase32, normalizeBase32 } from '../lib/crypto';
-  import { DEFAULT_DIGITS, DEFAULT_PERIOD, DEFAULT_ALGORITHM, type TOTPConfig } from '../lib/types';
+  import {
+    DEFAULT_DIGITS,
+    DEFAULT_PERIOD,
+    DEFAULT_ALGORITHM,
+    type TOTPConfig,
+    type Algorithm,
+  } from '../lib/types';
   import type { OTPAuthData } from '../lib/otpauth';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -18,7 +24,7 @@
   let showAdvanced = $state(false);
   let digits = $state(DEFAULT_DIGITS);
   let period = $state(DEFAULT_PERIOD);
-  let algorithm = $state<'SHA1' | 'SHA256' | 'SHA512'>(DEFAULT_ALGORITHM);
+  let algorithm = $state<Algorithm>(DEFAULT_ALGORITHM);
   let showScanner = $state(false);
 
   let generatedURL = $state('');

@@ -1,9 +1,11 @@
+export type Algorithm = 'SHA1' | 'SHA256' | 'SHA512';
+
 export interface TOTPMetadata {
   s: string; // secret (Base32)
   l?: string; // label (optional)
   d?: number; // digits (optional, default 6)
   p?: number; // period (optional, default 30)
-  a?: 'SHA1' | 'SHA256' | 'SHA512'; // algorithm (optional, default SHA1)
+  a?: Algorithm; // algorithm (optional, default SHA1)
 }
 
 export interface TOTPConfig {
@@ -11,7 +13,7 @@ export interface TOTPConfig {
   label: string;
   digits: number;
   period: number;
-  algorithm: 'SHA1' | 'SHA256' | 'SHA512';
+  algorithm: Algorithm;
 }
 
 export interface EncryptedData {
@@ -22,4 +24,4 @@ export interface EncryptedData {
 
 export const DEFAULT_DIGITS = 6;
 export const DEFAULT_PERIOD = 30;
-export const DEFAULT_ALGORITHM: 'SHA1' | 'SHA256' | 'SHA512' = 'SHA1';
+export const DEFAULT_ALGORITHM: Algorithm = 'SHA1';
