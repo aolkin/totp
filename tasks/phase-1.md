@@ -349,6 +349,7 @@ The project is configured to deploy to GitHub Pages. Build with `npm run build` 
   - TOTP generation tests
   - UI flow tests (create/view)
   - E2E tests
+  - **Note:** When adding tests, uncomment the Playwright steps in `.github/workflows/pr-validation.yml`
 
 ## Success Criteria
 
