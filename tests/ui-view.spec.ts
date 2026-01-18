@@ -1,14 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 
 test.describe('UI - View Mode', () => {
   // Helper to create a TOTP URL inline (avoids duplication with e2e.spec.ts)
-  async function generateUrl(
-    page: typeof test extends (name: string, fn: (args: { page: infer P }) => void) => void
-      ? P
-      : never,
-    passphrase: string,
-    label?: string,
-  ): Promise<string> {
+  async function generateUrl(page: Page, passphrase: string, label?: string): Promise<string> {
     await page.goto('/');
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
     if (label) {
