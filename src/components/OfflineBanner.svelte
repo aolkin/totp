@@ -71,7 +71,7 @@
     <Card class="mx-auto max-w-2xl border-green-500 bg-green-50">
       <CardContent class="p-6">
         <div class="flex items-start gap-4">
-          <div class="flex-shrink-0 text-2xl">✓</div>
+          <div class="shrink-0 text-2xl">✓</div>
           <div class="flex-1">
             <h2 class="text-lg font-semibold text-green-900 mb-2">App Ready for Offline Use</h2>
             <p class="text-sm text-green-800 mb-4">
@@ -85,7 +85,7 @@
           </div>
           <button
             onclick={handleDismiss}
-            class="flex-shrink-0 text-green-700 hover:text-green-900"
+            class="shrink-0 text-green-700 hover:text-green-900"
             aria-label="Close"
           >
             ✕
