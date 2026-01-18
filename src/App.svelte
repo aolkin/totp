@@ -120,14 +120,6 @@
     window.location.reload();
   }
 
-  function handleDismissUpdate() {
-    showUpdateBanner = false;
-  }
-
-  function toggleSettings() {
-    showSettings = !showSettings;
-  }
-
   interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -138,13 +130,17 @@
 <OfflineBanner onInstall={deferredPrompt ? handleInstall : undefined} />
 
 <!-- Update available banner -->
-<UpdateBanner visible={showUpdateBanner} onUpdate={handleUpdate} onDismiss={handleDismissUpdate} />
+<UpdateBanner
+  visible={showUpdateBanner}
+  onUpdate={handleUpdate}
+  onDismiss={() => (showUpdateBanner = false)}
+/>
 
 <main class="flex min-h-screen flex-col items-center p-4 font-sans">
   <header class="mb-8 text-center relative w-full max-w-2xl">
     <h1 class="text-2xl font-semibold">TOTP Authenticator</h1>
     <button
-      onclick={toggleSettings}
+      onclick={() => (showSettings = !showSettings)}
       class="absolute right-0 top-0 text-sm text-muted-foreground hover:text-foreground"
       aria-label="Settings"
     >
