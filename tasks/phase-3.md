@@ -1,5 +1,14 @@
 # Phase 3: QR Code Scanning
 
+## Status: UI Components Ready ✅
+
+All necessary shadcn-svelte UI components have been added (Jan 2026). Implementation can now proceed.
+
+**Added Components:**
+- ✅ switch - For toggling front/rear camera
+- ✅ dialog - For camera preview modal (already existed from Phase 1)
+- ✅ alert - For error messages (shared with Phase 2)
+
 ## Overview
 
 Add camera-based QR code scanning to the create form, allowing users to scan TOTP QR codes directly instead of manually entering Base32 secrets.
