@@ -12,7 +12,6 @@
     formatRelativeTime,
     type CacheInfo as CacheInfoType,
   } from '$lib/offline';
-  import { getShortCommitHash } from '$lib/build-info';
 
   let cacheInfo = $state<CacheInfoType>({ totalSize: 0, lastUpdate: undefined, itemCount: 0 });
   let isCached = $state(false);
@@ -98,7 +97,7 @@
                 <span class="text-yellow-600">Not persistent</span>
               {/if}
             </div>
-            <div>Build: <code class="text-xs">{getShortCommitHash()}</code></div>
+            <div>Build: <code class="text-xs">{__COMMIT_HASH__.substring(0, 7)}</code></div>
           </div>
 
           <div class="flex gap-2 pt-2">
