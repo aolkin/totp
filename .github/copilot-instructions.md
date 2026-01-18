@@ -14,7 +14,7 @@ This is a **fully client-side browser-based TOTP (Time-based One-Time Password) 
 - **Frontend Framework**: Svelte 5 (with runes API: `$state`, `$derived`, etc.)
 - **Language**: TypeScript (strict mode enabled)
 - **Build Tool**: Vite 7
-- **Styling**: Tailwind CSS v3 with shadcn-svelte component library
+- **Styling**: Tailwind CSS v4 with shadcn-svelte component library
 - **PWA**: vite-plugin-pwa with Workbox for service worker management
 - **Testing**: Playwright (end-to-end tests)
 - **Type Checking**: svelte-check with TypeScript

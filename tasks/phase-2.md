@@ -6,7 +6,9 @@ Add local browser storage to Phase 1, allowing users to save TOTP configurations
 
 **Key Principle:** Encrypted URLs remain stateless and shareable. Storage is an optional convenience feature for personal use.
 
-**UI Framework:** Continue using Tailwind CSS and shadcn-svelte components established in Phase 1 for consistent styling and user experience.
+**UI Framework:** Continue using Tailwind CSS v4 and shadcn-svelte components established in Phase 1 for consistent styling and user experience.
+
+**Build Process:** Use Vite 7 for development and production builds. All dependencies should be installed via npm, not CDN links.
 
 ## Architecture Changes
 
@@ -218,6 +220,8 @@ This allows transitioning stored TOTP to stateless URL for sharing with team.
 
 ## Testing Requirements
 
+Use **Vitest** for unit tests of IndexedDB wrapper functions and **Playwright** for E2E UI tests.
+
 ### tests/indexeddb.spec.ts
 
 - Test database creation and schema
@@ -258,6 +262,13 @@ This allows transitioning stored TOTP to stateless URL for sharing with team.
 - Tests appropriate to the master password functionality.
 
 ## Implementation Notes
+
+### Build and Dependencies
+
+- All dependencies must be installed via npm (e.g., IndexedDB wrapper libraries if needed)
+- Use Vite 7 for development (`npm run dev`) and production builds (`npm run build`)
+- Build output goes to `site/` directory for GitHub Pages deployment
+- Run tests with `npm test` (runs both Vitest unit tests and Playwright E2E tests)
 
 ### IndexedDB Wrapper
 

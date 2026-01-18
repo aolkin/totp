@@ -22,3 +22,6 @@ yarn.lock
 
 # Third-party UI components (shadcn-svelte CLI-generated)
 src/lib/components/ui/
+
+# Task documentation (excluded from formatting)
+tasks/

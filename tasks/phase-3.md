@@ -6,20 +6,27 @@ Add camera-based QR code scanning to the create form, allowing users to scan TOT
 
 **Goal:** Match the UX of mobile authenticator apps (Google Authenticator, Authy, etc.)
 
-**UI Framework:** Continue using Tailwind CSS and shadcn-svelte components established in Phase 1 for consistent styling and user experience.
+**UI Framework:** Continue using Tailwind CSS v4 and shadcn-svelte components established in Phase 1 for consistent styling and user experience.
+
+**Build Process:** Use Vite 7 for development and production builds. All dependencies should be installed via npm, not CDN links.
 
 ## Technical Requirements
 
 ### Dependencies
 
-Add QR code library via CDN:
+Install QR code library via npm:
 
-- **jsQR** (~30KB) - Pure JavaScript QR decoder
-  - CDN: https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js (make sure to use the latest stable version)
+**Option 1: jsQR** (~30KB) - Pure JavaScript QR decoder
+```bash
+npm install jsqr
+```
 
-Alternative: **qr-scanner** (~15KB, better performance)
+**Option 2: qr-scanner** (~15KB, better performance, recommended)
+```bash
+npm install qr-scanner
+```
 
-- CDN: https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js (use the latest stable version of this unless there's a really good reason not to)
+Choose qr-scanner for better performance unless there's a specific reason to use jsQR. Both work well with Vite's build process.
 
 ### Browser APIs
 
@@ -102,6 +109,8 @@ function parseOTPAuthURL(url: string): OTPAuthData {
 
 ### Camera Modal
 
+Use shadcn-svelte Dialog component for the modal. Style with Tailwind CSS v4 utilities.
+
 **Layout:**
 
 ```
@@ -143,44 +152,84 @@ function parseOTPAuthURL(url: string): OTPAuthData {
 
 ## Implementation
 
+### Build and Dependencies
+
+- Install QR scanner library via npm (recommended: `qr-scanner`)
+- Use Vite 7 for development (`npm run dev`) and production builds (`npm run build`)
+- Build output goes to `site/` directory for GitHub Pages deployment
+- Run tests with `npm test` (runs both Vitest unit tests and Playwright E2E tests)
+- Import QR scanner library at the top of your component: `import jsQR from 'jsqr'` or use qr-scanner's provided API
+
 ### Camera Stream Setup
 
-```typescript
-async function startCamera(): Promise<void> {
-  const constraints: MediaStreamConstraints = {
-    video: {
-      facingMode: 'environment', // Rear camera on mobile
-      width: { ideal: 1280 },
-      height: { ideal: 720 },
-    },
-  };
+Create a Svelte component (e.g., `QrScanner.svelte`) that handles camera access:
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    videoElement.srcObject = stream;
-    await videoElement.play();
-    startScanning();
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'NotAllowedError') {
-      showError('Camera permission denied');
-    } else {
-      showError('Camera not available');
+```typescript
+<script lang="ts">
+  import { onMount } from 'svelte';
+
+  let videoElement = $state<HTMLVideoElement>();
+  let stream = $state<MediaStream | undefined>();
+  let error = $state<string | undefined>();
+
+  async function startCamera(): Promise<void> {
+    const constraints: MediaStreamConstraints = {
+      video: {
+        facingMode: 'environment', // Rear camera on mobile
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+    };
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (videoElement) {
+        videoElement.srcObject = stream;
+        await videoElement.play();
+        startScanning();
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        error = 'Camera permission denied';
+      } else {
+        error = 'Camera not available';
+      }
     }
   }
-}
+
+  onMount(() => {
+    startCamera();
+    return () => {
+      // Cleanup on unmount
+      stream?.getTracks().forEach((track) => track.stop());
+    };
+  });
+</script>
+
+<video bind:this={videoElement}></video>
+{#if error}
+  <p class="text-destructive">{error}</p>
+{/if}
 ```
 
 ### Continuous Scanning Loop
 
+Add to the QrScanner component:
+
 ```typescript
+import jsQR from 'jsqr';
+
+let scanning = $state(true);
+let qrData = $state<string | undefined>();
+
 function startScanning(): void {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not get canvas context');
 
   function tick(): void {
-    if (!videoElement.videoWidth) {
-      requestAnimationFrame(tick);
+    if (!scanning || !videoElement?.videoWidth) {
+      if (scanning) requestAnimationFrame(tick);
       return;
     }
 
@@ -192,7 +241,8 @@ function startScanning(): void {
     const code = jsQR(imageData.data, imageData.width, imageData.height);
 
     if (code) {
-      handleQRCodeDetected(code.data);
+      qrData = code.data;
+      scanning = false;
       return; // Stop scanning
     }
 
@@ -201,51 +251,96 @@ function startScanning(): void {
 
   tick();
 }
+
+// React to qrData changes
+$effect(() => {
+  if (qrData) {
+    handleQRCodeDetected(qrData);
+  }
+});
 ```
 
 ### Form Auto-fill
 
+Use Svelte component events to communicate scanned data to the parent form component:
+
 ```typescript
-function handleQRCodeDetected(data: string): void {
-  try {
-    const parsed = parseOTPAuthURL(data);
-
-    // Fill form fields
-    const secretInput = document.getElementById('secret') as HTMLInputElement;
-    const labelInput = document.getElementById('label') as HTMLInputElement;
-    const digitsInput = document.getElementById('digits') as HTMLSelectElement;
-    const periodInput = document.getElementById('period') as HTMLInputElement;
-    const algorithmInput = document.getElementById('algorithm') as HTMLSelectElement;
-
-    if (secretInput) secretInput.value = parsed.secret;
-    if (labelInput) labelInput.value = parsed.label;
-    if (digitsInput) digitsInput.value = parsed.digits.toString();
-    if (periodInput) periodInput.value = parsed.period.toString();
-    if (algorithmInput) algorithmInput.value = parsed.algorithm;
-
-    // Show success
-    showToast('QR code scanned successfully!');
-    closeCameraModal();
-  } catch (error) {
-    showError('Invalid QR code format');
+// In QrScanner.svelte
+<script lang="ts">
+  interface Props {
+    onScan?: (data: OTPAuthData) => void;
+    onError?: (error: string) => void;
+    onClose?: () => void;
   }
-}
+
+  let { onScan, onError, onClose }: Props = $props();
+
+  function handleQRCodeDetected(data: string): void {
+    try {
+      const parsed = parseOTPAuthURL(data);
+      onScan?.(parsed);
+    } catch (err) {
+      onError?.('Invalid QR code format');
+    }
+  }
+</script>
+
+// In CreateForm.svelte (parent component)
+<script lang="ts">
+  let secret = $state('');
+  let label = $state('');
+  let digits = $state(6);
+  let period = $state(30);
+  let algorithm = $state('SHA1');
+  let showScanner = $state(false);
+
+  function handleScan(data: OTPAuthData) {
+    secret = data.secret;
+    label = data.label;
+    digits = data.digits;
+    period = data.period;
+    algorithm = data.algorithm;
+    showScanner = false;
+    // Show toast notification using shadcn-svelte Toast component
+  }
+</script>
+
+{#if showScanner}
+  <QrScanner onScan={handleScan} onError={(err) => console.error(err)} onClose={() => showScanner = false} />
+{/if}
 ```
 
 ### Cleanup
 
-```typescript
-function stopCamera(): void {
-  const stream = videoElement.srcObject as MediaStream | null;
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-    // Note: srcObject requires null (DOM API), exception to undefined-over-null rule
-    videoElement.srcObject = null;
-  }
-}
+Cleanup is handled automatically by Svelte's lifecycle:
 
-// Call on modal close or successful scan
+```typescript
+// In QrScanner.svelte
+<script lang="ts">
+  import { onMount } from 'svelte';
+
+  let stream = $state<MediaStream | undefined>();
+  let videoElement = $state<HTMLVideoElement>();
+
+  onMount(() => {
+    startCamera();
+
+    // Cleanup function runs when component unmounts
+    return () => {
+      stream?.getTracks().forEach((track) => track.stop());
+      if (videoElement) {
+        // Note: srcObject requires null (DOM API), exception to undefined-over-null rule
+        videoElement.srcObject = null;
+      }
+    };
+  });
+</script>
 ```
+
+The cleanup function in `onMount` ensures the camera stream is stopped when:
+- Component is unmounted (modal closed)
+- User navigates away
+- QR code is successfully scanned and component is removed
 
 ## Error Handling
 
@@ -293,6 +388,8 @@ function stopCamera(): void {
 - Example: Scanning "Google" QR on "Facebook" setup page
 
 ## Testing Requirements
+
+Use **Vitest** for unit tests (e.g., OTP URL parsing) and **Playwright** for E2E UI tests (camera access, QR scanning).
 
 ### tests/qr-scan.spec.ts
 
