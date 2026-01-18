@@ -19,3 +19,6 @@ yarn.lock
 # Generated files
 *.min.js
 *.min.css
+
+# Third-party UI components (shadcn-svelte CLI-generated)
+src/lib/components/ui/
