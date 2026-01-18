@@ -21,13 +21,9 @@
     if (isFirefox) return 'Firefox';
     return 'your browser';
   }
-
-  function handleOpenChange(newOpen: boolean) {
-    visible = newOpen;
-  }
 </script>
 
-<Dialog.Root open={visible} onOpenChange={handleOpenChange}>
+<Dialog.Root bind:open={visible}>
   <Dialog.Content>
     <Dialog.Header>
       <Dialog.Title>Install This App</Dialog.Title>
@@ -90,12 +86,7 @@
     {/if}
 
     <Dialog.Footer>
-      <Button
-        onclick={() => {
-          handleOpenChange(false);
-        }}
-        size="sm">Got It</Button
-      >
+      <Button onclick={() => (visible = false)} size="sm">Got It</Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
