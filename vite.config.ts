@@ -33,4 +33,7 @@ export default defineConfig({
     outDir: 'site',
     emptyOutDir: true,
   },
+  define: {
+    __COMMIT_HASH__: JSON.stringify(process.env.VITE_COMMIT_HASH ?? 'dev'),
+  },
 });
