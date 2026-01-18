@@ -22,7 +22,6 @@
   let encryptedData = $state<EncryptedData | undefined>(undefined);
   let promptError = $state('');
   let errorMessage = $state('');
-  let showUpdateBanner = $state(false);
   let showSettings = $state(false);
   let deferredPrompt = $state<Event | undefined>(undefined);
 
@@ -44,11 +43,6 @@
           }
         },
       );
-
-      // Listen for updates
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        showUpdateBanner = true;
-      });
     }
 
     // Listen for beforeinstallprompt event for PWA installation
@@ -130,11 +124,7 @@
 <OfflineBanner onInstall={deferredPrompt ? handleInstall : undefined} />
 
 <!-- Update available banner -->
-<UpdateBanner
-  visible={showUpdateBanner}
-  onUpdate={handleUpdate}
-  onDismiss={() => (showUpdateBanner = false)}
-/>
+<UpdateBanner onUpdate={handleUpdate} />
 
 <main class="flex min-h-screen flex-col items-center p-4 font-sans">
   <header class="mb-8 text-center relative w-full max-w-2xl">
