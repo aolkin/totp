@@ -12,10 +12,8 @@
   let visible = $state(false);
 
   onMount(() => {
-    // Listen for service worker controller changes
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        // Only show if not dismissed this session
         const dismissed = sessionStorage.getItem('update_banner_dismissed');
         if (!dismissed) {
           visible = true;

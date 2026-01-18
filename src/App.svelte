@@ -84,10 +84,7 @@
   }
 </script>
 
-<!-- Offline ready banner -->
 <OfflineBanner />
-
-<!-- Update available banner -->
 <UpdateBanner onUpdate={handleUpdate} />
 
 <main class="flex min-h-screen flex-col items-center p-4 font-sans">

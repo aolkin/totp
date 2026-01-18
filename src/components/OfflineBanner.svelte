@@ -10,11 +10,9 @@
   let showInstructions = $state(false);
 
   onMount(() => {
-    // Check if already dismissed
     const dismissed = localStorage.getItem('offline_banner_dismissed');
     if (dismissed) return;
 
-    // Listen for service worker activation
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener(
         'message',
@@ -23,7 +21,6 @@
             visible = true;
             localStorage.setItem('cache_last_update', new Date().toISOString());
 
-            // Auto-hide after 10 seconds
             autoHideTimeout = setTimeout(() => {
               handleDismiss();
             }, 10000);
@@ -32,7 +29,6 @@
       );
     }
 
-    // Listen for PWA install prompt
     const beforeInstallHandler = (e: Event) => {
       e.preventDefault();
       deferredPrompt = e;
@@ -54,14 +50,12 @@
 
   async function handleInstall() {
     if (deferredPrompt) {
-      // Chrome/Edge: Use native install prompt
       handleDismiss();
       const prompt = deferredPrompt as BeforeInstallPromptEvent;
       await prompt.prompt();
       await prompt.userChoice;
       deferredPrompt = undefined;
     } else {
-      // Safari/Firefox: Show manual instructions
       showInstructions = true;
     }
   }
@@ -102,5 +96,4 @@
   </div>
 {/if}
 
-<!-- Install instructions modal -->
 <InstallInstructions visible={showInstructions} onClose={() => (showInstructions = false)} />

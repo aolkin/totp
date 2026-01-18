@@ -9,7 +9,6 @@
 
   const { visible = false, onClose }: Props = $props();
 
-  // Detect browser/platform
   const userAgent = navigator.userAgent.toLowerCase();
   const isIOS =
     userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('ipod');
@@ -42,14 +41,12 @@
 </script>
 
 {#if visible}
-  <!-- Backdrop -->
   <div
     class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
     onclick={handleBackdropClick}
     onkeydown={handleBackdropKeydown}
     role="presentation"
   >
-    <!-- Modal -->
     <div
       onclick={(e) => {
         e.stopPropagation();
