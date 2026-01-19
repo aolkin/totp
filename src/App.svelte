@@ -14,14 +14,13 @@
     tryDecryptWithEmptyPassphrase,
     type EncryptedData,
   } from './lib/crypto';
-  import type { TOTPConfig, TOTPRecord, TOTPExport } from './lib/types';
+  import type { TOTPConfig, TOTPRecord } from './lib/types';
   import { totpStorage } from './lib/storage';
   import { Button } from '$lib/components/ui/button';
-  import { toast } from 'svelte-sonner';
 
   type AppMode = 'list' | 'create' | 'prompt' | 'display' | 'error';
 
-  let mode = $state<AppMode>('create');
+  let mode = $state<AppMode>('list');
   let config = $state<TOTPConfig | undefined>(undefined);
   let encryptedData = $state<EncryptedData | undefined>(undefined);
   let promptError = $state('');
@@ -29,7 +28,6 @@
   let showSettings = $state(false);
   let currentRecord = $state<TOTPRecord | undefined>(undefined);
   let currentPassphrase = $state('');
-  let hasSavedTotps = $state(false);
 
   onMount(() => {
     void handleHashChange();
@@ -43,28 +41,13 @@
     };
   });
 
-  async function checkForSavedTotps(): Promise<boolean> {
-    try {
-      const count = await totpStorage.count();
-      return count > 0;
-    } catch {
-      return false;
-    }
-  }
-
   async function handleHashChange() {
     const hash = window.location.hash.slice(1);
 
     if (!hash) {
       currentRecord = undefined;
       currentPassphrase = '';
-      hasSavedTotps = await checkForSavedTotps();
-
-      if (hasSavedTotps) {
-        mode = 'list';
-      } else {
-        mode = 'create';
-      }
+      mode = 'list';
       config = undefined;
       encryptedData = undefined;
       return;
@@ -125,7 +108,6 @@
   }
 
   function handleSaved() {
-    hasSavedTotps = true;
     mode = 'list';
   }
 
@@ -142,24 +124,6 @@
     } else {
       mode = 'prompt';
       promptError = '';
-    }
-  }
-
-  async function handleImport(file: File) {
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text) as TOTPExport;
-
-      if (data.version !== 1 || !Array.isArray(data.totps)) {
-        throw new Error('Invalid backup file format');
-      }
-
-      const imported = await totpStorage.importAll(data);
-      toast.success(`Imported ${String(imported)} TOTP${imported !== 1 ? 's' : ''}`);
-      hasSavedTotps = true;
-      mode = 'list';
-    } catch {
-      toast.error('Failed to import backup file');
     }
   }
 </script>
@@ -188,13 +152,9 @@
 
   <div class="flex w-full justify-center p-4">
     {#if mode === 'list'}
-      <TotpList onView={handleViewRecord} onAdd={handleAddNew} onImport={handleImport} />
+      <TotpList onView={handleViewRecord} onAdd={handleAddNew} />
     {:else if mode === 'create'}
-      <CreateForm
-        onSaved={handleSaved}
-        onBack={hasSavedTotps ? handleBackToList : undefined}
-        showBackButton={hasSavedTotps}
-      />
+      <CreateForm onSaved={handleSaved} onBack={handleBackToList} showBackButton={true} />
     {:else if mode === 'prompt'}
       <PassphrasePrompt
         onUnlock={handleUnlock}
@@ -207,11 +167,7 @@
       <TotpDisplay
         {config}
         onCreateNew={handleCreateNew}
-        onBackToList={currentRecord
-          ? handleBackToList
-          : hasSavedTotps
-            ? handleBackToList
-            : undefined}
+        onBackToList={handleBackToList}
         record={currentRecord}
         passphrase={currentPassphrase}
       />

@@ -19,7 +19,7 @@
     DialogHeader,
     DialogTitle,
   } from '$lib/components/ui/dialog';
-  import type { TOTPRecord, SortOption } from '$lib/types';
+  import type { TOTPRecord, SortOption, TOTPExport } from '$lib/types';
   import { totpStorage } from '$lib/storage';
   import { encodeToURL } from '$lib/crypto';
   import { toast } from 'svelte-sonner';
@@ -27,10 +27,9 @@
   interface Props {
     onView: (record: TOTPRecord) => void;
     onAdd: () => void;
-    onImport: (file: File) => void;
   }
 
-  const { onView, onAdd, onImport }: Props = $props();
+  const { onView, onAdd }: Props = $props();
 
   let records = $state<TOTPRecord[]>([]);
   let searchQuery = $state('');
@@ -145,11 +144,24 @@
     fileInput?.click();
   }
 
-  function handleFileSelect(event: Event) {
+  async function handleFileSelect(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (file) {
-      onImport(file);
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text) as TOTPExport;
+
+        if (data.version !== 1 || !Array.isArray(data.totps)) {
+          throw new Error('Invalid backup file format');
+        }
+
+        const imported = await totpStorage.importAll(data);
+        toast.success(`Imported ${String(imported)} TOTP${imported !== 1 ? 's' : ''}`);
+        await loadRecords();
+      } catch {
+        toast.error('Failed to import backup file');
+      }
       input.value = '';
     }
   }
