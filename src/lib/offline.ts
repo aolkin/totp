@@ -83,8 +83,6 @@ export async function refreshCache(): Promise<void> {
     await registration.update();
 
     if (registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-
       await new Promise<void>((resolve) => {
         navigator.serviceWorker.addEventListener(
           'controllerchange',
@@ -95,6 +93,8 @@ export async function refreshCache(): Promise<void> {
             once: true,
           },
         );
+
+        registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
       });
 
       localStorage.setItem('cache_last_update', new Date().toISOString());
@@ -109,8 +109,6 @@ export async function refreshCache(): Promise<void> {
 
         installer.addEventListener('statechange', () => {
           if (installer.state === 'installed' && registration.waiting) {
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-
             navigator.serviceWorker.addEventListener(
               'controllerchange',
               () => {
@@ -120,6 +118,8 @@ export async function refreshCache(): Promise<void> {
                 once: true,
               },
             );
+
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
           } else if (installer.state === 'activated') {
             resolve();
           }
