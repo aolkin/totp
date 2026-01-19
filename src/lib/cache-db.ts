@@ -8,24 +8,28 @@ const DB_VERSION = 1;
 const STORE_NAME = 'metadata';
 const TIMESTAMP_KEY = 'cache_last_update';
 
-function openDB(): Promise<IDBDatabase> {
+function wrapRequest<T>(request: IDBRequest<T>, errorMessage: string): Promise<T> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
     request.onerror = () => {
-      reject(new Error(request.error?.message ?? 'Failed to open IndexedDB'));
+      reject(new Error(request.error?.message ?? errorMessage));
     };
     request.onsuccess = () => {
       resolve(request.result);
     };
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
-      }
-    };
   });
+}
+
+async function openDB(): Promise<IDBDatabase> {
+  const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+  request.onupgradeneeded = (event) => {
+    const db = (event.target as IDBOpenDBRequest).result;
+    if (!db.objectStoreNames.contains(STORE_NAME)) {
+      db.createObjectStore(STORE_NAME);
+    }
+  };
+
+  return wrapRequest(request, 'Failed to open IndexedDB');
 }
 
 export async function getCacheTimestamp(): Promise<string | undefined> {
@@ -34,18 +38,11 @@ export async function getCacheTimestamp(): Promise<string | undefined> {
     try {
       const transaction = db.transaction(STORE_NAME, 'readonly');
       const store = transaction.objectStore(STORE_NAME);
-      const request = store.get(TIMESTAMP_KEY);
 
-      const result = await new Promise<string | undefined>((resolve, reject) => {
-        request.onerror = () => {
-          reject(new Error(request.error?.message ?? 'Failed to get timestamp from IndexedDB'));
-        };
-        request.onsuccess = () => {
-          resolve(request.result as string | undefined);
-        };
-      });
-
-      return result;
+      return (await wrapRequest(
+        store.get(TIMESTAMP_KEY),
+        'Failed to get timestamp from IndexedDB',
+      )) as string | undefined;
     } finally {
       db.close();
     }
@@ -62,14 +59,7 @@ export async function setCacheTimestamp(timestamp: string): Promise<void> {
     const store = transaction.objectStore(STORE_NAME);
     const request = store.put(timestamp, TIMESTAMP_KEY);
 
-    await new Promise<void>((resolve, reject) => {
-      request.onerror = () => {
-        reject(new Error(request.error?.message ?? 'Failed to set timestamp in IndexedDB'));
-      };
-      request.onsuccess = () => {
-        resolve();
-      };
-    });
+    await wrapRequest(request, 'Failed to set timestamp in IndexedDB');
   } finally {
     db.close();
   }
