@@ -86,14 +86,19 @@ export async function refreshCache(): Promise<void> {
 
     const hasUpdate = await new Promise<boolean>((resolve) => {
       const handleControllerChange = () => {
-        clearTimeout(timeoutId);
+        cleanup();
         resolve(true);
+      };
+
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
       };
 
       navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
 
       const timeoutId = setTimeout(() => {
-        navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+        cleanup();
         resolve(false);
       }, 5000);
 
