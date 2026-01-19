@@ -280,7 +280,3 @@ function base64ToUint8Array(base64: string): Uint8Array {
 }
 
 export const totpStorage = new TOTPStorage();
-
-export function isIndexedDBSupported(): boolean {
-  return typeof indexedDB !== 'undefined';
-}

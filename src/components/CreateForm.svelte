@@ -9,7 +9,7 @@
   import { Progress } from '$lib/components/ui/progress';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
-  import { totpStorage, isIndexedDBSupported } from '$lib/storage';
+  import { totpStorage } from '$lib/storage';
   import { toast } from 'svelte-sonner';
 
   interface Props {
@@ -36,8 +36,6 @@
   let wasSavedToBrowser = $state(false);
   let error = $state('');
   let showResult = $state(false);
-
-  const canSaveToBrowser = isIndexedDBSupported();
 
   function regeneratePassphrase() {
     passphrase = generatePassphrase();
@@ -96,7 +94,7 @@
       savedPassphrase = passphrase;
       wasSavedToBrowser = false;
 
-      if (saveToBrowser && canSaveToBrowser) {
+      if (saveToBrowser) {
         await totpStorage.add(label || 'Unnamed TOTP', encrypted, passphraseHint || undefined);
         wasSavedToBrowser = true;
         toast.success('TOTP saved to browser');
@@ -255,38 +253,36 @@
           {/if}
         </div>
 
-        {#if canSaveToBrowser}
-          <div class="space-y-4 p-4 border rounded-md">
-            <div class="flex items-center space-x-2">
-              <Checkbox id="save-to-browser" bind:checked={saveToBrowser} />
-              <Label for="save-to-browser" class="text-sm font-medium cursor-pointer">
-                Save to this browser
-              </Label>
-            </div>
-
-            {#if saveToBrowser}
-              <Alert>
-                <AlertDescription>
-                  A label and passphrase are required when saving to browser. The passphrase will
-                  not be stored - you'll need to enter it each time you view this TOTP.
-                </AlertDescription>
-              </Alert>
-
-              <div class="space-y-2">
-                <Label for="passphrase-hint">Passphrase Hint (optional)</Label>
-                <Input
-                  type="text"
-                  id="passphrase-hint"
-                  bind:value={passphraseHint}
-                  placeholder="e.g., office door code"
-                />
-                <p class="text-sm text-muted-foreground">
-                  This hint will be shown when viewing the TOTP to help you remember the passphrase.
-                </p>
-              </div>
-            {/if}
+        <div class="space-y-4 p-4 border rounded-md">
+          <div class="flex items-center space-x-2">
+            <Checkbox id="save-to-browser" bind:checked={saveToBrowser} />
+            <Label for="save-to-browser" class="text-sm font-medium cursor-pointer">
+              Save to this browser
+            </Label>
           </div>
-        {/if}
+
+          {#if saveToBrowser}
+            <Alert>
+              <AlertDescription>
+                A label and passphrase are required when saving to browser. The passphrase will not
+                be stored - you'll need to enter it each time you view this TOTP.
+              </AlertDescription>
+            </Alert>
+
+            <div class="space-y-2">
+              <Label for="passphrase-hint">Passphrase Hint (optional)</Label>
+              <Input
+                type="text"
+                id="passphrase-hint"
+                bind:value={passphraseHint}
+                placeholder="e.g., office door code"
+              />
+              <p class="text-sm text-muted-foreground">
+                This hint will be shown when viewing the TOTP to help you remember the passphrase.
+              </p>
+            </div>
+          {/if}
+        </div>
 
         <Button
           type="button"

@@ -5,7 +5,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent } from '$lib/components/ui/card';
   import { encodeToURL, encrypt } from '$lib/crypto';
-  import { totpStorage, isIndexedDBSupported } from '$lib/storage';
+  import { totpStorage } from '$lib/storage';
   import { toast } from 'svelte-sonner';
 
   interface Props {
@@ -22,8 +22,6 @@
   let timeRemaining = $state(0);
   let intervalId: number | undefined;
   let isSaving = $state(false);
-
-  const canSaveToBrowser = isIndexedDBSupported();
 
   function updateCode() {
     code = generateTOTPCode(config);
@@ -156,7 +154,7 @@
 
       <Button variant="outline" class="w-full" onclick={exportUrl}>Export URL</Button>
 
-      {#if canSaveToBrowser && !record && passphrase}
+      {#if !record && passphrase}
         <Button variant="outline" class="w-full" onclick={saveToBrowser} disabled={isSaving}>
           {isSaving ? 'Saving...' : 'Save to Browser'}
         </Button>

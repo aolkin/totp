@@ -15,7 +15,7 @@
     type EncryptedData,
   } from './lib/crypto';
   import type { TOTPConfig, TOTPRecord, TOTPExport } from './lib/types';
-  import { totpStorage, isIndexedDBSupported } from './lib/storage';
+  import { totpStorage } from './lib/storage';
   import { Button } from '$lib/components/ui/button';
   import { toast } from 'svelte-sonner';
 
@@ -44,7 +44,6 @@
   });
 
   async function checkForSavedTotps(): Promise<boolean> {
-    if (!isIndexedDBSupported()) return false;
     try {
       const count = await totpStorage.count();
       return count > 0;
