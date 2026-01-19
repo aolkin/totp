@@ -90,7 +90,7 @@
             <div>Cache size: {formatBytes(cacheInfo.totalSize)}</div>
             <div>Items cached: {cacheInfo.itemCount}</div>
             <div class="flex items-center gap-2">
-              <span>Storage:</span>
+              <span>Storage Status:</span>
               {#if isPersisted}
                 <span class="text-green-600">Persistent ✓</span>
               {:else}
