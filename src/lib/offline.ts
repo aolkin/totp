@@ -76,61 +76,72 @@ export async function getCacheInfo(): Promise<CacheInfo> {
  * Refresh the cache by checking for service worker updates and activating them
  */
 export async function refreshCache(): Promise<void> {
-  if ('serviceWorker' in navigator) {
+  if (!('serviceWorker' in navigator)) return;
+
+  try {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return;
 
     await registration.update();
 
     if (registration.waiting) {
-      await new Promise<void>((resolve) => {
-        navigator.serviceWorker.addEventListener(
-          'controllerchange',
-          () => {
-            resolve();
-          },
-          {
-            once: true,
-          },
-        );
+      await Promise.race([
+        new Promise<void>((resolve) => {
+          navigator.serviceWorker.addEventListener(
+            'controllerchange',
+            () => {
+              resolve();
+            },
+            {
+              once: true,
+            },
+          );
 
-        registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-      });
+          registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+        }),
+        new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+      ]);
 
       localStorage.setItem('cache_last_update', new Date().toISOString());
       window.location.reload();
     } else if (registration.installing) {
-      await new Promise<void>((resolve) => {
-        const installer = registration.installing;
-        if (!installer) {
-          resolve();
-          return;
-        }
-
-        installer.addEventListener('statechange', () => {
-          if (installer.state === 'installed' && registration.waiting) {
-            navigator.serviceWorker.addEventListener(
-              'controllerchange',
-              () => {
-                resolve();
-              },
-              {
-                once: true,
-              },
-            );
-
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-          } else if (installer.state === 'activated') {
+      await Promise.race([
+        new Promise<void>((resolve) => {
+          const installer = registration.installing;
+          if (!installer) {
             resolve();
+            return;
           }
-        });
-      });
+
+          installer.addEventListener('statechange', () => {
+            if (installer.state === 'installed' && registration.waiting) {
+              navigator.serviceWorker.addEventListener(
+                'controllerchange',
+                () => {
+                  resolve();
+                },
+                {
+                  once: true,
+                },
+              );
+
+              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            } else if (installer.state === 'activated' || installer.state === 'redundant') {
+              resolve();
+            }
+          });
+        }),
+        new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+      ]);
 
       localStorage.setItem('cache_last_update', new Date().toISOString());
       window.location.reload();
     } else {
       localStorage.setItem('cache_last_update', new Date().toISOString());
     }
+  } catch (error) {
+    console.error('Error refreshing cache:', error);
+    localStorage.setItem('cache_last_update', new Date().toISOString());
   }
 }
 
