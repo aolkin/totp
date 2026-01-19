@@ -181,9 +181,11 @@
         </div>
       {/if}
 
-      <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
-        Save this URL{savedPassphrase ? ' and passphrase' : ''}. They cannot be recovered.
-      </div>
+      {#if !wasSavedToBrowser}
+        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+          Save this URL{savedPassphrase ? ' and passphrase' : ''}. They cannot be recovered.
+        </div>
+      {/if}
 
       <div class="space-y-2">
         <Button type="button" onclick={handleCreateAnother} variant="secondary" class="w-full">

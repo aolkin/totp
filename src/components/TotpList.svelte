@@ -19,10 +19,12 @@
     DialogHeader,
     DialogTitle,
   } from '$lib/components/ui/dialog';
-  import type { TOTPRecord, SortOption, TOTPExport } from '$lib/types';
+  import type { TOTPRecord, TOTPExport } from '$lib/types';
   import { totpStorage } from '$lib/storage';
-  import { encodeToURL } from '$lib/crypto';
+  import { generateShareableURL } from '$lib/crypto';
   import { toast } from 'svelte-sonner';
+
+  type SortOption = 'recent' | 'alphabetical' | 'created';
 
   interface Props {
     onView: (record: TOTPRecord) => void;
@@ -89,14 +91,9 @@
     return 'Just now';
   }
 
-  function handleView(record: TOTPRecord) {
-    onView(record);
-  }
-
   async function handleExportUrl(record: TOTPRecord) {
     try {
-      const url = `${window.location.origin}${window.location.pathname}#${encodeToURL(record.encrypted)}`;
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(generateShareableURL(record.encrypted));
       toast.success('URL copied to clipboard');
     } catch {
       toast.error('Failed to export URL');
@@ -138,10 +135,6 @@
     } catch {
       toast.error('Failed to export backup');
     }
-  }
-
-  function handleImportClick() {
-    fileInput?.click();
   }
 
   async function handleFileSelect(event: Event) {
@@ -213,7 +206,7 @@
 
     <div class="flex gap-2">
       <Button variant="outline" size="sm" onclick={handleExportAll}>Export All</Button>
-      <Button variant="outline" size="sm" onclick={handleImportClick}>Import</Button>
+      <Button variant="outline" size="sm" onclick={() => fileInput?.click()}>Import</Button>
     </div>
 
     <Separator />
@@ -247,7 +240,7 @@
                 <Button
                   size="sm"
                   onclick={() => {
-                    handleView(record);
+                    onView(record);
                   }}>View</Button
                 >
                 <DropdownMenu>

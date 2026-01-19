@@ -4,7 +4,7 @@
   import type { TOTPConfig, TOTPRecord, EncryptedData } from '../lib/types';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent } from '$lib/components/ui/card';
-  import { encodeToURL } from '$lib/crypto';
+  import { generateShareableURL } from '$lib/crypto';
   import { totpStorage } from '$lib/storage';
   import { toast } from 'svelte-sonner';
 
@@ -63,8 +63,7 @@
         toast.error('No encrypted data available');
         return;
       }
-      const url = `${window.location.origin}${window.location.pathname}#${encodeToURL(encrypted)}`;
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(generateShareableURL(encrypted));
       toast.success('URL copied to clipboard');
     } catch {
       toast.error('Failed to export URL');

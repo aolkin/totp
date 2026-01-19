@@ -133,3 +133,7 @@ export function isValidBase32(secret: string): boolean {
 export function normalizeBase32(secret: string): string {
   return secret.replace(/\s/g, '').toUpperCase();
 }
+
+export function generateShareableURL(encrypted: EncryptedData): string {
+  return `${window.location.origin}${window.location.pathname}#${encodeToURL(encrypted)}`;
+}

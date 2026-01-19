@@ -44,8 +44,6 @@ export interface TOTPExport {
   }[];
 }
 
-export type SortOption = 'recent' | 'alphabetical' | 'created';
-
 export const DEFAULT_DIGITS = 6;
 export const DEFAULT_PERIOD = 30;
 export const DEFAULT_ALGORITHM: 'SHA1' | 'SHA256' | 'SHA512' = 'SHA1';

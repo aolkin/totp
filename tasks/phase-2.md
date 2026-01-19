@@ -200,8 +200,11 @@ This allows transitioning stored TOTP to stateless URL for sharing with team.
 
 **Master password option (future):**
 
-- Potential future feature to save passphrases encrypted with a master password
-- Master password would be kept in memory only, never persisted
+- Add "Save passphrases with master password" feature
+- Enables persisting passphrases locally in separate database encrypted with the chosen password
+- Master password is kept in memory for encryption and decryption but never persisted
+- If the passphrases database is present, the user is prompted to enter it on page load but can skip if desired
+- As a result, the passphrase database can be locked by closing the tab
 
 ### Privacy
 

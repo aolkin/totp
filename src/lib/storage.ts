@@ -1,8 +1,19 @@
-import type { TOTPRecord, EncryptedData, TOTPExport, SortOption } from './types';
+import type { TOTPRecord, EncryptedData, TOTPExport } from './types';
 
 const DB_NAME = 'totp-storage';
 const DB_VERSION = 1;
 const STORE_NAME = 'secrets';
+
+function wrapRequest<T>(request: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      reject(new Error('IndexedDB operation failed'));
+    };
+  });
+}
 
 class TOTPStorage {
   private db: IDBDatabase | undefined;
@@ -31,13 +42,10 @@ class TOTPStorage {
         const db = (event.target as IDBOpenDBRequest).result;
 
         if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, {
+          db.createObjectStore(STORE_NAME, {
             keyPath: 'id',
             autoIncrement: true,
           });
-          store.createIndex('label', 'label', { unique: false });
-          store.createIndex('lastUsed', 'lastUsed', { unique: false });
-          store.createIndex('created', 'created', { unique: false });
         }
       };
     });
@@ -55,94 +63,41 @@ class TOTPStorage {
 
   async add(label: string, encrypted: EncryptedData, passphraseHint?: string): Promise<number> {
     await this.init();
+    const store = this.getStore('readwrite');
+    const now = Date.now();
 
-    return new Promise((resolve, reject) => {
-      const store = this.getStore('readwrite');
-      const now = Date.now();
+    const record: Omit<TOTPRecord, 'id'> = {
+      label,
+      created: now,
+      lastUsed: now,
+      encrypted,
+      passphraseHint,
+    };
 
-      const record: Omit<TOTPRecord, 'id'> = {
-        label,
-        created: now,
-        lastUsed: now,
-        encrypted,
-        passphraseHint,
-      };
-
-      const request = store.add(record);
-
-      request.onsuccess = () => {
-        resolve(request.result as number);
-      };
-
-      request.onerror = () => {
-        reject(new Error('Failed to add record'));
-      };
-    });
+    return wrapRequest(store.add(record)) as Promise<number>;
   }
 
   async getAll(): Promise<TOTPRecord[]> {
     await this.init();
-
-    return new Promise((resolve, reject) => {
-      const store = this.getStore('readonly');
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        resolve(request.result as TOTPRecord[]);
-      };
-
-      request.onerror = () => {
-        reject(new Error('Failed to get records'));
-      };
-    });
+    const store = this.getStore('readonly');
+    return wrapRequest(store.getAll()) as Promise<TOTPRecord[]>;
   }
 
   async getById(id: number): Promise<TOTPRecord | undefined> {
     await this.init();
-
-    return new Promise((resolve, reject) => {
-      const store = this.getStore('readonly');
-      const request = store.get(id);
-
-      request.onsuccess = () => {
-        resolve(request.result as TOTPRecord | undefined);
-      };
-
-      request.onerror = () => {
-        reject(new Error('Failed to get record'));
-      };
-    });
+    const store = this.getStore('readonly');
+    return wrapRequest(store.get(id)) as Promise<TOTPRecord | undefined>;
   }
 
   async update(id: number, data: Partial<TOTPRecord>): Promise<void> {
     await this.init();
-
-    return new Promise((resolve, reject) => {
-      const store = this.getStore('readwrite');
-      const getRequest = store.get(id);
-
-      getRequest.onsuccess = () => {
-        const existing = getRequest.result as TOTPRecord | undefined;
-        if (!existing) {
-          reject(new Error('Record not found'));
-          return;
-        }
-
-        const updated = { ...existing, ...data };
-        const putRequest = store.put(updated);
-
-        putRequest.onsuccess = () => {
-          resolve();
-        };
-        putRequest.onerror = () => {
-          reject(new Error('Failed to update record'));
-        };
-      };
-
-      getRequest.onerror = () => {
-        reject(new Error('Failed to get record for update'));
-      };
-    });
+    const store = this.getStore('readwrite');
+    const existing = (await wrapRequest(store.get(id))) as TOTPRecord | undefined;
+    if (!existing) {
+      throw new Error('Record not found');
+    }
+    const updated = { ...existing, ...data };
+    await wrapRequest(store.put(updated));
   }
 
   async updateLastUsed(id: number): Promise<void> {
@@ -151,71 +106,14 @@ class TOTPStorage {
 
   async delete(id: number): Promise<void> {
     await this.init();
-
-    return new Promise((resolve, reject) => {
-      const store = this.getStore('readwrite');
-      const request = store.delete(id);
-
-      request.onsuccess = () => {
-        resolve();
-      };
-      request.onerror = () => {
-        reject(new Error('Failed to delete record'));
-      };
-    });
-  }
-
-  async search(query: string): Promise<TOTPRecord[]> {
-    const all = await this.getAll();
-    const lowerQuery = query.toLowerCase();
-    return all.filter((record) => record.label.toLowerCase().includes(lowerQuery));
-  }
-
-  async getSorted(sort: SortOption): Promise<TOTPRecord[]> {
-    const all = await this.getAll();
-
-    switch (sort) {
-      case 'recent':
-        return all.sort((a, b) => b.lastUsed - a.lastUsed);
-      case 'alphabetical':
-        return all.sort((a, b) => a.label.localeCompare(b.label));
-      case 'created':
-        return all.sort((a, b) => b.created - a.created);
-      default:
-        return all;
-    }
+    const store = this.getStore('readwrite');
+    await wrapRequest(store.delete(id));
   }
 
   async count(): Promise<number> {
     await this.init();
-
-    return new Promise((resolve, reject) => {
-      const store = this.getStore('readonly');
-      const request = store.count();
-
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-      request.onerror = () => {
-        reject(new Error('Failed to count records'));
-      };
-    });
-  }
-
-  async clear(): Promise<void> {
-    await this.init();
-
-    return new Promise((resolve, reject) => {
-      const store = this.getStore('readwrite');
-      const request = store.clear();
-
-      request.onsuccess = () => {
-        resolve();
-      };
-      request.onerror = () => {
-        reject(new Error('Failed to clear records'));
-      };
-    });
+    const store = this.getStore('readonly');
+    return wrapRequest(store.count());
   }
 
   async exportAll(): Promise<TOTPExport> {
@@ -237,13 +135,9 @@ class TOTPStorage {
     };
   }
 
-  async importAll(data: TOTPExport, overwrite = false): Promise<number> {
+  async importAll(data: TOTPExport): Promise<number> {
     if (data.version !== 1) {
       throw new Error('Unsupported export version');
-    }
-
-    if (overwrite) {
-      await this.clear();
     }
 
     let imported = 0;
