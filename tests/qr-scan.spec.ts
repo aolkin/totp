@@ -10,12 +10,6 @@ test.describe('QR Scanner', () => {
     await page.getByTestId('scan-qr-button').click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Scan QR Code' })).toBeVisible();
-  });
-
-  test('form should accept manual input', async ({ page }) => {
-    await page.goto('/');
-    const secretInput = page.getByRole('textbox', { name: 'TOTP Secret' });
-    await secretInput.fill('JBSWY3DPEHPK3PXP');
-    expect(await secretInput.inputValue()).toBe('JBSWY3DPEHPK3PXP');
+    await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
   });
 });

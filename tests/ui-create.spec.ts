@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+// Test secrets use obvious patterns (AAAA, ABCD) to avoid triggering security scanners.
+
 test.describe('UI - Create Form', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -17,13 +19,13 @@ test.describe('UI - Create Form', () => {
       await expect(page.getByText('Invalid format')).toBeVisible();
 
       // Valid Base32 (with spaces - should be normalized)
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSW Y3DP EHPK 3PXP');
+      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAA BBBB CCCC DDDD');
       await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
       await expect(page.getByRole('heading', { name: 'URL Generated' })).toBeVisible();
     });
 
     test('should validate passphrase length', async ({ page }) => {
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
+      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
       await page.getByRole('textbox', { name: 'Passphrase' }).fill('short');
       await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
 
@@ -76,7 +78,7 @@ test.describe('UI - Create Form', () => {
 
   test.describe('URL generation result', () => {
     test('should show generated URL with passphrase', async ({ page }) => {
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
+      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
       await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
 
       await expect(page.getByRole('heading', { name: 'URL Generated' })).toBeVisible();
@@ -86,7 +88,7 @@ test.describe('UI - Create Form', () => {
     });
 
     test('should show warning when no passphrase', async ({ page }) => {
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
+      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
       await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
       await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
 
@@ -94,7 +96,7 @@ test.describe('UI - Create Form', () => {
     });
 
     test('should allow creating another TOTP', async ({ page }) => {
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
+      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
       await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
       await page.getByRole('button', { name: 'Create Another' }).click();
 
@@ -105,7 +107,7 @@ test.describe('UI - Create Form', () => {
   test.describe('URL length optimization', () => {
     test('should generate shorter URL with default options', async ({ page }) => {
       // Default options
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
+      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
       await page.getByRole('textbox', { name: 'Passphrase' }).fill('testpassphrase12');
       await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
 
@@ -115,7 +117,7 @@ test.describe('UI - Create Form', () => {
 
       // Custom options
       await page.getByRole('button', { name: 'Create Another' }).click();
-      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('JBSWY3DPEHPK3PXP');
+      await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
       await page.getByRole('textbox', { name: 'Passphrase' }).fill('testpassphrase12');
       await page.getByRole('textbox', { name: 'Label' }).fill('Long Label With Many Characters');
       await page.getByRole('button', { name: 'Show Advanced Options' }).click();

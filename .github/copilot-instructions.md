@@ -250,6 +250,21 @@ All types are defined in `src/lib/types.ts`. Refer to that file for the canonica
 - ❌ Don't test that TOTP algorithms produce correct codes (that's testing `otpauth`)
 - ❌ Don't test simple lookup functions in isolation (test them via E2E flows)
 
+### Test Secrets and Credentials
+
+**Use obviously fake, predictable patterns for test secrets** to avoid triggering security scanners that might mistake them for real credentials.
+
+```typescript
+// ✅ Good - obviously fake patterns
+'AAAABBBBCCCCDDDD';
+'ABCDABCDABCDABCD';
+'TESTTEST';
+
+// ❌ Bad - looks like real secrets, triggers security scanners
+'JBSWY3DPEHPK3PXP';
+'N4XGIZLTMVRXEZLU';
+```
+
 ### Test Structure
 
 - **Unit tests** (`src/lib/__tests__/`): Vitest tests for our core logic
