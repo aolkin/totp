@@ -24,7 +24,11 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
     (async () => {
       await self.clients.claim();
 
-      await setCacheTimestamp(new Date().toISOString());
+      try {
+        await setCacheTimestamp(new Date().toISOString());
+      } catch (error) {
+        console.error('Failed to set cache timestamp:', error);
+      }
 
       const clients = await self.clients.matchAll({ type: 'window' });
       clients.forEach((client) => {
