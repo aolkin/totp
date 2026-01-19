@@ -102,7 +102,6 @@ export async function refreshCache(): Promise<void> {
         new Promise<void>((resolve) => setTimeout(resolve, 5000)),
       ]);
 
-      localStorage.setItem('cache_last_update', new Date().toISOString());
       window.location.reload();
     } else if (registration.installing) {
       await Promise.race([
@@ -134,14 +133,12 @@ export async function refreshCache(): Promise<void> {
         new Promise<void>((resolve) => setTimeout(resolve, 5000)),
       ]);
 
-      localStorage.setItem('cache_last_update', new Date().toISOString());
       window.location.reload();
     } else {
       localStorage.setItem('cache_last_update', new Date().toISOString());
     }
   } catch (error) {
     console.error('Error refreshing cache:', error);
-    localStorage.setItem('cache_last_update', new Date().toISOString());
   }
 }
 
