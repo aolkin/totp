@@ -15,5 +15,8 @@ test.describe('QR Scanner', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Scan QR Code' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
+
+    // Note: Dialog close verification is limited due to Svelte 5 + bits-ui binding issues
+    // See tasks/svelte5-dialog-binding-limitation.md for details
   });
 });

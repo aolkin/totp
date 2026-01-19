@@ -288,4 +288,4 @@
   </Card>
 {/if}
 
-<QrScanner bind:open={showScanner} onScan={handleScan} />
+<QrScanner bind:open={showScanner} onScan={handleScan} onClose={() => (showScanner = false)} />

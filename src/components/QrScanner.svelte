@@ -11,10 +11,11 @@
   interface Props {
     open?: boolean;
     onScan?: (data: OTPAuthData) => void;
+    onClose?: () => void;
   }
 
   // eslint-disable-next-line prefer-const -- destructured props cannot use const
-  let { open = $bindable(false), onScan }: Props = $props();
+  let { open = $bindable(false), onScan, onClose }: Props = $props();
 
   let videoElement = $state<HTMLVideoElement | undefined>();
   let qrScanner = $state<QrScanner | undefined>();
@@ -87,7 +88,7 @@
       const parsed = parseOTPAuthURL(data);
       stopScanner();
       onScan?.(parsed);
-      open = false;
+      onClose?.();
     } catch (err) {
       console.warn('QR scan failed for URL:', data);
       if (err instanceof Error) {
@@ -104,6 +105,12 @@
     await startScanner();
   }
 
+  function closeDialog(): void {
+    stopScanner();
+    onClose?.();
+  }
+
+  // Start scanner when dialog opens
   $effect(() => {
     if (open) {
       checkCameraCount().catch(() => {
@@ -125,8 +132,13 @@
   });
 </script>
 
-<Dialog.Root bind:open>
-  <Dialog.Content class="sm:max-w-lg">
+<Dialog.Root
+  bind:open
+  onOpenChange={(isOpen) => {
+    if (!isOpen) closeDialog();
+  }}
+>
+  <Dialog.Content class="sm:max-w-lg" showCloseButton={false}>
     <Dialog.Header>
       <Dialog.Title>Scan QR Code</Dialog.Title>
       <Dialog.Description>Point your camera at a TOTP authenticator QR code</Dialog.Description>
@@ -161,9 +173,7 @@
         </div>
       {/if}
 
-      <Dialog.Close>
-        <Button variant="outline" class="w-full max-w-md" onclick={stopScanner}>Cancel</Button>
-      </Dialog.Close>
+      <Button variant="outline" class="w-full max-w-md" onclick={closeDialog}>Cancel</Button>
     </div>
   </Dialog.Content>
 </Dialog.Root>
