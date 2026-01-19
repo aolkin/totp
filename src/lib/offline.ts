@@ -2,6 +2,8 @@
  * Offline-related utilities for PWA functionality
  */
 
+import { getCacheTimestamp } from './cache-db';
+
 export interface CacheInfo {
   totalSize: number;
   lastUpdate: string | undefined;
@@ -49,7 +51,6 @@ export async function getCacheInfo(): Promise<CacheInfo> {
       return { totalSize: 0, lastUpdate: undefined, itemCount: 0 };
     }
 
-    // Use the most recent cache
     const cacheName = cacheNames[0];
     const cache = await caches.open(cacheName);
     const keys = await cache.keys();
@@ -64,7 +65,7 @@ export async function getCacheInfo(): Promise<CacheInfo> {
     );
 
     const totalSize = sizes.reduce((a, b) => a + b, 0);
-    const lastUpdate = localStorage.getItem('cache_last_update') ?? undefined;
+    const lastUpdate = await getCacheTimestamp();
 
     return { totalSize, lastUpdate, itemCount: keys.length };
   } catch (error) {
@@ -74,25 +75,42 @@ export async function getCacheInfo(): Promise<CacheInfo> {
 }
 
 /**
- * Refresh the cache by unregistering and re-registering the service worker
+ * Refresh the cache by checking for service worker updates
  */
 export async function refreshCache(): Promise<void> {
-  if ('serviceWorker' in navigator) {
-    const registration = await navigator.serviceWorker.getRegistration();
-    if (registration) {
-      await registration.update();
-      localStorage.setItem('cache_last_update', new Date().toISOString());
-    }
-  }
-}
+  if (!('serviceWorker' in navigator)) return;
 
-/**
- * Clear all caches
- */
-export async function clearCache(): Promise<void> {
-  const cacheNames = await caches.keys();
-  await Promise.all(cacheNames.map((name) => caches.delete(name)));
-  localStorage.removeItem('cache_last_update');
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) return;
+
+    const hasUpdate = await new Promise<boolean>((resolve) => {
+      const handleControllerChange = () => {
+        cleanup();
+        resolve(true);
+      };
+
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+      };
+
+      navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        resolve(false);
+      }, 5000);
+
+      void registration.update();
+    });
+
+    if (hasUpdate) {
+      window.location.reload();
+    }
+  } catch (error) {
+    console.error('Error refreshing cache:', error);
+  }
 }
 
 /**

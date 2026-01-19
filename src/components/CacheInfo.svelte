@@ -7,7 +7,6 @@
     isAppCached,
     isPersistentStorageGranted,
     refreshCache,
-    clearCache,
     formatBytes,
     formatRelativeTime,
     type CacheInfo as CacheInfoType,
@@ -18,7 +17,6 @@
   let isPersisted = $state(false);
   let loading = $state(true);
   let refreshing = $state(false);
-  let clearing = $state(false);
 
   onMount(() => {
     void loadCacheInfo();
@@ -48,70 +46,46 @@
       refreshing = false;
     }
   }
-
-  async function handleClear() {
-    if (!confirm('Are you sure you want to clear the cache? The app will need to reload.')) {
-      return;
-    }
-
-    clearing = true;
-    try {
-      await clearCache();
-      window.location.reload();
-    } catch (error) {
-      console.error('Error clearing cache:', error);
-      clearing = false;
-    }
-  }
 </script>
 
 <Card>
   <CardHeader>
-    <h2 class="text-lg font-semibold">Offline Status</h2>
+    <h2 class="text-lg font-semibold">App Availability</h2>
   </CardHeader>
   <CardContent>
     {#if loading}
-      <p class="text-sm text-muted-foreground">Loading cache information...</p>
+      <p class="text-sm text-muted-foreground">Checking app status...</p>
     {:else}
       <div class="space-y-3">
         <div class="flex items-center gap-2">
           {#if isCached}
             <span class="text-green-600">✓</span>
-            <span class="text-sm">App cached for offline use</span>
+            <span class="text-sm">Ready to work offline</span>
           {:else}
             <span class="text-yellow-600">⚠</span>
-            <span class="text-sm">App not yet cached</span>
+            <span class="text-sm">Downloading for offline use...</span>
           {/if}
         </div>
 
         {#if isCached}
           <div class="space-y-2 text-sm text-muted-foreground">
-            <div>Cached: {formatRelativeTime(cacheInfo.lastUpdate)}</div>
-            <div>Cache size: {formatBytes(cacheInfo.totalSize)}</div>
-            <div>Items cached: {cacheInfo.itemCount}</div>
+            <div>Last updated: {formatRelativeTime(cacheInfo.lastUpdate)}</div>
+            <div>Storage used: {formatBytes(cacheInfo.totalSize)}</div>
+            <div>Files saved: {cacheInfo.itemCount}</div>
             <div class="flex items-center gap-2">
-              <span>Storage Status:</span>
+              <span>Storage:</span>
               {#if isPersisted}
-                <span class="text-green-600">Persistent ✓</span>
+                <span class="text-green-600">Protected from cleanup ✓</span>
               {:else}
-                <span class="text-yellow-600">Not persistent</span>
+                <span class="text-yellow-600">May be cleared by browser</span>
               {/if}
             </div>
             <div>Build: <code class="text-xs">{__COMMIT_HASH__.substring(0, 7)}</code></div>
           </div>
 
-          <div class="flex gap-2 pt-2">
+          <div class="pt-2">
             <Button onclick={handleRefresh} variant="outline" size="sm" disabled={refreshing}>
-              {refreshing ? 'Refreshing...' : 'Refresh Cache'}
-            </Button>
-            <Button
-              onclick={handleClear}
-              variant="outline"
-              size="sm"
-              disabled={clearing}
-              class="text-destructive hover:text-destructive"
-            >
-              {clearing ? 'Clearing...' : 'Clear Cache'}
+              {refreshing ? 'Checking...' : 'Check for Updates'}
             </Button>
           </div>
         {/if}
