@@ -74,15 +74,3 @@ export async function setCacheTimestamp(timestamp: string): Promise<void> {
     db.close();
   }
 }
-
-export async function deleteCacheDB(): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(DB_NAME);
-    request.onsuccess = () => {
-      resolve();
-    };
-    request.onerror = () => {
-      reject(new Error(request.error?.message ?? 'Failed to delete IndexedDB'));
-    };
-  });
-}

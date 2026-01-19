@@ -2,7 +2,7 @@
  * Offline-related utilities for PWA functionality
  */
 
-import { getCacheTimestamp, setCacheTimestamp, deleteCacheDB } from './cache-db';
+import { getCacheTimestamp, setCacheTimestamp } from './cache-db';
 
 export interface CacheInfo {
   totalSize: number;
@@ -143,20 +143,6 @@ function activateServiceWorker(worker: ServiceWorker): Promise<boolean> {
   });
 
   return Promise.race([activationPromise, timeoutPromise]);
-}
-
-/**
- * Clear all caches
- */
-export async function clearCache(): Promise<void> {
-  const cacheNames = await caches.keys();
-  await Promise.all(cacheNames.map((name) => caches.delete(name)));
-
-  try {
-    await deleteCacheDB();
-  } catch (error) {
-    console.error('Error clearing IndexedDB:', error);
-  }
 }
 
 /**
