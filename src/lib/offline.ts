@@ -74,13 +74,68 @@ export async function getCacheInfo(): Promise<CacheInfo> {
 }
 
 /**
- * Refresh the cache by unregistering and re-registering the service worker
+ * Refresh the cache by checking for service worker updates and activating them
  */
 export async function refreshCache(): Promise<void> {
   if ('serviceWorker' in navigator) {
     const registration = await navigator.serviceWorker.getRegistration();
-    if (registration) {
-      await registration.update();
+    if (!registration) return;
+
+    // Check for updates
+    await registration.update();
+
+    // If there's a waiting service worker, activate it immediately
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+
+      // Wait for the new service worker to take control
+      await new Promise<void>((resolve) => {
+        navigator.serviceWorker.addEventListener(
+          'controllerchange',
+          () => {
+            resolve();
+          },
+          {
+            once: true,
+          },
+        );
+      });
+
+      // Update timestamp and reload to use the new service worker
+      localStorage.setItem('cache_last_update', new Date().toISOString());
+      window.location.reload();
+    } else if (registration.installing) {
+      // If there's an installing service worker, wait for it to become waiting
+      await new Promise<void>((resolve) => {
+        const installer = registration.installing;
+        if (!installer) {
+          resolve();
+          return;
+        }
+
+        installer.addEventListener('statechange', () => {
+          if (installer.state === 'installed' && registration.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+
+            navigator.serviceWorker.addEventListener(
+              'controllerchange',
+              () => {
+                resolve();
+              },
+              {
+                once: true,
+              },
+            );
+          } else if (installer.state === 'activated') {
+            resolve();
+          }
+        });
+      });
+
+      localStorage.setItem('cache_last_update', new Date().toISOString());
+      window.location.reload();
+    } else {
+      // No update available, just update the timestamp
       localStorage.setItem('cache_last_update', new Date().toISOString());
     }
   }
