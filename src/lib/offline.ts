@@ -84,31 +84,21 @@ export async function refreshCache(): Promise<void> {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return;
 
-    const controller = new AbortController();
-    const timeoutMs = 5000;
+    const hasUpdate = await new Promise<boolean>((resolve) => {
+      const handleControllerChange = () => {
+        clearTimeout(timeoutId);
+        resolve(true);
+      };
 
-    const updatePromise = new Promise<boolean>((resolve) => {
-      navigator.serviceWorker.addEventListener(
-        'controllerchange',
-        () => {
-          controller.abort();
-          resolve(true);
-        },
-        {
-          once: true,
-          signal: controller.signal,
-        },
-      );
+      navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+
+      const timeoutId = setTimeout(() => {
+        navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+        resolve(false);
+      }, 5000);
 
       void registration.update();
-
-      setTimeout(() => {
-        controller.abort();
-        resolve(false);
-      }, timeoutMs);
     });
-
-    const hasUpdate = await updatePromise;
 
     if (hasUpdate) {
       window.location.reload();
