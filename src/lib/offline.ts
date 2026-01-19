@@ -49,7 +49,6 @@ export async function getCacheInfo(): Promise<CacheInfo> {
       return { totalSize: 0, lastUpdate: undefined, itemCount: 0 };
     }
 
-    // Use the most recent cache
     const cacheName = cacheNames[0];
     const cache = await caches.open(cacheName);
     const keys = await cache.keys();
@@ -81,14 +80,11 @@ export async function refreshCache(): Promise<void> {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return;
 
-    // Check for updates
     await registration.update();
 
-    // If there's a waiting service worker, activate it immediately
     if (registration.waiting) {
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
 
-      // Wait for the new service worker to take control
       await new Promise<void>((resolve) => {
         navigator.serviceWorker.addEventListener(
           'controllerchange',
@@ -101,11 +97,9 @@ export async function refreshCache(): Promise<void> {
         );
       });
 
-      // Update timestamp and reload to use the new service worker
       localStorage.setItem('cache_last_update', new Date().toISOString());
       window.location.reload();
     } else if (registration.installing) {
-      // If there's an installing service worker, wait for it to become waiting
       await new Promise<void>((resolve) => {
         const installer = registration.installing;
         if (!installer) {
@@ -135,7 +129,6 @@ export async function refreshCache(): Promise<void> {
       localStorage.setItem('cache_last_update', new Date().toISOString());
       window.location.reload();
     } else {
-      // No update available, just update the timestamp
       localStorage.setItem('cache_last_update', new Date().toISOString());
     }
   }
