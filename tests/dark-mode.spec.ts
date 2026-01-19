@@ -6,11 +6,11 @@ test.describe('Dark Mode', () => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/');
 
-    // Check light mode background color (white)
+    // Check light mode background color (white HSL)
     const lightBg = await page.evaluate(() => {
-      return getComputedStyle(document.body).backgroundColor;
+      return getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
     });
-    expect(lightBg).toBe('rgb(255, 255, 255)');
+    expect(lightBg).toBe('hsl(0 0% 100%)');
 
     // Switch to dark mode
     await page.emulateMedia({ colorScheme: 'dark' });
@@ -18,11 +18,11 @@ test.describe('Dark Mode', () => {
     // Wait a moment for CSS to apply
     await page.waitForTimeout(100);
 
-    // Check dark mode background color (dark blue-gray)
+    // Check dark mode background color (dark blue-gray HSL)
     const darkBg = await page.evaluate(() => {
-      return getComputedStyle(document.body).backgroundColor;
+      return getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
     });
-    expect(darkBg).toBe('rgb(2, 8, 23)');
+    expect(darkBg).toBe('hsl(222.2 84% 4.9%)');
 
     // Switch back to light mode
     await page.emulateMedia({ colorScheme: 'light' });
@@ -30,8 +30,8 @@ test.describe('Dark Mode', () => {
 
     // Verify it switches back
     const lightBgAgain = await page.evaluate(() => {
-      return getComputedStyle(document.body).backgroundColor;
+      return getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
     });
-    expect(lightBgAgain).toBe('rgb(255, 255, 255)');
+    expect(lightBgAgain).toBe('hsl(0 0% 100%)');
   });
 });
