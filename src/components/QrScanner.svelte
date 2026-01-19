@@ -13,7 +13,7 @@
     onScan?: (data: OTPAuthData) => void;
   }
 
-  // eslint-disable-next-line prefer-const -- onScan is not reassigned but destructured with bindable open
+  // eslint-disable-next-line prefer-const -- destructured props cannot use const
   let { open = $bindable(false), onScan }: Props = $props();
 
   let videoElement = $state<HTMLVideoElement | undefined>();
@@ -126,7 +126,7 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="sm:max-w-lg" showCloseButton={false}>
+  <Dialog.Content class="sm:max-w-lg">
     <Dialog.Header>
       <Dialog.Title>Scan QR Code</Dialog.Title>
       <Dialog.Description>Point your camera at a TOTP authenticator QR code</Dialog.Description>
@@ -161,11 +161,8 @@
         </div>
       {/if}
 
-      <Dialog.Close
-        onclick={stopScanner}
-        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full max-w-md"
-      >
-        Cancel
+      <Dialog.Close>
+        <Button variant="outline" class="w-full max-w-md" onclick={stopScanner}>Cancel</Button>
       </Dialog.Close>
     </div>
   </Dialog.Content>
