@@ -19,7 +19,6 @@
         (event: MessageEvent<{ type?: string }>) => {
           if (event.data.type === 'SW_ACTIVATED') {
             visible = true;
-            localStorage.setItem('cache_last_update', new Date().toISOString());
 
             autoHideTimeout = setTimeout(() => {
               handleDismiss();

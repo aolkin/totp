@@ -63,13 +63,60 @@ export async function getCacheInfo(): Promise<CacheInfo> {
     );
 
     const totalSize = sizes.reduce((a, b) => a + b, 0);
-    const lastUpdate = localStorage.getItem('cache_last_update') ?? undefined;
+    const lastUpdate = await getCacheTimestamp();
 
     return { totalSize, lastUpdate, itemCount: keys.length };
   } catch (error) {
     console.error('Error getting cache info:', error);
     return { totalSize: 0, lastUpdate: undefined, itemCount: 0 };
   }
+}
+
+async function getCacheTimestamp(): Promise<string | undefined> {
+  try {
+    const db = await openCacheDB();
+    const timestamp = await getTimestampFromDB(db);
+    db.close();
+    return timestamp ?? undefined;
+  } catch (error) {
+    console.error('Error getting cache timestamp:', error);
+    return undefined;
+  }
+}
+
+function openCacheDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('totp-cache-db', 1);
+
+    request.onerror = () => {
+      reject(new Error(request.error?.message ?? 'Failed to open IndexedDB'));
+    };
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains('metadata')) {
+        db.createObjectStore('metadata');
+      }
+    };
+  });
+}
+
+function getTimestampFromDB(db: IDBDatabase): Promise<string | null> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('metadata', 'readonly');
+    const store = transaction.objectStore('metadata');
+    const request = store.get('cache_last_update');
+
+    request.onerror = () => {
+      reject(new Error(request.error?.message ?? 'Failed to get timestamp from IndexedDB'));
+    };
+    request.onsuccess = () => {
+      resolve(request.result as string | null);
+    };
+  });
 }
 
 /**
@@ -84,62 +131,80 @@ export async function refreshCache(): Promise<void> {
 
     await registration.update();
 
-    if (registration.waiting) {
-      await Promise.race([
-        new Promise<void>((resolve) => {
-          navigator.serviceWorker.addEventListener(
-            'controllerchange',
-            () => {
-              resolve();
-            },
-            {
-              once: true,
-            },
-          );
+    const workerToActivate = registration.waiting ?? registration.installing;
 
-          registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-        }),
-        new Promise<void>((resolve) => setTimeout(resolve, 5000)),
-      ]);
-
-      window.location.reload();
-    } else if (registration.installing) {
-      await Promise.race([
-        new Promise<void>((resolve) => {
-          const installer = registration.installing;
-          if (!installer) {
-            resolve();
-            return;
-          }
-
-          installer.addEventListener('statechange', () => {
-            if (installer.state === 'installed' && registration.waiting) {
-              navigator.serviceWorker.addEventListener(
-                'controllerchange',
-                () => {
-                  resolve();
-                },
-                {
-                  once: true,
-                },
-              );
-
-              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            } else if (installer.state === 'activated' || installer.state === 'redundant') {
-              resolve();
-            }
-          });
-        }),
-        new Promise<void>((resolve) => setTimeout(resolve, 5000)),
-      ]);
-
-      window.location.reload();
+    if (workerToActivate) {
+      const activated = await activateServiceWorker(workerToActivate);
+      if (activated) {
+        window.location.reload();
+      }
     } else {
-      localStorage.setItem('cache_last_update', new Date().toISOString());
+      const db = await openCacheDB();
+      await setCacheTimestampInDB(db, new Date().toISOString());
+      db.close();
     }
   } catch (error) {
     console.error('Error refreshing cache:', error);
   }
+}
+
+function activateServiceWorker(worker: ServiceWorker): Promise<boolean> {
+  const controller = new AbortController();
+
+  const activationPromise = new Promise<boolean>((resolve) => {
+    navigator.serviceWorker.addEventListener(
+      'controllerchange',
+      () => {
+        controller.abort();
+        resolve(true);
+      },
+      {
+        once: true,
+        signal: controller.signal,
+      },
+    );
+
+    if (worker.state === 'installed') {
+      worker.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      worker.addEventListener(
+        'statechange',
+        () => {
+          if (worker.state === 'installed') {
+            worker.postMessage({ type: 'SKIP_WAITING' });
+          } else if (worker.state === 'activated' || worker.state === 'redundant') {
+            controller.abort();
+            resolve(true);
+          }
+        },
+        { signal: controller.signal },
+      );
+    }
+  });
+
+  const timeoutPromise = new Promise<boolean>((resolve) => {
+    setTimeout(() => {
+      controller.abort();
+      resolve(false);
+    }, 5000);
+  });
+
+  return Promise.race([activationPromise, timeoutPromise]);
+}
+
+function setCacheTimestampInDB(db: IDBDatabase, timestamp: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('metadata', 'readwrite');
+    const store = transaction.objectStore('metadata');
+    const request = store.put(timestamp, 'cache_last_update');
+
+    request.onerror = () => {
+      reject(new Error(request.error?.message ?? 'Failed to set timestamp in IndexedDB'));
+    };
+    request.onsuccess = () => {
+      resolve();
+    };
+  });
 }
 
 /**
@@ -148,7 +213,20 @@ export async function refreshCache(): Promise<void> {
 export async function clearCache(): Promise<void> {
   const cacheNames = await caches.keys();
   await Promise.all(cacheNames.map((name) => caches.delete(name)));
-  localStorage.removeItem('cache_last_update');
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.deleteDatabase('totp-cache-db');
+      request.onsuccess = () => {
+        resolve();
+      };
+      request.onerror = () => {
+        reject(new Error(request.error?.message ?? 'Failed to delete IndexedDB'));
+      };
+    });
+  } catch (error) {
+    console.error('Error clearing IndexedDB:', error);
+  }
 }
 
 /**
