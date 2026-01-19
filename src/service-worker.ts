@@ -15,6 +15,10 @@ cleanupOutdatedCaches();
 const handler = createHandlerBoundToURL('/index.html');
 registerRoute(new NavigationRoute(handler));
 
+self.addEventListener('install', () => {
+  void self.skipWaiting();
+});
+
 self.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(
     (async () => {
@@ -31,11 +35,4 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
       });
     })(),
   );
-});
-
-self.addEventListener('message', (event: ExtendableMessageEvent) => {
-  const data = event.data as { type?: string } | undefined;
-  if (data?.type === 'SKIP_WAITING') {
-    void self.skipWaiting();
-  }
 });

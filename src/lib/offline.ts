@@ -75,7 +75,7 @@ export async function getCacheInfo(): Promise<CacheInfo> {
 }
 
 /**
- * Refresh the cache by checking for service worker updates and activating them
+ * Refresh the cache by checking for service worker updates
  */
 export async function refreshCache(): Promise<void> {
   if (!('serviceWorker' in navigator)) return;
@@ -84,63 +84,38 @@ export async function refreshCache(): Promise<void> {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return;
 
-    await registration.update();
+    const controller = new AbortController();
+    const timeoutMs = 5000;
 
-    const workerToActivate = registration.waiting ?? registration.installing;
+    const updatePromise = new Promise<boolean>((resolve) => {
+      navigator.serviceWorker.addEventListener(
+        'controllerchange',
+        () => {
+          controller.abort();
+          resolve(true);
+        },
+        {
+          once: true,
+          signal: controller.signal,
+        },
+      );
 
-    if (workerToActivate) {
-      const activated = await activateServiceWorker(workerToActivate);
-      if (activated) {
-        window.location.reload();
-      }
+      void registration.update();
+
+      setTimeout(() => {
+        controller.abort();
+        resolve(false);
+      }, timeoutMs);
+    });
+
+    const hasUpdate = await updatePromise;
+
+    if (hasUpdate) {
+      window.location.reload();
     }
   } catch (error) {
     console.error('Error refreshing cache:', error);
   }
-}
-
-function activateServiceWorker(worker: ServiceWorker): Promise<boolean> {
-  const controller = new AbortController();
-
-  const activationPromise = new Promise<boolean>((resolve) => {
-    navigator.serviceWorker.addEventListener(
-      'controllerchange',
-      () => {
-        controller.abort();
-        resolve(true);
-      },
-      {
-        once: true,
-        signal: controller.signal,
-      },
-    );
-
-    if (worker.state === 'installed') {
-      worker.postMessage({ type: 'SKIP_WAITING' });
-    } else {
-      worker.addEventListener(
-        'statechange',
-        () => {
-          if (worker.state === 'installed') {
-            worker.postMessage({ type: 'SKIP_WAITING' });
-          } else if (worker.state === 'activated' || worker.state === 'redundant') {
-            controller.abort();
-            resolve(true);
-          }
-        },
-        { signal: controller.signal },
-      );
-    }
-  });
-
-  const timeoutPromise = new Promise<boolean>((resolve) => {
-    setTimeout(() => {
-      controller.abort();
-      resolve(false);
-    }, 5000);
-  });
-
-  return Promise.race([activationPromise, timeoutPromise]);
 }
 
 /**
