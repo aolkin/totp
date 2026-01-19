@@ -1,6 +1,8 @@
 /**
  * Shared IndexedDB utilities for cache metadata management
  * Used by both the main app and service worker
+ *
+ * TODO: Consider adding unit tests for IndexedDB operations
  */
 
 const DB_NAME = 'totp-cache-db';
