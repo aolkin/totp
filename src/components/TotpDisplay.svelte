@@ -4,7 +4,7 @@
   import type { TOTPConfig, TOTPRecord, EncryptedData } from '../lib/types';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent } from '$lib/components/ui/card';
-  import { encodeToURL, encrypt } from '$lib/crypto';
+  import { encodeToURL } from '$lib/crypto';
   import { totpStorage } from '$lib/storage';
   import { toast } from 'svelte-sonner';
 
@@ -13,10 +13,10 @@
     onCreateNew: () => void;
     onBackToList?: () => void;
     record?: TOTPRecord;
-    passphrase?: string;
+    encryptedData?: EncryptedData;
   }
 
-  const { config, onCreateNew, onBackToList, record, passphrase = '' }: Props = $props();
+  const { config, onCreateNew, onBackToList, record, encryptedData }: Props = $props();
 
   let code = $state('');
   let timeRemaining = $state(0);
@@ -58,11 +58,10 @@
 
   async function exportUrl() {
     try {
-      let encrypted: EncryptedData;
-      if (record) {
-        encrypted = record.encrypted;
-      } else {
-        encrypted = await encrypt(config, passphrase);
+      const encrypted = record?.encrypted ?? encryptedData;
+      if (!encrypted) {
+        toast.error('No encrypted data available');
+        return;
       }
       const url = `${window.location.origin}${window.location.pathname}#${encodeToURL(encrypted)}`;
       await navigator.clipboard.writeText(url);
@@ -73,15 +72,14 @@
   }
 
   async function saveToBrowser() {
-    if (!passphrase) {
-      toast.error('Cannot save without passphrase');
+    if (!encryptedData) {
+      toast.error('No encrypted data available');
       return;
     }
 
     isSaving = true;
     try {
-      const encrypted = await encrypt(config, passphrase);
-      await totpStorage.add(config.label || 'Unnamed TOTP', encrypted);
+      await totpStorage.add(config.label || 'Unnamed TOTP', encryptedData);
       toast.success('TOTP saved to browser');
     } catch {
       toast.error('Failed to save TOTP');
@@ -154,7 +152,7 @@
 
       <Button variant="outline" class="w-full" onclick={exportUrl}>Export URL</Button>
 
-      {#if !record && passphrase}
+      {#if !record && encryptedData}
         <Button variant="outline" class="w-full" onclick={saveToBrowser} disabled={isSaving}>
           {isSaving ? 'Saving...' : 'Save to Browser'}
         </Button>

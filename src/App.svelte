@@ -27,7 +27,6 @@
   let errorMessage = $state('');
   let showSettings = $state(false);
   let currentRecord = $state<TOTPRecord | undefined>(undefined);
-  let currentPassphrase = $state('');
 
   onMount(() => {
     void handleHashChange();
@@ -46,7 +45,6 @@
 
     if (!hash) {
       currentRecord = undefined;
-      currentPassphrase = '';
       mode = 'list';
       config = undefined;
       encryptedData = undefined;
@@ -59,7 +57,6 @@
       const result = await tryDecryptWithEmptyPassphrase(encryptedData);
       if (result) {
         config = result;
-        currentPassphrase = '';
         mode = 'display';
       } else {
         mode = 'prompt';
@@ -76,7 +73,6 @@
 
     try {
       config = await decrypt(encryptedData, passphrase);
-      currentPassphrase = passphrase;
       mode = 'display';
       promptError = '';
 
@@ -103,7 +99,6 @@
 
   function handleBackToList() {
     currentRecord = undefined;
-    currentPassphrase = '';
     window.location.hash = '';
   }
 
@@ -118,7 +113,6 @@
     const result = await tryDecryptWithEmptyPassphrase(record.encrypted);
     if (result) {
       config = result;
-      currentPassphrase = '';
       mode = 'display';
       await totpStorage.updateLastUsed(record.id);
     } else {
@@ -169,7 +163,7 @@
         onCreateNew={handleCreateNew}
         onBackToList={handleBackToList}
         record={currentRecord}
-        passphrase={currentPassphrase}
+        encryptedData={currentRecord ? undefined : encryptedData}
       />
     {:else if mode === 'error'}
       <div class="text-center p-8">
