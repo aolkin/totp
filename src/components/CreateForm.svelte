@@ -76,6 +76,11 @@
       return;
     }
 
+    if (saveToBrowser && !label.trim()) {
+      error = 'A label is required when saving to browser.';
+      return;
+    }
+
     try {
       const config: TOTPConfig = {
         secret: normalizedSecret,
@@ -122,7 +127,7 @@
   }
 
   function handleCreateAnother() {
-    if (wasSavedToBrowser && onSaved) {
+    if (onSaved) {
       onSaved();
     } else {
       resetForm();
@@ -184,13 +189,8 @@
 
       <div class="space-y-2">
         <Button type="button" onclick={handleCreateAnother} variant="secondary" class="w-full">
-          {wasSavedToBrowser ? 'Back to List' : 'Create Another'}
+          Back to List
         </Button>
-        {#if showBackButton && onBack && !wasSavedToBrowser}
-          <Button type="button" onclick={onBack} variant="ghost" class="w-full">
-            Back to List
-          </Button>
-        {/if}
       </div>
     </CardContent>
   </Card>
@@ -227,7 +227,7 @@
         </div>
 
         <div class="space-y-2">
-          <Label for="label">Label (optional)</Label>
+          <Label for="label">Label {saveToBrowser ? '*' : '(optional)'}</Label>
           <Input type="text" id="label" bind:value={label} placeholder="Service - account" />
           <p class="text-sm text-muted-foreground">A description to identify this TOTP</p>
         </div>
@@ -267,8 +267,8 @@
             {#if saveToBrowser}
               <Alert>
                 <AlertDescription>
-                  A passphrase is required when saving to browser. The passphrase will not be stored
-                  - you'll need to enter it each time you view this TOTP.
+                  A label and passphrase are required when saving to browser. The passphrase will
+                  not be stored - you'll need to enter it each time you view this TOTP.
                 </AlertDescription>
               </Alert>
 
