@@ -36,16 +36,16 @@ export async function getCacheTimestamp(): Promise<string | undefined> {
       const store = transaction.objectStore(STORE_NAME);
       const request = store.get(TIMESTAMP_KEY);
 
-      const result = await new Promise<string | null>((resolve, reject) => {
+      const result = await new Promise<string | undefined>((resolve, reject) => {
         request.onerror = () => {
           reject(new Error(request.error?.message ?? 'Failed to get timestamp from IndexedDB'));
         };
         request.onsuccess = () => {
-          resolve(request.result as string | null);
+          resolve(request.result as string | undefined);
         };
       });
 
-      return result ?? undefined;
+      return result;
     } finally {
       db.close();
     }
