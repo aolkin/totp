@@ -29,14 +29,6 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
       } catch (error) {
         console.error('Failed to set cache timestamp:', error);
       }
-
-      const clients = await self.clients.matchAll({ type: 'window' });
-      clients.forEach((client) => {
-        client.postMessage({
-          type: 'SW_ACTIVATED',
-          timestamp: Date.now(),
-        });
-      });
     })(),
   );
 });
