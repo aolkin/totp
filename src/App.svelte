@@ -16,7 +16,6 @@
   } from './lib/crypto';
   import type { TOTPConfig, TOTPRecord, TOTPExport } from './lib/types';
   import { totpStorage, isIndexedDBSupported } from './lib/storage';
-  import { getCachedPassphrase, cachePassphrase } from './lib/session';
   import { Button } from '$lib/components/ui/button';
   import { toast } from 'svelte-sonner';
 
@@ -100,7 +99,6 @@
       promptError = '';
 
       if (currentRecord) {
-        cachePassphrase(currentRecord.id, passphrase);
         await totpStorage.updateLastUsed(currentRecord.id);
       }
     } catch {
@@ -134,19 +132,6 @@
 
   async function handleViewRecord(record: TOTPRecord) {
     currentRecord = record;
-
-    const cachedPassphrase = getCachedPassphrase(record.id);
-    if (cachedPassphrase) {
-      try {
-        config = await decrypt(record.encrypted, cachedPassphrase);
-        currentPassphrase = cachedPassphrase;
-        mode = 'display';
-        await totpStorage.updateLastUsed(record.id);
-        return;
-      } catch {
-        // Cached passphrase is wrong, continue to prompt
-      }
-    }
 
     encryptedData = record.encrypted;
     const result = await tryDecryptWithEmptyPassphrase(record.encrypted);

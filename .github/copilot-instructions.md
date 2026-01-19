@@ -80,7 +80,6 @@ npm run format:check  # Check if files are formatted correctly
 │   │   ├── totp.ts         # TOTP generation logic
 │   │   ├── passphrase.ts   # Passphrase generation
 │   │   ├── storage.ts      # IndexedDB storage for saved TOTPs
-│   │   ├── session.ts      # Session passphrase caching
 │   │   └── types.ts        # TypeScript type definitions
 │   ├── App.svelte          # Root component
 │   ├── app.css             # Global styles and Tailwind directives
@@ -247,7 +246,6 @@ TOTPs can optionally be saved to browser's IndexedDB:
 - Database: `totp-storage`, Object Store: `secrets`
 - Each record contains: id, label, created, lastUsed, encrypted data, optional passphrase hint
 - Passphrases are NEVER stored - only used for encryption/decryption
-- Session caching uses sessionStorage for convenience (cleared on browser close)
 
 ### Optional Passphrase
 

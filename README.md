@@ -27,7 +27,6 @@ Optionally save TOTPs to your browser's IndexedDB:
 - **Save to Browser:** Check "Save to this browser" when creating a TOTP
 - **List View:** Access all saved TOTPs from the root URL
 - **Passphrase Hints:** Add optional hints to help remember passphrases
-- **Session Caching:** Passphrases are cached in session storage to avoid re-entering
 - **Export/Import:** Backup and restore your TOTPs as JSON files
 
 **Note:** Browser storage is local only - no cloud sync. Clearing browser data will delete saved TOTPs.
