@@ -3,6 +3,22 @@ import { mount } from 'svelte';
 import App from './App.svelte';
 import { requestPersistentStorage } from './lib/offline';
 
+// Set up dark mode detection
+function updateDarkMode() {
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (isDark) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
+
+// Apply initial dark mode
+updateDarkMode();
+
+// Listen for changes to system dark mode preference
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateDarkMode);
+
 const app = mount(App, {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   target: document.getElementById('app')!,
