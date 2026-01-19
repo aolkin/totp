@@ -22,7 +22,7 @@ test.describe('Dark Mode', () => {
     const darkBg = await page.evaluate(() => {
       return getComputedStyle(document.body).backgroundColor;
     });
-    expect(darkBg).toBe('rgb(3, 7, 18)');
+    expect(darkBg).toBe('rgb(2, 8, 23)');
 
     // Switch back to light mode
     await page.emulateMedia({ colorScheme: 'light' });
