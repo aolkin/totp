@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-// Test secrets use obvious patterns (AAAA, ABCD) to avoid triggering security scanners.
-
 test.describe('UI - Create Form', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');

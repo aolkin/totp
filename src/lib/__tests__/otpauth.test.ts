@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseOTPAuthURL } from '../otpauth';
 
-// Test secrets use obvious patterns (AAAA, ABCD) to avoid triggering security scanners
-// that might mistake them for real credentials.
-
 describe('OTP Auth URL Parser', () => {
   it('should parse standard otpauth URL with all parameters and defaults', () => {
     const url =

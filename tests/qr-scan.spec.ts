@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('QR Scanner', () => {
-  test('should open scan modal and display content', async ({ page, context }) => {
+  test('should open scan modal and show cancel button', async ({ page, context }) => {
     await page.goto('/');
     await context.grantPermissions(['camera']);
 
@@ -10,6 +10,10 @@ test.describe('QR Scanner', () => {
     await page.getByTestId('scan-qr-button').click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Scan QR Code' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
+
+    // Verify cancel button exists and is clickable
+    const cancelButton = page.getByRole('button', { name: 'Cancel' });
+    await expect(cancelButton).toBeVisible();
+    await expect(cancelButton).toBeEnabled();
   });
 });
