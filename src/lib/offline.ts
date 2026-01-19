@@ -2,7 +2,7 @@
  * Offline-related utilities for PWA functionality
  */
 
-import { getCacheTimestamp, setCacheTimestamp } from './cache-db';
+import { getCacheTimestamp } from './cache-db';
 
 export interface CacheInfo {
   totalSize: number;
@@ -93,8 +93,6 @@ export async function refreshCache(): Promise<void> {
       if (activated) {
         window.location.reload();
       }
-    } else {
-      await setCacheTimestamp(new Date().toISOString());
     }
   } catch (error) {
     console.error('Error refreshing cache:', error);
