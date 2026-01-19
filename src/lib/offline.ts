@@ -2,6 +2,8 @@
  * Offline-related utilities for PWA functionality
  */
 
+import { getCacheTimestamp, setCacheTimestamp, deleteCacheDB } from './cache-db';
+
 export interface CacheInfo {
   totalSize: number;
   lastUpdate: string | undefined;
@@ -72,53 +74,6 @@ export async function getCacheInfo(): Promise<CacheInfo> {
   }
 }
 
-async function getCacheTimestamp(): Promise<string | undefined> {
-  try {
-    const db = await openCacheDB();
-    const timestamp = await getTimestampFromDB(db);
-    db.close();
-    return timestamp ?? undefined;
-  } catch (error) {
-    console.error('Error getting cache timestamp:', error);
-    return undefined;
-  }
-}
-
-function openCacheDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('totp-cache-db', 1);
-
-    request.onerror = () => {
-      reject(new Error(request.error?.message ?? 'Failed to open IndexedDB'));
-    };
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains('metadata')) {
-        db.createObjectStore('metadata');
-      }
-    };
-  });
-}
-
-function getTimestampFromDB(db: IDBDatabase): Promise<string | null> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction('metadata', 'readonly');
-    const store = transaction.objectStore('metadata');
-    const request = store.get('cache_last_update');
-
-    request.onerror = () => {
-      reject(new Error(request.error?.message ?? 'Failed to get timestamp from IndexedDB'));
-    };
-    request.onsuccess = () => {
-      resolve(request.result as string | null);
-    };
-  });
-}
-
 /**
  * Refresh the cache by checking for service worker updates and activating them
  */
@@ -139,9 +94,7 @@ export async function refreshCache(): Promise<void> {
         window.location.reload();
       }
     } else {
-      const db = await openCacheDB();
-      await setCacheTimestampInDB(db, new Date().toISOString());
-      db.close();
+      await setCacheTimestamp(new Date().toISOString());
     }
   } catch (error) {
     console.error('Error refreshing cache:', error);
@@ -192,21 +145,6 @@ function activateServiceWorker(worker: ServiceWorker): Promise<boolean> {
   return Promise.race([activationPromise, timeoutPromise]);
 }
 
-function setCacheTimestampInDB(db: IDBDatabase, timestamp: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction('metadata', 'readwrite');
-    const store = transaction.objectStore('metadata');
-    const request = store.put(timestamp, 'cache_last_update');
-
-    request.onerror = () => {
-      reject(new Error(request.error?.message ?? 'Failed to set timestamp in IndexedDB'));
-    };
-    request.onsuccess = () => {
-      resolve();
-    };
-  });
-}
-
 /**
  * Clear all caches
  */
@@ -215,15 +153,7 @@ export async function clearCache(): Promise<void> {
   await Promise.all(cacheNames.map((name) => caches.delete(name)));
 
   try {
-    await new Promise<void>((resolve, reject) => {
-      const request = indexedDB.deleteDatabase('totp-cache-db');
-      request.onsuccess = () => {
-        resolve();
-      };
-      request.onerror = () => {
-        reject(new Error(request.error?.message ?? 'Failed to delete IndexedDB'));
-      };
-    });
+    await deleteCacheDB();
   } catch (error) {
     console.error('Error clearing IndexedDB:', error);
   }
