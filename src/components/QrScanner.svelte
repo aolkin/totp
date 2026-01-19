@@ -13,9 +13,8 @@
     onScan?: (data: OTPAuthData) => void;
   }
 
-  /* eslint-disable prefer-const */
+  // eslint-disable-next-line prefer-const -- onScan is not reassigned but destructured with bindable open
   let { open = $bindable(false), onScan }: Props = $props();
-  /* eslint-enable prefer-const */
 
   let videoElement = $state<HTMLVideoElement | undefined>();
   let qrScanner = $state<QrScanner | undefined>();
