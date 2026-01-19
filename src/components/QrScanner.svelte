@@ -91,12 +91,9 @@
     } catch (err) {
       console.warn('QR scan failed for URL:', data);
       if (err instanceof Error) {
-        // Strip "Invalid URL: " prefix from error messages for cleaner user display
-        if (err.message.includes('Invalid URL')) {
-          error = err.message.replace('Invalid URL: ', '');
-        } else {
-          error = 'Not a valid TOTP QR code. Please scan a TOTP authenticator QR code.';
-        }
+        error = err.message;
+      } else {
+        error = 'Not a valid TOTP QR code. Please scan a TOTP authenticator QR code.';
       }
     }
   }
