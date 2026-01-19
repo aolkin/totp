@@ -75,8 +75,7 @@
           <div class="flex-1">
             <h2 class="text-lg font-semibold text-green-900 mb-2">App Ready for Offline Use</h2>
             <p class="text-sm text-green-800 mb-4">
-              This app now works without internet connection. Your TOTPs are always available, even
-              offline.
+              This app now works without an internet connection. Your TOTPs are always available.
             </p>
             <div class="flex gap-2 flex-wrap">
               <Button onclick={handleDismiss} variant="outline" size="sm">Got It</Button>

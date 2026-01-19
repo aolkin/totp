@@ -131,7 +131,8 @@
       {/if}
 
       <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
-        Save this URL{savedPassphrase ? ' and passphrase' : ''}. They cannot be recovered.
+        Save this URL{savedPassphrase ? ' and passphrase' : ''}. This information cannot be
+        recovered.
       </div>
 
       <Button type="button" onclick={resetForm} variant="secondary" class="w-full">
