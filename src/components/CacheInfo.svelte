@@ -7,7 +7,6 @@
     isAppCached,
     isPersistentStorageGranted,
     refreshCache,
-    clearCache,
     formatBytes,
     formatRelativeTime,
     type CacheInfo as CacheInfoType,
@@ -18,7 +17,6 @@
   let isPersisted = $state(false);
   let loading = $state(true);
   let refreshing = $state(false);
-  let clearing = $state(false);
 
   onMount(() => {
     void loadCacheInfo();
@@ -46,25 +44,6 @@
       console.error('Error refreshing cache:', error);
     } finally {
       refreshing = false;
-    }
-  }
-
-  async function handleClear() {
-    if (
-      !confirm(
-        'This will reset the app to a fresh state and reload the page. Your TOTP codes in the URL will not be affected. Continue?',
-      )
-    ) {
-      return;
-    }
-
-    clearing = true;
-    try {
-      await clearCache();
-      window.location.reload();
-    } catch (error) {
-      console.error('Error clearing cache:', error);
-      clearing = false;
     }
   }
 </script>
@@ -104,18 +83,9 @@
             <div>Build: <code class="text-xs">{__COMMIT_HASH__.substring(0, 7)}</code></div>
           </div>
 
-          <div class="flex gap-2 pt-2">
+          <div class="pt-2">
             <Button onclick={handleRefresh} variant="outline" size="sm" disabled={refreshing}>
               {refreshing ? 'Checking...' : 'Check for Updates'}
-            </Button>
-            <Button
-              onclick={handleClear}
-              variant="outline"
-              size="sm"
-              disabled={clearing}
-              class="text-destructive hover:text-destructive"
-            >
-              {clearing ? 'Resetting...' : 'Reset App'}
             </Button>
           </div>
         {/if}
