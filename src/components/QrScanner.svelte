@@ -6,14 +6,16 @@
   import { Switch } from '$lib/components/ui/switch';
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
+  import * as Dialog from '$lib/components/ui/dialog';
 
   interface Props {
+    open?: boolean;
     onScan?: (data: OTPAuthData) => void;
-    onError?: (error: string) => void;
-    onClose?: () => void;
   }
 
-  const { onScan, onError, onClose }: Props = $props();
+  /* eslint-disable prefer-const */
+  let { open = $bindable(false), onScan }: Props = $props();
+  /* eslint-enable prefer-const */
 
   let videoElement = $state<HTMLVideoElement | undefined>();
   let qrScanner = $state<QrScanner | undefined>();
@@ -67,7 +69,6 @@
         error = 'Failed to start camera. Please try again.';
       }
       scanning = false;
-      onError?.(error);
     }
   }
 
@@ -87,8 +88,11 @@
       const parsed = parseOTPAuthURL(data);
       stopScanner();
       onScan?.(parsed);
+      open = false;
     } catch (err) {
+      console.warn('QR scan failed for URL:', data);
       if (err instanceof Error) {
+        // Strip "Invalid URL: " prefix from error messages for cleaner user display
         if (err.message.includes('Invalid URL')) {
           error = err.message.replace('Invalid URL: ', '');
         } else {
@@ -104,55 +108,69 @@
     await startScanner();
   }
 
-  function handleCancel(): void {
-    stopScanner();
-    onClose?.();
-  }
+  $effect(() => {
+    if (open) {
+      checkCameraCount().catch(() => {
+        hasMultipleCameras = false;
+      });
+      startScanner().catch(() => {
+        error = 'Failed to initialize camera';
+        scanning = false;
+      });
+    } else {
+      stopScanner();
+    }
+  });
 
   onMount(() => {
-    checkCameraCount().catch(() => {
-      hasMultipleCameras = false;
-    });
-    startScanner().catch(() => {
-      error = 'Failed to initialize camera';
-      scanning = false;
-    });
-
     return () => {
       stopScanner();
     };
   });
 </script>
 
-<div class="flex flex-col items-center gap-4">
-  <div class="relative w-full max-w-md overflow-hidden rounded-lg bg-black">
-    <video bind:this={videoElement} class="w-full aspect-square object-cover" playsinline muted
-    ></video>
+<Dialog.Root bind:open>
+  <Dialog.Content class="sm:max-w-lg" showCloseButton={false}>
+    <Dialog.Header>
+      <Dialog.Title>Scan QR Code</Dialog.Title>
+      <Dialog.Description>Point your camera at a TOTP authenticator QR code</Dialog.Description>
+    </Dialog.Header>
+    <div class="flex flex-col items-center gap-4">
+      <div class="relative w-full max-w-md overflow-hidden rounded-lg bg-black">
+        <video bind:this={videoElement} class="w-full aspect-square object-cover" playsinline muted
+        ></video>
 
-    {#if scanning && !error}
-      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div class="w-48 h-48 border-2 border-white/50 rounded-lg animate-pulse"></div>
+        {#if scanning && !error}
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="w-48 h-48 border-2 border-white/50 rounded-lg animate-pulse"></div>
+          </div>
+        {/if}
       </div>
-    {/if}
-  </div>
 
-  {#if error}
-    <Alert variant="destructive" class="w-full max-w-md">
-      <AlertDescription>{error}</AlertDescription>
-    </Alert>
-    <Button onclick={startScanner} variant="secondary">Try Again</Button>
-  {:else}
-    <p class="text-sm text-muted-foreground text-center">Point your camera at a TOTP QR code</p>
-  {/if}
+      {#if error}
+        <Alert variant="destructive" class="w-full max-w-md">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+        <Button onclick={startScanner} variant="secondary">Try Again</Button>
+      {:else}
+        <p class="text-sm text-muted-foreground text-center">Point your camera at a TOTP QR code</p>
+      {/if}
 
-  {#if hasMultipleCameras && !error}
-    <div class="flex items-center gap-2">
-      <Switch id="camera-toggle" checked={useFrontCamera} onCheckedChange={toggleCamera} />
-      <Label for="camera-toggle" class="text-sm cursor-pointer">
-        {useFrontCamera ? 'Front camera' : 'Rear camera'}
-      </Label>
+      {#if hasMultipleCameras && !error}
+        <div class="flex items-center gap-2">
+          <Switch id="camera-toggle" checked={useFrontCamera} onCheckedChange={toggleCamera} />
+          <Label for="camera-toggle" class="text-sm cursor-pointer">
+            {useFrontCamera ? 'Front camera' : 'Rear camera'}
+          </Label>
+        </div>
+      {/if}
+
+      <Dialog.Close
+        onclick={stopScanner}
+        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full max-w-md"
+      >
+        Cancel
+      </Dialog.Close>
     </div>
-  {/if}
-
-  <Button onclick={handleCancel} variant="outline" class="w-full max-w-md">Cancel</Button>
-</div>
+  </Dialog.Content>
+</Dialog.Root>

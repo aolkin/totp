@@ -14,7 +14,6 @@
   import { Label } from '$lib/components/ui/label';
   import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
   import { Progress } from '$lib/components/ui/progress';
-  import * as Dialog from '$lib/components/ui/dialog';
   import QrScanner from './QrScanner.svelte';
 
   let secret = $state('');
@@ -31,6 +30,21 @@
   let savedPassphrase = $state('');
   let error = $state('');
   let showResult = $state(false);
+
+  function handleScan(data: OTPAuthData): void {
+    secret = data.secret;
+    label = data.label || data.issuer || '';
+    digits = data.digits;
+    period = data.period;
+    algorithm = data.algorithm;
+    if (
+      data.digits !== DEFAULT_DIGITS ||
+      data.period !== DEFAULT_PERIOD ||
+      data.algorithm !== DEFAULT_ALGORITHM
+    ) {
+      showAdvanced = true;
+    }
+  }
 
   function regeneratePassphrase() {
     passphrase = generatePassphrase();
@@ -104,26 +118,6 @@
     } catch {
       // Fallback handled by user selecting text
     }
-  }
-
-  function handleScan(data: OTPAuthData) {
-    secret = data.secret;
-    label = data.label || (data.issuer ? data.issuer : '');
-    digits = data.digits;
-    period = data.period;
-    algorithm = data.algorithm;
-    showScanner = false;
-    if (
-      data.digits !== DEFAULT_DIGITS ||
-      data.period !== DEFAULT_PERIOD ||
-      data.algorithm !== DEFAULT_ALGORITHM
-    ) {
-      showAdvanced = true;
-    }
-  }
-
-  function handleScanClose() {
-    showScanner = false;
   }
 </script>
 
@@ -294,12 +288,4 @@
   </Card>
 {/if}
 
-<Dialog.Root bind:open={showScanner}>
-  <Dialog.Content class="sm:max-w-lg" showCloseButton={false}>
-    <Dialog.Header>
-      <Dialog.Title>Scan QR Code</Dialog.Title>
-      <Dialog.Description>Point your camera at a TOTP authenticator QR code</Dialog.Description>
-    </Dialog.Header>
-    <QrScanner onScan={handleScan} onClose={handleScanClose} />
-  </Dialog.Content>
-</Dialog.Root>
+<QrScanner bind:open={showScanner} onScan={handleScan} />
