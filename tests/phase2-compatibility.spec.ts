@@ -43,7 +43,7 @@ test.describe('Phase 2 - Cross-Mode Compatibility', () => {
     await page.goto(url);
     await expect(page.getByRole('button', { name: 'Copy Code' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Create New TOTP' }).click();
+    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
     await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
     await expect(page.getByText('List Item')).toBeVisible();
   });

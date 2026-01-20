@@ -19,7 +19,7 @@ test.describe('Phase 2 - Export and Import', () => {
     await page.locator('#passphrase').fill('exportpassword456');
     await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-    await page.getByRole('button', { name: 'Back to List' }).click();
+    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
 
     const downloadPromise = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Export All' }).click();

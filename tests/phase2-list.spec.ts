@@ -18,7 +18,7 @@ test.describe('Phase 2 - List View and Navigation', () => {
     await page.locator('#passphrase').fill('awspassword123');
     await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-    await page.getByRole('button', { name: 'Back to List' }).click();
+    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
 
     await expect(page.getByText('GitHub Account')).toBeVisible();
     await expect(page.getByText('AWS Console')).toBeVisible();
@@ -80,7 +80,7 @@ test.describe('Phase 2 - List View and Navigation', () => {
     await page.locator('#passphrase').fill('alphapassword123');
     await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-    await page.getByRole('button', { name: 'Back to List' }).click();
+    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
 
     const sortSelect = page.locator('.w-\\[140px\\]').first();
     await sortSelect.click();

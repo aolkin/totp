@@ -10,13 +10,12 @@
 
   interface Props {
     config: TOTPConfig;
-    onCreateNew: () => void;
-    onBackToList?: () => void;
+    onBackToList: () => void;
     record?: TOTPRecord;
     encryptedData?: EncryptedData;
   }
 
-  const { config, onCreateNew, onBackToList, record, encryptedData }: Props = $props();
+  const { config, onBackToList, record, encryptedData }: Props = $props();
 
   let code = $state('');
   let timeRemaining = $state(0);
@@ -157,13 +156,9 @@
         </Button>
       {/if}
 
-      {#if record && onBackToList}
-        <Button variant="ghost" class="w-full text-sm" onclick={onBackToList}>Back to List</Button>
-      {:else}
-        <Button variant="ghost" class="w-full text-sm" onclick={onCreateNew}>
-          Create New TOTP
-        </Button>
-      {/if}
+      <Button variant="ghost" class="w-full text-sm" onclick={onBackToList}>
+        View Saved TOTPs
+      </Button>
     </div>
   </CardContent>
 </Card>

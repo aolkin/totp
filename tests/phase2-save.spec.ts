@@ -73,7 +73,7 @@ test.describe('Phase 2 - Save to Browser', () => {
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
 
     await expect(page.getByRole('heading', { name: 'URL Generated' })).toBeVisible();
-    await page.getByRole('button', { name: 'Back to List' }).click();
+    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
 
     await expect(page.getByText('Not Saved Account')).not.toBeVisible();
   });

@@ -74,7 +74,7 @@ export async function saveTotpToBrowser(
 
   await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
   await expect(page.getByRole('heading', { name: 'URL Generated' })).toBeVisible();
-  await page.getByRole('button', { name: 'Back to List' }).click();
+  await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
   await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
 }
 

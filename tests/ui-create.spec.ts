@@ -103,7 +103,7 @@ test.describe('UI - Create Form', () => {
     test('should allow creating another TOTP', async ({ page }) => {
       await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
       await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-      await page.getByRole('button', { name: 'Back to List' }).click();
+      await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
       await page.getByRole('button', { name: 'Add New' }).click();
 
       await expect(page.getByRole('heading', { name: 'Create TOTP URL' })).toBeVisible();
@@ -122,7 +122,7 @@ test.describe('UI - Create Form', () => {
         .inputValue();
 
       // Custom options
-      await page.getByRole('button', { name: 'Back to List' }).click();
+      await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
       await page.getByRole('button', { name: 'Add New' }).click();
       await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
       await page.getByRole('textbox', { name: 'Passphrase' }).fill('testpassphrase12');
