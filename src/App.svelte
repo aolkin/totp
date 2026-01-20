@@ -107,17 +107,23 @@
   }
 
   async function handleViewRecord(record: TOTPRecord) {
-    currentRecord = record;
+    try {
+      currentRecord = record;
 
-    encryptedData = record.encrypted;
-    const result = await tryDecryptWithEmptyPassphrase(record.encrypted);
-    if (result) {
-      config = result;
-      mode = 'display';
-      await totpStorage.updateLastUsed(record.id);
-    } else {
-      mode = 'prompt';
-      promptError = '';
+      encryptedData = record.encrypted;
+      const result = await tryDecryptWithEmptyPassphrase(record.encrypted);
+      if (result) {
+        config = result;
+        mode = 'display';
+        await totpStorage.updateLastUsed(record.id);
+      } else {
+        mode = 'prompt';
+        promptError = '';
+      }
+    } catch (error) {
+      console.error('Failed to view TOTP record', error);
+      errorMessage = 'Failed to open record. Please try again.';
+      mode = 'error';
     }
   }
 </script>
