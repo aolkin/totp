@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
 
   onMount(() => {
     // Redirect unknown routes to home after brief delay
     const timeout = setTimeout(() => {
-      window.location.hash = '/';
+      void goto('#/');
     }, 3000);
     return () => {
       clearTimeout(timeout);
@@ -13,7 +14,7 @@
   });
 
   function handleGoHome() {
-    window.location.hash = '/';
+    void goto('#/');
   }
 </script>
 

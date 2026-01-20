@@ -6,8 +6,9 @@ test.describe('Dark Mode', () => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/#/');
 
-    // Wait for the page to fully load
+    // Wait for the page to fully load and stabilize
     await page.waitForSelector('h1');
+    await page.waitForLoadState('networkidle');
 
     // Check light mode background color (white HSL)
     const lightBg = await page.evaluate(() => {

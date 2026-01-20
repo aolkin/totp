@@ -1,12 +1,13 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import CreateForm from '$lib/components/CreateForm.svelte';
 
   function handleSaved() {
-    window.location.hash = '/';
+    void goto('#/');
   }
 
   function handleBack() {
-    window.location.hash = '/';
+    void goto('#/');
   }
 </script>
 

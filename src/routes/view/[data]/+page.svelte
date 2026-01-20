@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import TotpDisplay from '$lib/components/TotpDisplay.svelte';
@@ -89,11 +90,11 @@
   }
 
   function handleCreateNew() {
-    window.location.hash = '/';
+    void goto('#/');
   }
 
   function handleBackToList() {
-    window.location.hash = '/';
+    void goto('#/');
   }
 
   onMount(() => {
