@@ -1,3 +1,4 @@
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { TOTPRecord, EncryptedData, TOTPExport } from './types';
 import { uint8ArrayToBase64, base64ToUint8Array } from './crypto';
 
@@ -5,66 +6,32 @@ const DB_NAME = 'totp-storage';
 const DB_VERSION = 1;
 const STORE_NAME = 'secrets';
 
-function wrapRequest<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-    request.onerror = () => {
-      reject(new Error('IndexedDB operation failed'));
-    };
-  });
+interface TOTPDBSchema extends DBSchema {
+  secrets: {
+    key: number;
+    value: TOTPRecord;
+    // For autoIncrement stores, the key is optional when adding
+  };
 }
 
 class TOTPStorage {
-  private db: IDBDatabase | undefined;
-  private initPromise: Promise<void> | undefined;
+  private dbPromise: Promise<IDBPDatabase<TOTPDBSchema>>;
 
-  async init(): Promise<void> {
-    if (this.db) return;
-
-    if (this.initPromise) {
-      return this.initPromise;
-    }
-
-    this.initPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-      request.onerror = () => {
-        reject(new Error('Failed to open IndexedDB'));
-      };
-
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve();
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-
+  constructor() {
+    this.dbPromise = openDB<TOTPDBSchema>(DB_NAME, DB_VERSION, {
+      upgrade(db) {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME, {
             keyPath: 'id',
             autoIncrement: true,
           });
         }
-      };
+      },
     });
-
-    return this.initPromise;
-  }
-
-  private getStore(mode: IDBTransactionMode): IDBObjectStore {
-    if (!this.db) {
-      throw new Error('Database not initialized');
-    }
-    const transaction = this.db.transaction(STORE_NAME, mode);
-    return transaction.objectStore(STORE_NAME);
   }
 
   async add(label: string, encrypted: EncryptedData, passphraseHint?: string): Promise<number> {
-    await this.init();
-    const store = this.getStore('readwrite');
+    const db = await this.dbPromise;
     const now = Date.now();
 
     const record: Omit<TOTPRecord, 'id'> = {
@@ -75,30 +42,28 @@ class TOTPStorage {
       passphraseHint,
     };
 
-    return wrapRequest(store.add(record)) as Promise<number>;
+    // autoIncrement will generate the id, so we cast to the full type
+    return db.add(STORE_NAME, record as TOTPRecord);
   }
 
   async getAll(): Promise<TOTPRecord[]> {
-    await this.init();
-    const store = this.getStore('readonly');
-    return wrapRequest(store.getAll()) as Promise<TOTPRecord[]>;
+    const db = await this.dbPromise;
+    return db.getAll(STORE_NAME);
   }
 
   async getById(id: number): Promise<TOTPRecord | undefined> {
-    await this.init();
-    const store = this.getStore('readonly');
-    return wrapRequest(store.get(id)) as Promise<TOTPRecord | undefined>;
+    const db = await this.dbPromise;
+    return db.get(STORE_NAME, id);
   }
 
   async update(id: number, data: Partial<TOTPRecord>): Promise<void> {
-    await this.init();
-    const store = this.getStore('readwrite');
-    const existing = (await wrapRequest(store.get(id))) as TOTPRecord | undefined;
+    const db = await this.dbPromise;
+    const existing = await db.get(STORE_NAME, id);
     if (!existing) {
       throw new Error('Record not found');
     }
     const updated = { ...existing, ...data };
-    await wrapRequest(store.put(updated));
+    await db.put(STORE_NAME, updated);
   }
 
   async updateLastUsed(id: number): Promise<void> {
@@ -106,15 +71,13 @@ class TOTPStorage {
   }
 
   async delete(id: number): Promise<void> {
-    await this.init();
-    const store = this.getStore('readwrite');
-    await wrapRequest(store.delete(id));
+    const db = await this.dbPromise;
+    await db.delete(STORE_NAME, id);
   }
 
   async count(): Promise<number> {
-    await this.init();
-    const store = this.getStore('readonly');
-    return wrapRequest(store.count());
+    const db = await this.dbPromise;
+    return db.count(STORE_NAME);
   }
 
   async exportAll(): Promise<TOTPExport> {
