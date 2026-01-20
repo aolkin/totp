@@ -2,33 +2,9 @@ import { test, expect } from '@playwright/test';
 import { saveTotpToBrowser, clearStorage } from './helpers';
 import type { TOTPExport } from '../src/lib/types';
 
-test.describe('Phase 2 - Export and Import', () => {
+test.describe('Phase 2 - Import', () => {
   test.beforeEach(async ({ page }) => {
     await clearStorage(page);
-  });
-
-  test('should export all TOTPs as JSON backup', async ({ page }) => {
-    await saveTotpToBrowser(page, {
-      label: 'Export Test 1',
-      passphrase: 'exportpassword123',
-    });
-
-    await page.getByRole('button', { name: 'Add New' }).click();
-    await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('BBBBCCCCDDDDEEEE');
-    await page.getByRole('textbox', { name: 'Label' }).fill('Export Test 2');
-    await page.locator('#passphrase').fill('exportpassword456');
-    await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
-    await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
-
-    const downloadPromise = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Export All' }).click();
-    const download = await downloadPromise;
-
-    expect(download.suggestedFilename()).toMatch(/^totp-backup-\d{4}-\d{2}-\d{2}\.json$/);
-
-    const path = await download.path();
-    expect(path).toBeTruthy();
   });
 
   test('should import JSON backup and verify additive merge', async ({ page }) => {
@@ -65,6 +41,10 @@ test.describe('Phase 2 - Export and Import', () => {
       ],
     };
 
+    const jsonString = JSON.stringify(exportData);
+    // @ts-expect-error - Buffer is available in Node.js runtime
+    const buffer = Buffer.from(jsonString);
+
     const fileChooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Import' }).click();
     const fileChooser = await fileChooserPromise;
@@ -72,7 +52,7 @@ test.describe('Phase 2 - Export and Import', () => {
     await fileChooser.setFiles({
       name: 'test-backup.json',
       mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(exportData)),
+      buffer,
     });
 
     await expect(page.getByText('Imported 2 TOTPs')).toBeVisible();

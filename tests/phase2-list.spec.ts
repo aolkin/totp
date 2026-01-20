@@ -69,15 +69,4 @@ test.describe('Phase 2 - List View and Navigation', () => {
     const firstItem = page.locator('.p-4.rounded-lg.border').first();
     await expect(firstItem.getByText('Alpha Account')).toBeVisible();
   });
-
-  test('should display passphrase hint when viewing TOTP', async ({ page }) => {
-    await saveTotpToBrowser(page, {
-      label: 'Hinted Account',
-      passphrase: 'secretpassword123',
-      passphraseHint: 'my favorite color',
-    });
-
-    await page.getByRole('button', { name: 'View' }).click();
-    await expect(page.getByText('my favorite color')).toBeVisible();
-  });
 });

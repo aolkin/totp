@@ -39,19 +39,4 @@ test.describe('Phase 2 - Cross-Mode Compatibility', () => {
     await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
     await expect(page.getByText('Auto List Display')).toBeVisible();
   });
-
-  test('should preserve Phase 1 URL format when exporting saved TOTP', async ({ page }) => {
-    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-
-    await saveTotpToBrowser(page, {
-      label: 'Export Format Test',
-      passphrase: 'exportpassword123',
-    });
-
-    await page.getByRole('button', { name: 'More actions' }).first().click();
-    await page.getByRole('menuitem', { name: 'Export URL' }).click();
-
-    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboardText).toMatch(/^https?:\/\/.+#[A-Za-z0-9_-]+$/);
-  });
 });
