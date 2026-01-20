@@ -31,7 +31,12 @@ test.describe('Phase 2 - Export and Import', () => {
     expect(path).toBeTruthy();
   });
 
-  test('should import JSON backup and restore TOTPs', async ({ page }) => {
+  test('should import JSON backup and verify additive merge', async ({ page }) => {
+    await saveTotpToBrowser(page, {
+      label: 'Existing TOTP',
+      passphrase: 'existingpass123',
+    });
+
     const exportData: TOTPExport = {
       version: 1,
       exported: Date.now(),
@@ -60,12 +65,6 @@ test.describe('Phase 2 - Export and Import', () => {
       ],
     };
 
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.setItem('offline_banner_dismissed', 'true');
-    });
-    await page.reload();
-
     const fileChooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Import' }).click();
     const fileChooser = await fileChooserPromise;
@@ -77,45 +76,9 @@ test.describe('Phase 2 - Export and Import', () => {
     });
 
     await expect(page.getByText('Imported 2 TOTPs')).toBeVisible();
+    await expect(page.getByText('Existing TOTP')).toBeVisible();
     await expect(page.getByText('Imported TOTP 1')).toBeVisible();
     await expect(page.getByText('Imported TOTP 2')).toBeVisible();
     await expect(page.getByText('Has hint')).toBeVisible();
-  });
-
-  test('should add imported TOTPs to existing ones', async ({ page }) => {
-    await saveTotpToBrowser(page, {
-      label: 'Existing TOTP',
-      passphrase: 'existingpass123',
-    });
-
-    const exportData: TOTPExport = {
-      version: 1,
-      exported: Date.now(),
-      totps: [
-        {
-          label: 'New Imported TOTP',
-          created: Date.now(),
-          encrypted: {
-            salt: 'dGVzdHNhbHQxMjM0NTY3OA==',
-            iv: 'dGVzdGl2MTIzNDU2',
-            ciphertext:
-              'dGVzdGNpcGhlcnRleHQxMjM0NTY3ODkwYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkw',
-          },
-        },
-      ],
-    };
-
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Import' }).click();
-    const fileChooser = await fileChooserPromise;
-
-    await fileChooser.setFiles({
-      name: 'test-backup.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(exportData)),
-    });
-
-    await expect(page.getByText('Existing TOTP')).toBeVisible();
-    await expect(page.getByText('New Imported TOTP')).toBeVisible();
   });
 });

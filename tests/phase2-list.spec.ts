@@ -48,26 +48,6 @@ test.describe('Phase 2 - List View and Navigation', () => {
     await expect(page.getByText('Test Account')).toBeVisible();
   });
 
-  test('should view saved TOTP without passphrase', async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.setItem('offline_banner_dismissed', 'true');
-    });
-    await page.reload();
-    await page.getByRole('button', { name: 'Add New' }).click();
-
-    await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
-    await page.getByRole('textbox', { name: 'Label' }).fill('No Pass Account');
-    await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
-
-    await page.locator('#passphrase-hint').fill('no passphrase needed');
-    await page.locator('#passphrase').clear();
-
-    await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-
-    await expect(page.getByText('A passphrase is required when saving to browser')).toBeVisible();
-  });
-
   test('should sort TOTPs alphabetically', async ({ page }) => {
     await saveTotpToBrowser(page, {
       label: 'Zebra Account',

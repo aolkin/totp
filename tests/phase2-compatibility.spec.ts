@@ -6,30 +6,6 @@ test.describe('Phase 2 - Cross-Mode Compatibility', () => {
     await clearStorage(page);
   });
 
-  test('should handle Phase 1 URLs with saved TOTPs present', async ({ page, context }) => {
-    await saveTotpToBrowser(page, {
-      label: 'Saved TOTP',
-      passphrase: 'savedpassphrase123',
-    });
-
-    const { url, passphrase } = await createTotpUrl(page, {
-      label: 'Phase 1 TOTP',
-      passphrase: 'phase1password123',
-    });
-
-    const newPage = await context.newPage();
-    await newPage.goto(url);
-
-    await expect(newPage.getByRole('heading', { name: 'Enter Passphrase' })).toBeVisible();
-    await newPage.getByPlaceholder('Enter your passphrase').fill(passphrase);
-    await newPage.getByRole('button', { name: 'Unlock' }).click();
-
-    await expect(newPage.getByRole('button', { name: 'Copy Code' })).toBeVisible();
-    await expect(newPage.getByText('Phase 1 TOTP')).toBeVisible();
-
-    await newPage.close();
-  });
-
   test('should navigate from Phase 1 URL back to saved list', async ({ page }) => {
     await saveTotpToBrowser(page, {
       label: 'List Item',

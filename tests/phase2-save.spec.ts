@@ -16,7 +16,7 @@ test.describe('Phase 2 - Save to Browser', () => {
     await expect(page.getByText('Created')).toBeVisible();
   });
 
-  test('should require passphrase when saving to browser', async ({ page }) => {
+  test('should require passphrase and label when saving to browser', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => {
       localStorage.setItem('offline_banner_dismissed', 'true');
@@ -26,24 +26,14 @@ test.describe('Phase 2 - Save to Browser', () => {
 
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
     await page.getByRole('textbox', { name: 'Label' }).fill('Test Account');
-    await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
+    await page.locator('#passphrase').fill('');
     await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
 
     await expect(page.getByText('A passphrase is required when saving to browser')).toBeVisible();
-  });
 
-  test('should require label when saving to browser', async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.setItem('offline_banner_dismissed', 'true');
-    });
-    await page.reload();
-    await page.getByRole('button', { name: 'Add New' }).click();
-
-    await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
-    await page.getByRole('textbox', { name: 'Passphrase' }).fill('testpassword123');
-    await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
+    await page.locator('#passphrase').fill('testpassword123');
+    await page.getByRole('textbox', { name: 'Label' }).fill('');
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
 
     await expect(page.getByText('A label is required when saving to browser')).toBeVisible();
