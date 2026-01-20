@@ -14,10 +14,10 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "lint": "eslint . --cache",
+    "lint:fix": "eslint . --fix --cache",
+    "format": "prettier --write . --cache",
+    "format:check": "prettier --check . --cache",
     "prepare": "husky"
   },
   "author": "",
@@ -57,15 +57,16 @@
     "workbox-routing": "^7.4.0"
   },
   "dependencies": {
-    "otpauth": "^9.4.1"
+    "otpauth": "^9.4.1",
+    "qr-scanner": "^1.4.2"
   },
   "lint-staged": {
     "*.{js,ts,svelte}": [
-      "eslint --fix",
-      "prettier --write"
+      "eslint --fix --cache",
+      "prettier --write --cache"
     ],
     "*.{json,css,md}": [
-      "prettier --write"
+      "prettier --write --cache"
     ]
   }
 }

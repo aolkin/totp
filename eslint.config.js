@@ -16,6 +16,7 @@ export default tseslint.config(
       globals: {
         ...globals.browser,
         ...globals.es2020,
+        __COMMIT_HASH__: 'readonly',
       },
       parserOptions: {
         project: true,

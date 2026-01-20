@@ -1,7 +1,14 @@
 <script lang="ts">
   import { generatePassphrase, calculateStrength, getStrengthLabel } from '../lib/passphrase';
   import { encrypt, encodeToURL, isValidBase32, normalizeBase32 } from '../lib/crypto';
-  import { DEFAULT_DIGITS, DEFAULT_PERIOD, DEFAULT_ALGORITHM, type TOTPConfig } from '../lib/types';
+  import {
+    DEFAULT_DIGITS,
+    DEFAULT_PERIOD,
+    DEFAULT_ALGORITHM,
+    type TOTPConfig,
+    type Algorithm,
+  } from '../lib/types';
+  import type { OTPAuthData } from '../lib/otpauth';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
@@ -19,6 +26,7 @@
   }
 
   const { onSaved, onBack, showBackButton = false }: Props = $props();
+  import QrScanner from './QrScanner.svelte';
 
   let secret = $state('');
   let label = $state('');
@@ -27,15 +35,31 @@
   let showAdvanced = $state(false);
   let digits = $state(DEFAULT_DIGITS);
   let period = $state(DEFAULT_PERIOD);
-  let algorithm = $state<'SHA1' | 'SHA256' | 'SHA512'>(DEFAULT_ALGORITHM);
   let saveToBrowser = $state(false);
   let passphraseHint = $state('');
+  let algorithm = $state<Algorithm>(DEFAULT_ALGORITHM);
+  let showScanner = $state(false);
 
   let generatedURL = $state('');
   let savedPassphrase = $state('');
   let wasSavedToBrowser = $state(false);
   let error = $state('');
   let showResult = $state(false);
+
+  function handleScan(data: OTPAuthData): void {
+    secret = data.secret;
+    label = data.label || data.issuer || '';
+    digits = data.digits;
+    period = data.period;
+    algorithm = data.algorithm;
+    if (
+      data.digits !== DEFAULT_DIGITS ||
+      data.period !== DEFAULT_PERIOD ||
+      data.algorithm !== DEFAULT_ALGORITHM
+    ) {
+      showAdvanced = true;
+    }
+  }
 
   function regeneratePassphrase() {
     passphrase = generatePassphrase();
@@ -214,16 +238,26 @@
       >
         <div class="space-y-2">
           <Label for="secret">TOTP Secret *</Label>
-          <Input
-            type="text"
-            id="secret"
-            bind:value={secret}
-            placeholder="AAAA BBBB CCCC DDDD"
-            class="font-mono tracking-wider"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <p class="text-sm text-muted-foreground">Enter the secret key provided by the service</p>
+          <div class="flex gap-2">
+            <Input
+              type="text"
+              id="secret"
+              bind:value={secret}
+              placeholder="AAAA BBBB CCCC DDDD"
+              class="font-mono tracking-wider flex-1"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <Button
+              type="button"
+              onclick={() => (showScanner = true)}
+              variant="outline"
+              data-testid="scan-qr-button"
+            >
+              Scan QR
+            </Button>
+          </div>
+          <p class="text-sm text-muted-foreground">Enter the secret key or scan a QR code</p>
         </div>
 
         <div class="space-y-2">
@@ -343,3 +377,5 @@
     </CardContent>
   </Card>
 {/if}
+
+<QrScanner bind:open={showScanner} onScan={handleScan} onClose={() => (showScanner = false)} />

@@ -11,22 +11,12 @@
 
   onMount(() => {
     const dismissed = localStorage.getItem('offline_banner_dismissed');
-    if (dismissed) return;
+    if (!dismissed) {
+      visible = true;
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener(
-        'message',
-        (event: MessageEvent<{ type?: string }>) => {
-          if (event.data.type === 'SW_ACTIVATED') {
-            visible = true;
-            localStorage.setItem('cache_last_update', new Date().toISOString());
-
-            autoHideTimeout = setTimeout(() => {
-              handleDismiss();
-            }, 10000);
-          }
-        },
-      );
+      autoHideTimeout = setTimeout(() => {
+        handleDismiss();
+      }, 10000);
     }
 
     const beforeInstallHandler = (e: Event) => {
@@ -68,24 +58,23 @@
 
 {#if visible}
   <div class="fixed top-0 left-0 right-0 z-50 p-4">
-    <Card class="mx-auto max-w-2xl border-green-500 bg-green-50">
+    <Card class="mx-auto max-w-2xl border-blue-500 bg-blue-50">
       <CardContent class="p-6">
         <div class="flex items-start gap-4">
-          <div class="shrink-0 text-2xl">✓</div>
+          <div class="shrink-0 text-2xl">📱</div>
           <div class="flex-1">
-            <h2 class="text-lg font-semibold text-green-900 mb-2">App Ready for Offline Use</h2>
-            <p class="text-sm text-green-800 mb-4">
-              This app now works without internet connection. Your TOTPs are always available, even
-              offline.
+            <h2 class="text-lg font-semibold text-blue-900 mb-2">Install for Best Experience</h2>
+            <p class="text-sm text-blue-800 mb-4">
+              Add this app to your home screen for quick access and offline use.
             </p>
             <div class="flex gap-2 flex-wrap">
-              <Button onclick={handleDismiss} variant="outline" size="sm">Got It</Button>
-              <Button onclick={handleInstall} size="sm">Install for Best Experience</Button>
+              <Button onclick={handleInstall} size="sm">Install Now</Button>
+              <Button onclick={handleDismiss} variant="outline" size="sm">Maybe Later</Button>
             </div>
           </div>
           <button
             onclick={handleDismiss}
-            class="shrink-0 text-green-700 hover:text-green-900"
+            class="shrink-0 text-blue-700 hover:text-blue-900"
             aria-label="Close"
           >
             ✕

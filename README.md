@@ -7,6 +7,7 @@ A fully client-side browser-based TOTP generator
 - 🔒 Client-side encryption (AES-256-GCM)
 - 🔑 Stateless architecture (secrets in URL)
 - 💾 Optional browser storage (IndexedDB) for saved TOTPs
+- 📷 QR code scanning for easy TOTP setup
 - 📱 Progressive Web App with offline support
 - 🌐 Works without internet after first load
 - 🎨 Modern UI with Tailwind CSS and shadcn-svelte
