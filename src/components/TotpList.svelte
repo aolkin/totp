@@ -185,7 +185,13 @@
   </CardHeader>
   <CardContent class="space-y-4">
     <div class="flex gap-2 flex-col sm:flex-row">
-      <Input type="text" placeholder="Search..." bind:value={searchQuery} class="flex-1" />
+      <Input
+        type="text"
+        placeholder="Search..."
+        aria-label="Search TOTPs"
+        bind:value={searchQuery}
+        class="flex-1"
+      />
       <div class="flex gap-2">
         <Select type="single" value={sortOption} onValueChange={handleSortChange}>
           <SelectTrigger class="w-[140px]">
