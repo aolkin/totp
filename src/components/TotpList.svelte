@@ -253,7 +253,7 @@
                 >
                 <DropdownMenu>
                   <DropdownMenuTrigger>
-                    <Button variant="ghost" size="sm">⋮</Button>
+                    <Button variant="ghost" size="sm" aria-label="More actions">⋮</Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onclick={() => handleExportUrl(record)}>

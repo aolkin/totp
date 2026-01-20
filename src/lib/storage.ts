@@ -1,4 +1,5 @@
 import type { TOTPRecord, EncryptedData, TOTPExport } from './types';
+import { uint8ArrayToBase64, base64ToUint8Array } from './crypto';
 
 const DB_NAME = 'totp-storage';
 const DB_VERSION = 1;
@@ -154,23 +155,6 @@ class TOTPStorage {
 
     return imported;
   }
-}
-
-function uint8ArrayToBase64(arr: Uint8Array): string {
-  let binary = '';
-  for (const byte of arr) {
-    binary += String.fromCharCode(byte);
-  }
-  return btoa(binary);
-}
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
 }
 
 export const totpStorage = new TOTPStorage();
