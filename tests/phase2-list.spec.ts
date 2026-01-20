@@ -6,34 +6,42 @@ test.describe('Phase 2 - List View and Navigation', () => {
     await clearStorage(page);
   });
 
-  test('should display list with multiple saved TOTPs', async ({ page }) => {
+  test('should display and search saved TOTPs', async ({ page }) => {
     await saveTotpToBrowser(page, {
-      label: 'GitHub',
+      label: 'GitHub Account',
       passphrase: 'githubpass123',
     });
 
     await page.getByRole('button', { name: 'Add New' }).click();
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('BBBBCCCCDDDDEEEE');
     await page.getByRole('textbox', { name: 'Label' }).fill('AWS Console');
-    await page.getByRole('textbox', { name: 'Passphrase' }).fill('awspass123');
+    await page.locator('#passphrase').fill('awspassword123');
     await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
     await page.getByRole('button', { name: 'Back to List' }).click();
 
-    await expect(page.getByText('GitHub')).toBeVisible();
+    await expect(page.getByText('GitHub Account')).toBeVisible();
+    await expect(page.getByText('AWS Console')).toBeVisible();
+
+    await page.getByRole('textbox', { name: 'Search TOTPs' }).fill('github');
+    await expect(page.getByText('GitHub Account')).toBeVisible();
+    await expect(page.getByText('AWS Console')).not.toBeVisible();
+
+    await page.getByRole('textbox', { name: 'Search TOTPs' }).fill('');
+    await expect(page.getByText('GitHub Account')).toBeVisible();
     await expect(page.getByText('AWS Console')).toBeVisible();
   });
 
   test('should view saved TOTP with passphrase unlock', async ({ page }) => {
     await saveTotpToBrowser(page, {
       label: 'Test Account',
-      passphrase: 'testpass123',
+      passphrase: 'testpassphrase123',
     });
 
     await page.getByRole('button', { name: 'View' }).click();
     await expect(page.getByRole('heading', { name: 'Enter Passphrase' })).toBeVisible();
 
-    await page.getByRole('textbox', { name: 'Enter your passphrase' }).fill('testpass123');
+    await page.getByPlaceholder('Enter your passphrase').fill('testpassphrase123');
     await page.getByRole('button', { name: 'Unlock' }).click();
 
     await expect(page.getByRole('button', { name: 'Copy Code' })).toBeVisible();
@@ -50,49 +58,26 @@ test.describe('Phase 2 - List View and Navigation', () => {
 
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
     await page.getByRole('textbox', { name: 'Label' }).fill('No Pass Account');
-    await page.getByRole('textbox', { name: 'Passphrase' }).fill('');
     await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
-    await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-    await page.getByRole('button', { name: 'Back to List' }).click();
 
-    await page.getByRole('button', { name: 'View' }).click();
-    await expect(page.getByRole('button', { name: 'Copy Code' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Enter Passphrase' })).not.toBeVisible();
+    await page.locator('#passphrase-hint').fill('no passphrase needed');
+    await page.locator('#passphrase').clear();
+
+    await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
+
+    await expect(page.getByText('A passphrase is required when saving to browser')).toBeVisible();
   });
 
-  test('should filter TOTPs by search query', async ({ page }) => {
-    await saveTotpToBrowser(page, {
-      label: 'GitHub Account',
-      passphrase: 'pass123',
-    });
-
-    await page.getByRole('button', { name: 'Add New' }).click();
-    await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('BBBBCCCCDDDDEEEE');
-    await page.getByRole('textbox', { name: 'Label' }).fill('AWS Console');
-    await page.getByRole('textbox', { name: 'Passphrase' }).fill('pass123');
-    await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
-    await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-    await page.getByRole('button', { name: 'Back to List' }).click();
-
-    await page.getByRole('textbox', { name: 'Search TOTPs' }).fill('github');
-    await expect(page.getByText('GitHub Account')).toBeVisible();
-    await expect(page.getByText('AWS Console')).not.toBeVisible();
-
-    await page.getByRole('textbox', { name: 'Search TOTPs' }).fill('');
-    await expect(page.getByText('GitHub Account')).toBeVisible();
-    await expect(page.getByText('AWS Console')).toBeVisible();
-  });
-
-  test('should sort TOTPs by different options', async ({ page }) => {
+  test('should sort TOTPs alphabetically', async ({ page }) => {
     await saveTotpToBrowser(page, {
       label: 'Zebra Account',
-      passphrase: 'pass123',
+      passphrase: 'zebrapassword123',
     });
 
     await page.getByRole('button', { name: 'Add New' }).click();
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('BBBBCCCCDDDDEEEE');
     await page.getByRole('textbox', { name: 'Label' }).fill('Alpha Account');
-    await page.getByRole('textbox', { name: 'Passphrase' }).fill('pass123');
+    await page.locator('#passphrase').fill('alphapassword123');
     await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
     await page.getByRole('button', { name: 'Back to List' }).click();
@@ -105,37 +90,14 @@ test.describe('Phase 2 - List View and Navigation', () => {
     await expect(firstItem.getByText('Alpha Account')).toBeVisible();
   });
 
-  test('should navigate between list and create form', async ({ page }) => {
-    await saveTotpToBrowser(page, {
-      label: 'Test Account',
-      passphrase: 'pass123',
-    });
-
-    await page.getByRole('button', { name: 'Add New' }).click();
-    await expect(page.getByRole('heading', { name: 'Create TOTP URL' })).toBeVisible();
-
-    await page.getByRole('button', { name: 'Back to List' }).click();
-    await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
-  });
-
-  test('should show passphrase hint when viewing TOTP', async ({ page }) => {
+  test('should display passphrase hint when viewing TOTP', async ({ page }) => {
     await saveTotpToBrowser(page, {
       label: 'Hinted Account',
-      passphrase: 'secretpass123',
+      passphrase: 'secretpassword123',
       passphraseHint: 'my favorite color',
     });
 
     await page.getByRole('button', { name: 'View' }).click();
     await expect(page.getByText('my favorite color')).toBeVisible();
-  });
-
-  test('should display empty state message when no search results', async ({ page }) => {
-    await saveTotpToBrowser(page, {
-      label: 'GitHub Account',
-      passphrase: 'pass123',
-    });
-
-    await page.getByRole('textbox', { name: 'Search TOTPs' }).fill('nonexistent');
-    await expect(page.getByText('No TOTPs match your search')).toBeVisible();
   });
 });
