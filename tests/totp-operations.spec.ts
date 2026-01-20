@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { saveTotpToBrowser, clearStorage } from './helpers';
 import type { TOTPExport } from '../src/lib/types';
 
-test.describe('Phase 2 - TOTP Operations', () => {
+test.describe('TOTP Operations', () => {
   test.beforeEach(async ({ page }) => {
     await clearStorage(page);
   });

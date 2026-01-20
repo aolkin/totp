@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { saveTotpToBrowser, clearStorage } from './helpers';
 
-test.describe('Phase 2 - Save to Browser', () => {
+test.describe('Browser Storage', () => {
   test.beforeEach(async ({ page }) => {
     await clearStorage(page);
   });
@@ -50,7 +50,7 @@ test.describe('Phase 2 - Save to Browser', () => {
     await expect(page.getByText('Has hint')).toBeVisible();
   });
 
-  test('should allow creating without saving (Phase 1 behavior)', async ({ page }) => {
+  test('should allow creating without saving', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => {
       localStorage.setItem('offline_banner_dismissed', 'true');
