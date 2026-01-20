@@ -1,14 +1,14 @@
-# Phase 4: Account System for Passphrase Management
+# Phase 4a: Account Management System
 
 ## Status: Not Started
 
 ## Overview
 
-Add an optional account system that extends Phase 2's browser storage by allowing users to save TOTP passphrases encrypted with account-specific keys. This eliminates the need to re-enter passphrases for frequently-used TOTPs while maintaining strong security through account-level encryption.
+Add an account management system that provides the infrastructure for secure passphrase storage (to be used in Phase 4b). This phase focuses solely on creating, managing, and securing user accounts with password-protected encryption keys.
 
-**Key Principle:** Accounts are a convenience feature for managing passphrases, not a replacement for the stateless URL architecture. Phase 1 stateless mode and Phase 2 storage-without-accounts remain fully supported.
+**Key Principle:** Build the account foundation without TOTP integration. Accounts will be ready to encrypt passphrases in Phase 4b.
 
-**Security Model:** Each account encrypts passphrases with a key derived from its password. Accounts unlock in-memory only, never persisting unlocked state to disk.
+**Security Model:** Each account has a randomly-generated Data Encryption Key (DEK) wrapped by a password-derived Key Encryption Key (KEK). Accounts unlock in-memory only, never persisting unlocked state to disk.
 
 ## Architecture Changes
 
@@ -17,8 +17,8 @@ Add an optional account system that extends Phase 2's browser storage by allowin
 **IndexedDB Schema (New Object Store):**
 
 ```typescript
-Database: "totp-storage" (existing)
-Version: 2 (upgrade from Phase 2)
+Database: "totp-storage" (existing from Phase 2)
+Version: 3 (upgrade from Phase 2's version 2)
 
 Object Store: "accounts"
 Key Path: "id" (auto-increment)
@@ -38,43 +38,9 @@ interface Account {
   };
   autoLockMinutes: number; // Per-account auto-lock timeout (0 = never)
 }
-
-Object Store: "encrypted_passphrases"
-Key Path: "id" (auto-increment)
-Indexes: ["accountId", "totpId"]
-
-interface EncryptedPassphrase {
-  id: number;
-  accountId: number; // Foreign key to accounts
-  totpId: number; // Foreign key to TOTPRecord from Phase 2
-  encrypted: {
-    iv: Uint8Array;
-    ciphertext: Uint8Array;
-    tag: Uint8Array;
-  };
-  created: number; // timestamp
-}
 ```
 
-**Phase 2 Schema Update:**
-
-```typescript
-// Extend TOTPRecord from Phase 2
-interface TOTPRecord {
-  id: number;
-  label: string;
-  created: number;
-  lastUsed: number;
-  encrypted: {
-    salt: Uint8Array;
-    iv: Uint8Array;
-    ciphertext: Uint8Array;
-    tag: Uint8Array;
-  };
-  passphraseHint?: string;
-  savedWithAccount?: number; // NEW: optional account ID reference
-}
-```
+**Note:** The `encrypted_passphrases` object store will be added in Phase 4b.
 
 ### In-Memory Session Management
 
@@ -110,13 +76,11 @@ const unlockedAccounts = $state<Map<number, UnlockedAccount>>(new Map());
 │  Accounts                      [+ New]  │
 ├─────────────────────────────────────────┤
 │  👤 alice@work                          │
-│     Unlocked • 3 TOTPs saved            │
-│     Auto-lock: 15 minutes               │
+│     Unlocked • Auto-lock: 15 minutes    │
 │     [Lock] [Edit] [Delete Account]      │
 ├─────────────────────────────────────────┤
 │  👤 bob@personal                        │
-│     🔒 Locked • 5 TOTPs saved           │
-│     Auto-lock: Never                    │
+│     🔒 Locked • Auto-lock: Never        │
 │     [Unlock] [Edit] [Delete Account]    │
 └─────────────────────────────────────────┘
 ```
@@ -210,69 +174,26 @@ const unlockedAccounts = $state<Map<number, UnlockedAccount>>(new Map());
   2. Current password verification
   3. New password minimum 8 characters
   4. Confirmation must match
-- On password change: Re-wrap DEK with new password-derived KEK (no TOTP passphrase re-encryption needed)
+- On password change: Re-wrap DEK with new password-derived KEK
 
-### Enhanced Create/Save Flow
+### Settings Integration
 
-**Phase 2 Behavior (Before Phase 4):**
-
-```
-[✓] Save to this browser
-```
-
-**Phase 4 Behavior (After Implementation):**
-
-```
-Save options:
-( ) Don't save
-( ) Save TOTP to browser (passphrase required each time)
-( ) Save TOTP and passphrase to account: [dropdown ▼]
-    └─ Options:
-       - alice@work (unlocked)
-       - bob@personal (locked - click to unlock)
-       - [+ Create new account...]
-```
-
-**Logic:**
-1. If user selects "Don't save": Phase 1 stateless URL only
-2. If "Save TOTP to browser": Phase 2 behavior (passphrase not saved)
-3. If "Save TOTP and passphrase to account":
-   - If account is locked, prompt to unlock first
-   - Save both TOTP (to `secrets` store) and encrypted passphrase (to `encrypted_passphrases` store)
-   - Set `savedWithAccount` field on TOTPRecord
-
-### Enhanced List View
-
-**Phase 2 List Item:**
+**New Settings Section:**
 
 ```
 ┌─────────────────────────────────────────┐
-│  GitHub - work@example.com              │
-│  Created: 2 days ago                    │
-│  [View] [Export URL] [Delete]           │
+│  Settings                          [×]  │
+├─────────────────────────────────────────┤
+│  Accounts                               │
+│  • Manage accounts and auto-lock        │
+│    [Manage Accounts]                    │
+│                                         │
+│  Security                               │
+│  [Lock All Accounts Now]                │
 └─────────────────────────────────────────┘
 ```
 
-**Phase 4 List Item (with account):**
-
-```
-┌─────────────────────────────────────────┐
-│  GitHub - work@example.com              │
-│  Created: 2 days ago                    │
-│  👤 alice@work                          │
-│  [View] [Export URL] [Delete]           │
-└─────────────────────────────────────────┘
-```
-
-**Click "View" Behavior:**
-
-**Without Account (Phase 2):**
-- Always prompt for passphrase
-
-**With Account (Phase 4):**
-- If account is unlocked: Automatically decrypt and show TOTP (no prompt)
-- If account is locked: Show unlock dialog, then show TOTP
-- Update `lastActivity` timestamp for auto-lock
+**Note:** Auto-lock settings are configured per-account, not globally. Each account has its own timeout setting that can be adjusted in the Edit Account dialog.
 
 ### Auto-Lock Mechanism
 
@@ -298,27 +219,26 @@ setInterval(() => {
 ```
 
 **Activity Events (reset lastActivity):**
-- Viewing a TOTP with account passphrase
-- Saving a new TOTP to the account
 - Unlocking the account
 - Any user interaction with account-related UI
+- (Phase 4b will add: viewing TOTP, saving TOTP)
 
 ## Encryption & Key Derivation
 
 ### Two-Step Encryption Architecture (Key Wrapping)
 
-This system uses a **key wrapping pattern** to enable efficient password changes without re-encrypting all TOTP passphrases.
+This system uses a **key wrapping pattern** to enable efficient password changes without re-encrypting data (passphrases in Phase 4b).
 
 **Key Hierarchy:**
 
 1. **Password** (user-provided) → derives KEK (Key Encryption Key)
 2. **KEK** (password-derived) → wraps/unwraps DEK (Data Encryption Key)
-3. **DEK** (randomly generated) → encrypts/decrypts TOTP passphrases
+3. **DEK** (randomly generated) → will encrypt/decrypt TOTP passphrases in Phase 4b
 
 **Benefits:**
 - Password change: Only re-wrap DEK (O(1) operation)
 - Without key wrapping: Must re-encrypt all passphrases (O(n) operation)
-- DEK never changes, so encrypted passphrases remain valid
+- DEK never changes, so encrypted data remains valid
 
 ### Account Creation Flow
 
@@ -368,6 +288,9 @@ async function createAccount(username: string, password: string, autoLockMinutes
   };
 
   await db.add('accounts', account);
+
+  // Step 7: Automatically unlock account
+  await unlockAccount(account.id, password);
 }
 ```
 
@@ -443,7 +366,7 @@ async function unlockAccount(accountId: number, password: string): Promise<void>
 
 ### Password Change Flow
 
-**Re-wrap DEK with New Password (No Passphrase Re-encryption)**
+**Re-wrap DEK with New Password (No Data Re-encryption)**
 
 ```typescript
 async function changeAccountPassword(
@@ -508,88 +431,9 @@ async function changeAccountPassword(
     }
   });
 
-  // All encrypted passphrases remain valid (DEK unchanged)!
+  // All encrypted data remains valid (DEK unchanged)!
 }
 ```
-
-### Passphrase Encryption (Using DEK)
-
-**Saving a passphrase to an account:**
-
-```typescript
-async function savePassphraseToAccount(
-  accountId: number,
-  totpId: number,
-  passphrase: string
-): Promise<void> {
-  const account = unlockedAccounts.get(accountId);
-  if (!account) {
-    throw new Error('Account must be unlocked first');
-  }
-
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encoded = new TextEncoder().encode(passphrase);
-
-  // Encrypt passphrase with DEK (not KEK!)
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv, tagLength: 128 },
-    account.dataEncryptionKey, // DEK
-    encoded
-  );
-
-  // Store in encrypted_passphrases object store
-  await db.add('encrypted_passphrases', {
-    accountId,
-    totpId,
-    encrypted: {
-      iv,
-      ciphertext: new Uint8Array(ciphertext.slice(0, -16)),
-      tag: new Uint8Array(ciphertext.slice(-16))
-    },
-    created: Date.now()
-  });
-}
-```
-
-**Retrieving a passphrase:**
-
-```typescript
-async function getPassphraseFromAccount(
-  accountId: number,
-  totpId: number
-): Promise<string | undefined> {
-  const account = unlockedAccounts.get(accountId);
-  if (!account) {
-    return undefined; // Account locked
-  }
-
-  const record = await db.getByIndex(
-    'encrypted_passphrases',
-    'accountId_totpId',
-    [accountId, totpId]
-  );
-
-  if (!record) return undefined;
-
-  const { iv, ciphertext, tag } = record.encrypted;
-  const combined = new Uint8Array([...ciphertext, ...tag]);
-
-  // Decrypt passphrase with DEK
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv, tagLength: 128 },
-    account.dataEncryptionKey, // DEK
-    combined
-  );
-
-  return new TextDecoder().decode(decrypted);
-}
-```
-
-**Why This Works:**
-- DEK never changes, so all encrypted passphrases remain valid
-- Password change only affects the wrapper around DEK
-- No need to decrypt and re-encrypt N passphrases
-- Efficient O(1) password change regardless of number of TOTPs
 
 ## Features
 
@@ -615,7 +459,7 @@ async function getPassphraseFromAccount(
 **Lock Account:**
 1. Remove from unlockedAccounts map
 2. DEK is garbage collected from memory
-3. User must unlock again to access saved passphrases
+3. User must unlock again to use account features
 
 **Change Password:**
 1. Verify current password
@@ -623,18 +467,17 @@ async function getPassphraseFromAccount(
 3. Derive new KEK from new password
 4. Re-wrap DEK with new KEK
 5. Update Account record with new password hash and wrapped DEK
-6. All encrypted passphrases remain valid (DEK unchanged)
+6. All encrypted data remains valid (DEK unchanged)
 
 **Update Auto-Lock Setting:**
 1. Update `autoLockMinutes` field in Account record
 2. If account is unlocked, update in-memory UnlockedAccount as well
 
 **Delete Account:**
-1. Show confirmation warning: "This will delete X saved passphrases. TOTPs will remain but require manual passphrase entry."
-2. Delete Account record
-3. Delete all EncryptedPassphrase records with matching accountId
-4. Update all TOTPRecords: clear `savedWithAccount` field
-5. Remove from unlockedAccounts if unlocked
+1. Show confirmation warning: "Are you sure? This action is permanent."
+2. Delete Account record from IndexedDB
+3. Remove from unlockedAccounts if unlocked
+4. (Phase 4b will add: delete associated passphrases, update TOTP records)
 
 ### Account Selection Indicators
 
@@ -644,32 +487,13 @@ async function getPassphraseFromAccount(
 - 🔒 **Locked**: Gray indicator, "Click to unlock" affordance
 - ⏰ **Auto-lock timer**: Show countdown in account list ("Auto-locks in 5m")
 
-### Settings Integration
-
-**New Settings Section:**
-
-```
-┌─────────────────────────────────────────┐
-│  Settings                          [×]  │
-├─────────────────────────────────────────┤
-│  Accounts                               │
-│  • Manage accounts and auto-lock        │
-│    [Manage Accounts]                    │
-│                                         │
-│  Security                               │
-│  [Lock All Accounts Now]                │
-└─────────────────────────────────────────┘
-```
-
-**Note:** Auto-lock settings are configured per-account, not globally. Each account has its own timeout setting that can be adjusted in the Edit Account dialog.
-
 ## Security Considerations
 
 ### Threat Model
 
 **What accounts protect against:**
-- ✅ Casual passphrase theft (someone quickly checking browser storage)
-- ✅ Convenience without storing passphrases in plaintext
+- ✅ Casual theft (someone quickly checking browser storage)
+- ✅ Convenience without storing encryption keys in plaintext
 - ✅ Auto-lock provides time-limited exposure
 
 **What accounts do NOT protect against:**
@@ -699,31 +523,24 @@ async function getPassphraseFromAccount(
 
 **No Password Recovery:**
 - Forgotten account password = permanent loss of access
-- Passphrases cannot be decrypted without the account password
-- TOTPs remain accessible but require manual passphrase entry
+- Encryption keys cannot be recovered without the account password
+- Future encrypted data (Phase 4b) will be inaccessible
 
 **Export Options:**
 - Accounts are NOT exportable (no way to export encryption keys)
-- TOTPs can still be exported as URLs (Phase 2 feature)
-- If user loses account access, they must manually re-enter passphrases
+- (Phase 4b will handle TOTP export separately)
 
 ## Migration & Compatibility
 
-### Phase 1 Compatibility
+### Phase 1 & 2 Compatibility
 - Stateless URLs continue to work identically
-- No changes to URL fragment format
-
-### Phase 2 Compatibility
-- Existing Phase 2 saved TOTPs work unchanged
-- Can retroactively add passphrase to account:
-  1. View TOTP → Enter passphrase manually
-  2. Click "Save passphrase to account" button
-  3. Select account → Passphrase encrypted and saved
+- Phase 2 browser storage works unchanged
+- Accounts are purely additive
 
 ### Upgrade Path
-- Phase 4 is purely additive
 - IndexedDB schema upgrade from version 2 to 3
-- No data migration needed for existing TOTPs
+- Only adds `accounts` object store
+- No data migration needed
 
 ## Testing Requirements
 
@@ -749,14 +566,6 @@ Use **Vitest** for unit tests and **Playwright** for E2E tests.
 - Multiple accounts unlocked simultaneously
 - Verify encryption key removed from memory on lock
 
-### tests/passphrase-storage.spec.ts
-
-- Save TOTP with passphrase to account
-- Retrieve passphrase from unlocked account
-- Cannot retrieve passphrase from locked account
-- Delete account removes all associated passphrases
-- Passphrase encryption/decryption round-trip
-
 ### tests/auto-lock.spec.ts
 
 - Configure auto-lock timeout per account
@@ -771,7 +580,6 @@ Use **Vitest** for unit tests and **Playwright** for E2E tests.
 - Change password with correct current password
 - Reject incorrect current password
 - Verify DEK re-wrapped with new KEK
-- All passphrases remain decryptable after password change
 - Can unlock with new password after change
 - Cannot unlock with old password after change
 - Password change updates account record in IndexedDB
@@ -785,32 +593,30 @@ Use **Vitest** for unit tests and **Playwright** for E2E tests.
 - Settings update reflected in UI immediately
 - Multiple accounts have independent settings
 
-### tests/ui-account-flow.spec.ts
+### tests/ui-account-management.spec.ts
 
-- View TOTP with account passphrase (auto-decrypt)
-- View TOTP without account (prompt for passphrase)
-- Create TOTP with "save to account" option
-- Delete account affects TOTP display (shows account deleted)
-- Lock all accounts button works
+- Account management dialog opens and displays accounts
+- Lock/unlock buttons work correctly
 - Edit account settings dialog opens and saves changes
 - Password change through Edit dialog works correctly
 - Auto-lock setting update through Edit dialog works
 - Account list shows correct auto-lock settings
+- "Lock All Accounts Now" button works
 
 ### tests/account-indexeddb.spec.ts
 
 - Account CRUD operations
-- EncryptedPassphrase CRUD operations
 - IndexedDB indexes work correctly
 - Schema migration from version 2 to 3
 - Quota handling for account data
+- Username uniqueness constraint enforced
 
 ## Implementation Notes
 
 ### Database Migration
 
 ```typescript
-// Upgrade from Phase 2 (version 2) to Phase 4 (version 3)
+// Upgrade from Phase 2 (version 2) to Phase 4a (version 3)
 const request = indexedDB.open('totp-storage', 3);
 
 request.onupgradeneeded = (event) => {
@@ -824,15 +630,6 @@ request.onupgradeneeded = (event) => {
       autoIncrement: true
     });
     accountsStore.createIndex('username', 'username', { unique: true });
-
-    // Create encrypted_passphrases object store
-    const passphrasesStore = db.createObjectStore('encrypted_passphrases', {
-      keyPath: 'id',
-      autoIncrement: true
-    });
-    passphrasesStore.createIndex('accountId', 'accountId', { unique: false });
-    passphrasesStore.createIndex('totpId', 'totpId', { unique: false });
-    passphrasesStore.createIndex('accountId_totpId', ['accountId', 'totpId'], { unique: true });
   }
 };
 ```
@@ -884,32 +681,24 @@ $effect(() => {
 - Password incorrect → Show inline error, allow retry
 - Database error → Graceful fallback, suggest browser refresh
 
-**Passphrase Operations:**
-- Cannot decrypt → Account may be locked, prompt to unlock
-- Passphrase not found → Fall back to manual entry
-- Encryption error → Show error, allow manual passphrase entry
-
 ## Success Criteria
 
-Phase 4 is complete when:
+Phase 4a is complete when:
 
 - [ ] Can create accounts with username, password, and auto-lock setting
 - [ ] DEK generation and wrapping with KEK implemented correctly
 - [ ] Can unlock and lock accounts
-- [ ] Can save TOTPs with passphrases to accounts (encrypted with DEK)
-- [ ] Viewing TOTP with account passphrase auto-decrypts when unlocked
 - [ ] Auto-lock works with per-account configurable timeout
 - [ ] Multiple accounts can be unlocked simultaneously with independent timeouts
-- [ ] Can change account password (re-wraps DEK without re-encrypting passphrases)
+- [ ] Can change account password (re-wraps DEK without re-encrypting data)
 - [ ] Can update account auto-lock settings
 - [ ] Can delete accounts (with confirmation)
 - [ ] Account activity tracking resets auto-lock timer
 - [ ] Edit Account dialog for password and auto-lock changes
 - [ ] Account management UI shows per-account auto-lock settings
-- [ ] Enhanced create/save flow with account dropdown
-- [ ] List view shows account association
+- [ ] "Lock All Accounts Now" button works
 - [ ] Phase 1 and Phase 2 functionality unchanged
 - [ ] All code is checked for duplication and refactoring is done
 - [ ] All unnecessary comments are removed
 - [ ] All tests pass
-- [ ] Documentation updated (README if user-facing changes)
+- [ ] Ready for Phase 4b integration
