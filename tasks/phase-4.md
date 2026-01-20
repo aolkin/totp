@@ -30,7 +30,13 @@ interface Account {
   lastUsed: number; // timestamp
   passwordHash: string; // For login verification, not encryption
   salt: Uint8Array; // For password hashing
-  keySalt: Uint8Array; // Separate salt for key derivation
+  keySalt: Uint8Array; // Separate salt for KEK derivation
+  encryptedDEK: { // Wrapped data encryption key (DEK encrypted with KEK)
+    iv: Uint8Array;
+    ciphertext: Uint8Array;
+    tag: Uint8Array;
+  };
+  autoLockMinutes: number; // Per-account auto-lock timeout (0 = never)
 }
 
 Object Store: "encrypted_passphrases"
@@ -79,7 +85,8 @@ interface TOTPRecord {
 interface UnlockedAccount {
   accountId: number;
   username: string;
-  encryptionKey: CryptoKey; // Derived from password
+  dataEncryptionKey: CryptoKey; // DEK (unwrapped from encryptedDEK)
+  autoLockMinutes: number; // Per-account setting
   unlockedAt: number; // timestamp
   lastActivity: number; // timestamp for auto-lock
 }
@@ -88,20 +95,7 @@ interface UnlockedAccount {
 const unlockedAccounts = $state<Map<number, UnlockedAccount>>(new Map());
 ```
 
-**Auto-Lock Configuration:**
-
-```typescript
-interface AutoLockSettings {
-  enabled: boolean;
-  timeoutMinutes: number; // User-configurable, default: 15
-}
-
-// Stored in localStorage (not security-sensitive)
-const autoLockSettings = $state<AutoLockSettings>({
-  enabled: true,
-  timeoutMinutes: 15
-});
-```
+**Note on Auto-Lock:** Auto-lock settings are stored per-account in the `Account.autoLockMinutes` field. Each account can have its own timeout or disable auto-lock entirely (0 = never lock).
 
 ## UI Changes
 
@@ -117,15 +111,14 @@ const autoLockSettings = $state<AutoLockSettings>({
 ├─────────────────────────────────────────┤
 │  👤 alice@work                          │
 │     Unlocked • 3 TOTPs saved            │
-│     [Lock] [Delete Account]             │
+│     Auto-lock: 15 minutes               │
+│     [Lock] [Edit] [Delete Account]      │
 ├─────────────────────────────────────────┤
 │  👤 bob@personal                        │
 │     🔒 Locked • 5 TOTPs saved           │
-│     [Unlock] [Delete Account]           │
+│     Auto-lock: Never                    │
+│     [Unlock] [Edit] [Delete Account]    │
 └─────────────────────────────────────────┘
-
-⚙️ Auto-lock after [15] minutes of inactivity
-   [✓] Enable auto-lock
 ```
 
 **Create Account Dialog:**
@@ -143,6 +136,10 @@ const autoLockSettings = $state<AutoLockSettings>({
 │  Confirm Password:                      │
 │  [________________________]             │
 │                                         │
+│  Auto-lock after inactivity:            │
+│  [15 minutes ▼]                         │
+│    Options: 5m, 10m, 15m, 30m, 1h, Never│
+│                                         │
 │  ⚠️  Important:                         │
 │  • Passwords cannot be recovered        │
 │  • Each account encrypts independently  │
@@ -157,6 +154,7 @@ const autoLockSettings = $state<AutoLockSettings>({
 - Password: Minimum 8 characters
 - Password confirmation must match
 - No duplicate usernames within the same browser
+- Auto-lock: Default 15 minutes, options include 5, 10, 15, 30, 60 minutes, or Never (0)
 
 **Unlock Account Dialog:**
 
@@ -174,6 +172,45 @@ const autoLockSettings = $state<AutoLockSettings>({
 │           [Cancel] [Unlock]             │
 └─────────────────────────────────────────┘
 ```
+
+**Edit Account Settings Dialog:**
+
+```
+┌─────────────────────────────────────────┐
+│  Edit Account: alice@work          [×]  │
+├─────────────────────────────────────────┤
+│  Auto-lock after inactivity:            │
+│  [15 minutes ▼]                         │
+│    Options: 5m, 10m, 15m, 30m, 1h, Never│
+│                                         │
+│  Change Password:                       │
+│  [ ] Update password                    │
+│                                         │
+│  (if checked, show fields below)        │
+│  Current Password:                      │
+│  [________________________]             │
+│                                         │
+│  New Password:                          │
+│  [________________________]             │
+│                                         │
+│  Confirm New Password:                  │
+│  [________________________]             │
+│                                         │
+│  ⚠️  Password change requires account   │
+│      to be unlocked first               │
+│                                         │
+│           [Cancel] [Save Changes]       │
+└─────────────────────────────────────────┘
+```
+
+**Logic:**
+- Auto-lock setting can always be updated
+- Password change requires:
+  1. Account must be unlocked (or prompt to unlock first)
+  2. Current password verification
+  3. New password minimum 8 characters
+  4. Confirmation must match
+- On password change: Re-wrap DEK with new password-derived KEK (no TOTP passphrase re-encryption needed)
 
 ### Enhanced Create/Save Flow
 
@@ -244,12 +281,14 @@ Save options:
 ```typescript
 // Check every 30 seconds
 setInterval(() => {
-  if (!autoLockSettings.enabled) return;
-
   const now = Date.now();
-  const timeoutMs = autoLockSettings.timeoutMinutes * 60 * 1000;
 
   unlockedAccounts.forEach((account, accountId) => {
+    // Skip if auto-lock disabled for this account (0 = never)
+    if (account.autoLockMinutes === 0) return;
+
+    const timeoutMs = account.autoLockMinutes * 60 * 1000;
+
     if (now - account.lastActivity > timeoutMs) {
       lockAccount(accountId);
       showToast(`Account "${account.username}" locked due to inactivity`);
@@ -266,44 +305,214 @@ setInterval(() => {
 
 ## Encryption & Key Derivation
 
-### Account Password Handling
+### Two-Step Encryption Architecture (Key Wrapping)
 
-**Two Separate Derivations:**
+This system uses a **key wrapping pattern** to enable efficient password changes without re-encrypting all TOTP passphrases.
 
-1. **Password Hash (for login verification):**
+**Key Hierarchy:**
+
+1. **Password** (user-provided) → derives KEK (Key Encryption Key)
+2. **KEK** (password-derived) → wraps/unwraps DEK (Data Encryption Key)
+3. **DEK** (randomly generated) → encrypts/decrypts TOTP passphrases
+
+**Benefits:**
+- Password change: Only re-wrap DEK (O(1) operation)
+- Without key wrapping: Must re-encrypt all passphrases (O(n) operation)
+- DEK never changes, so encrypted passphrases remain valid
+
+### Account Creation Flow
+
+**Step 1: Generate Keys and Salts**
+
 ```typescript
-// Stored in Account.passwordHash
-const passwordHash = await pbkdf2(
-  password,
-  account.salt, // Account-specific salt
-  100_000, // iterations
-  256 // bits
-);
-// Compared during unlock to verify password
+async function createAccount(username: string, password: string, autoLockMinutes: number) {
+  // Generate salts
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const keySalt = crypto.getRandomValues(new Uint8Array(16));
+
+  // Step 2: Derive password hash for verification
+  const passwordHash = await pbkdf2(password, salt, 100_000, 256);
+
+  // Step 3: Generate random DEK (Data Encryption Key)
+  const dek = await crypto.subtle.generateKey(
+    { name: 'AES-GCM', length: 256 },
+    true, // extractable (needed for wrapping)
+    ['encrypt', 'decrypt']
+  );
+
+  // Step 4: Derive KEK (Key Encryption Key) from password
+  const kek = await deriveKEK(password, keySalt);
+
+  // Step 5: Wrap DEK with KEK
+  const wrappedDEK = await crypto.subtle.wrapKey(
+    'raw',
+    dek,
+    kek,
+    { name: 'AES-GCM', iv: crypto.getRandomValues(new Uint8Array(12)) }
+  );
+
+  // Step 6: Store account with wrapped DEK
+  const account: Account = {
+    username,
+    passwordHash,
+    salt,
+    keySalt,
+    encryptedDEK: {
+      iv: wrappedDEK.iv,
+      ciphertext: new Uint8Array(wrappedDEK.slice(0, -16)),
+      tag: new Uint8Array(wrappedDEK.slice(-16))
+    },
+    autoLockMinutes,
+    created: Date.now(),
+    lastUsed: Date.now()
+  };
+
+  await db.add('accounts', account);
+}
 ```
 
-2. **Encryption Key (for passphrase encryption):**
+**Helper: Derive KEK from Password**
+
 ```typescript
-// Kept in memory in UnlockedAccount.encryptionKey
-const encryptionKey = await crypto.subtle.deriveKey(
-  {
-    name: 'PBKDF2',
-    salt: account.keySalt, // Different salt!
-    iterations: 100_000,
-    hash: 'SHA-256'
-  },
-  passwordKey,
-  { name: 'AES-GCM', length: 256 },
-  false, // not extractable
-  ['encrypt', 'decrypt']
-);
+async function deriveKEK(password: string, keySalt: Uint8Array): Promise<CryptoKey> {
+  const passwordKey = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(password),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: keySalt,
+      iterations: 100_000,
+      hash: 'SHA-256'
+    },
+    passwordKey,
+    { name: 'AES-GCM', length: 256 },
+    false, // not extractable
+    ['wrapKey', 'unwrapKey'] // KEK is only used for wrapping/unwrapping DEK
+  );
+}
 ```
 
-**Why Two Salts?**
-- `salt`: For password verification (stored hash compared on login)
-- `keySalt`: For deriving encryption key (never stored, only used in memory)
+### Account Unlock Flow
 
-### Passphrase Encryption
+**Unwrap DEK and Store in Memory:**
+
+```typescript
+async function unlockAccount(accountId: number, password: string): Promise<void> {
+  const account = await db.get('accounts', accountId);
+
+  // Step 1: Verify password
+  const passwordHash = await pbkdf2(password, account.salt, 100_000, 256);
+  if (passwordHash !== account.passwordHash) {
+    throw new Error('Incorrect password');
+  }
+
+  // Step 2: Derive KEK from password
+  const kek = await deriveKEK(password, account.keySalt);
+
+  // Step 3: Unwrap DEK using KEK
+  const { iv, ciphertext, tag } = account.encryptedDEK;
+  const wrappedDEK = new Uint8Array([...ciphertext, ...tag]);
+
+  const dek = await crypto.subtle.unwrapKey(
+    'raw',
+    wrappedDEK,
+    kek,
+    { name: 'AES-GCM', iv },
+    { name: 'AES-GCM', length: 256 },
+    false, // not extractable
+    ['encrypt', 'decrypt']
+  );
+
+  // Step 4: Store DEK in memory
+  unlockedAccounts.set(accountId, {
+    accountId,
+    username: account.username,
+    dataEncryptionKey: dek, // DEK, not KEK!
+    autoLockMinutes: account.autoLockMinutes,
+    unlockedAt: Date.now(),
+    lastActivity: Date.now()
+  });
+}
+```
+
+### Password Change Flow
+
+**Re-wrap DEK with New Password (No Passphrase Re-encryption)**
+
+```typescript
+async function changeAccountPassword(
+  accountId: number,
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  const account = await db.get('accounts', accountId);
+
+  // Step 1: Verify current password
+  const passwordHash = await pbkdf2(currentPassword, account.salt, 100_000, 256);
+  if (passwordHash !== account.passwordHash) {
+    throw new Error('Incorrect current password');
+  }
+
+  // Step 2: Get DEK from unlocked account (or unwrap it)
+  let dek: CryptoKey;
+  const unlockedAccount = unlockedAccounts.get(accountId);
+  if (unlockedAccount) {
+    dek = unlockedAccount.dataEncryptionKey;
+  } else {
+    // Unwrap DEK using current password
+    const currentKEK = await deriveKEK(currentPassword, account.keySalt);
+    const { iv, ciphertext, tag } = account.encryptedDEK;
+    const wrappedDEK = new Uint8Array([...ciphertext, ...tag]);
+    dek = await crypto.subtle.unwrapKey(
+      'raw',
+      wrappedDEK,
+      currentKEK,
+      { name: 'AES-GCM', iv },
+      { name: 'AES-GCM', length: 256 },
+      true, // temporarily extractable for re-wrapping
+      ['encrypt', 'decrypt']
+    );
+  }
+
+  // Step 3: Generate new salt and derive new password hash
+  const newSalt = crypto.getRandomValues(new Uint8Array(16));
+  const newKeySalt = crypto.getRandomValues(new Uint8Array(16));
+  const newPasswordHash = await pbkdf2(newPassword, newSalt, 100_000, 256);
+
+  // Step 4: Derive new KEK from new password
+  const newKEK = await deriveKEK(newPassword, newKeySalt);
+
+  // Step 5: Re-wrap DEK with new KEK
+  const newWrappedDEK = await crypto.subtle.wrapKey(
+    'raw',
+    dek,
+    newKEK,
+    { name: 'AES-GCM', iv: crypto.getRandomValues(new Uint8Array(12)) }
+  );
+
+  // Step 6: Update account record (DEK is the same, only wrapper changed)
+  await db.update('accounts', accountId, {
+    passwordHash: newPasswordHash,
+    salt: newSalt,
+    keySalt: newKeySalt,
+    encryptedDEK: {
+      iv: newWrappedDEK.iv,
+      ciphertext: new Uint8Array(newWrappedDEK.slice(0, -16)),
+      tag: new Uint8Array(newWrappedDEK.slice(-16))
+    }
+  });
+
+  // All encrypted passphrases remain valid (DEK unchanged)!
+}
+```
+
+### Passphrase Encryption (Using DEK)
 
 **Saving a passphrase to an account:**
 
@@ -321,9 +530,10 @@ async function savePassphraseToAccount(
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(passphrase);
 
+  // Encrypt passphrase with DEK (not KEK!)
   const ciphertext = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv, tagLength: 128 },
-    account.encryptionKey,
+    account.dataEncryptionKey, // DEK
     encoded
   );
 
@@ -364,9 +574,10 @@ async function getPassphraseFromAccount(
   const { iv, ciphertext, tag } = record.encrypted;
   const combined = new Uint8Array([...ciphertext, ...tag]);
 
+  // Decrypt passphrase with DEK
   const decrypted = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv, tagLength: 128 },
-    account.encryptionKey,
+    account.dataEncryptionKey, // DEK
     combined
   );
 
@@ -374,28 +585,49 @@ async function getPassphraseFromAccount(
 }
 ```
 
+**Why This Works:**
+- DEK never changes, so all encrypted passphrases remain valid
+- Password change only affects the wrapper around DEK
+- No need to decrypt and re-encrypt N passphrases
+- Efficient O(1) password change regardless of number of TOTPs
+
 ## Features
 
 ### Account Lifecycle
 
 **Create Account:**
-1. User enters username and password (min 8 chars)
-2. Generate two random salts (salt, keySalt)
-3. Derive password hash for verification
-4. Store Account record in IndexedDB
-5. Automatically unlock account (derive key, add to unlockedAccounts)
+1. User enters username, password (min 8 chars), and auto-lock setting
+2. Generate two random salts (salt for password verification, keySalt for KEK derivation)
+3. Derive password hash for login verification
+4. Generate random DEK (Data Encryption Key)
+5. Derive KEK (Key Encryption Key) from password
+6. Wrap DEK with KEK and store in `encryptedDEK` field
+7. Store Account record in IndexedDB with wrapped DEK
+8. Automatically unlock account (unwrap DEK, store in memory)
 
 **Unlock Account:**
 1. User enters password
 2. Derive password hash using stored salt
 3. Compare with stored passwordHash
-4. If match: derive encryption key, add to unlockedAccounts
+4. If match: derive KEK, unwrap DEK, add to unlockedAccounts with DEK
 5. If no match: show error, allow retry
 
 **Lock Account:**
 1. Remove from unlockedAccounts map
-2. Encryption key is garbage collected
+2. DEK is garbage collected from memory
 3. User must unlock again to access saved passphrases
+
+**Change Password:**
+1. Verify current password
+2. Get DEK from unlocked account (or unwrap with current password)
+3. Derive new KEK from new password
+4. Re-wrap DEK with new KEK
+5. Update Account record with new password hash and wrapped DEK
+6. All encrypted passphrases remain valid (DEK unchanged)
+
+**Update Auto-Lock Setting:**
+1. Update `autoLockMinutes` field in Account record
+2. If account is unlocked, update in-memory UnlockedAccount as well
 
 **Delete Account:**
 1. Show confirmation warning: "This will delete X saved passphrases. TOTPs will remain but require manual passphrase entry."
@@ -424,15 +656,12 @@ async function getPassphraseFromAccount(
 │  • Manage accounts and auto-lock        │
 │    [Manage Accounts]                    │
 │                                         │
-│  Auto-Lock Settings                     │
-│  [✓] Enable auto-lock                   │
-│  Lock after [15 ▼] minutes of inactivity│
-│     Options: 5, 10, 15, 30, 60, Never   │
-│                                         │
 │  Security                               │
 │  [Lock All Accounts Now]                │
 └─────────────────────────────────────────┘
 ```
+
+**Note:** Auto-lock settings are configured per-account, not globally. Each account has its own timeout setting that can be adjusted in the Edit Account dialog.
 
 ## Security Considerations
 
@@ -502,12 +731,14 @@ Use **Vitest** for unit tests and **Playwright** for E2E tests.
 
 ### tests/account-creation.spec.ts
 
-- Create account with valid username and password
+- Create account with valid username, password, and auto-lock setting
 - Reject password shorter than 8 characters
 - Reject mismatched password confirmation
 - Reject duplicate usernames
 - Verify account automatically unlocked after creation
 - Test password hashing and key derivation
+- Verify DEK generation and wrapping with KEK
+- Test different auto-lock timeout options (5m, 15m, 30m, 60m, Never)
 
 ### tests/account-unlock-lock.spec.ts
 
@@ -528,11 +759,31 @@ Use **Vitest** for unit tests and **Playwright** for E2E tests.
 
 ### tests/auto-lock.spec.ts
 
-- Configure auto-lock timeout
-- Disable auto-lock entirely
+- Configure auto-lock timeout per account
+- Disable auto-lock entirely (set to Never/0)
 - Activity resets auto-lock timer
-- Multiple accounts lock independently
+- Multiple accounts lock independently with different timeouts
 - Toast notification on auto-lock
+- Each account respects its own timeout setting
+
+### tests/account-password-change.spec.ts
+
+- Change password with correct current password
+- Reject incorrect current password
+- Verify DEK re-wrapped with new KEK
+- All passphrases remain decryptable after password change
+- Can unlock with new password after change
+- Cannot unlock with old password after change
+- Password change updates account record in IndexedDB
+
+### tests/account-settings-update.spec.ts
+
+- Update auto-lock timeout for account
+- Change auto-lock from enabled to disabled (Never)
+- Change auto-lock from disabled to enabled
+- Settings persist across lock/unlock
+- Settings update reflected in UI immediately
+- Multiple accounts have independent settings
 
 ### tests/ui-account-flow.spec.ts
 
@@ -541,6 +792,10 @@ Use **Vitest** for unit tests and **Playwright** for E2E tests.
 - Create TOTP with "save to account" option
 - Delete account affects TOTP display (shows account deleted)
 - Lock all accounts button works
+- Edit account settings dialog opens and saves changes
+- Password change through Edit dialog works correctly
+- Auto-lock setting update through Edit dialog works
+- Account list shows correct auto-lock settings
 
 ### tests/account-indexeddb.spec.ts
 
@@ -638,15 +893,19 @@ $effect(() => {
 
 Phase 4 is complete when:
 
-- [ ] Can create accounts with username and password
+- [ ] Can create accounts with username, password, and auto-lock setting
+- [ ] DEK generation and wrapping with KEK implemented correctly
 - [ ] Can unlock and lock accounts
-- [ ] Can save TOTPs with passphrases to accounts
+- [ ] Can save TOTPs with passphrases to accounts (encrypted with DEK)
 - [ ] Viewing TOTP with account passphrase auto-decrypts when unlocked
-- [ ] Auto-lock works with configurable timeout
-- [ ] Multiple accounts can be unlocked simultaneously
+- [ ] Auto-lock works with per-account configurable timeout
+- [ ] Multiple accounts can be unlocked simultaneously with independent timeouts
+- [ ] Can change account password (re-wraps DEK without re-encrypting passphrases)
+- [ ] Can update account auto-lock settings
 - [ ] Can delete accounts (with confirmation)
 - [ ] Account activity tracking resets auto-lock timer
-- [ ] Settings UI for account management and auto-lock config
+- [ ] Edit Account dialog for password and auto-lock changes
+- [ ] Account management UI shows per-account auto-lock settings
 - [ ] Enhanced create/save flow with account dropdown
 - [ ] List view shows account association
 - [ ] Phase 1 and Phase 2 functionality unchanged
