@@ -198,14 +198,6 @@ This allows transitioning stored TOTP to stateless URL for sharing with team.
 - Users must re-enter passphrase each time they view a TOTP
 - Passphrase hints can optionally be stored to help users remember
 
-**Master password option (future):**
-
-- Add "Save passphrases with master password" feature
-- Enables persisting passphrases locally in separate database encrypted with the chosen password
-- Master password is kept in memory for encryption and decryption but never persisted
-- If the passphrases database is present, the user is prompted to enter it on page load but can skip if desired
-- As a result, the passphrase database can be locked by closing the tab
-
 ### Privacy
 
 **No cloud sync:**
@@ -263,10 +255,6 @@ Use **Vitest** for unit tests of IndexedDB wrapper functions and **Playwright** 
 - Export all as JSON → Verify structure
 - Import JSON → Verify TOTPs restored
 - Test import with conflicts (same label)
-
-### tests/masterpassword.spec.ts
-
-- Tests appropriate to the master password functionality.
 
 ## Implementation Notes
 
