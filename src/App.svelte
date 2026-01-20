@@ -166,7 +166,6 @@
     {:else if mode === 'display' && config}
       <TotpDisplay
         {config}
-        onCreateNew={handleCreateNew}
         onBackToList={handleBackToList}
         record={currentRecord}
         encryptedData={currentRecord ? undefined : encryptedData}

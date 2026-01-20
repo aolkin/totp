@@ -43,10 +43,10 @@ test.describe('E2E - Cross-Tab Flows', () => {
 });
 
 test.describe('E2E - Navigation Flows', () => {
-  test('should reset form when clicking Back to List and adding new', async ({ page }) => {
+  test('should reset form when returning to list and adding new', async ({ page }) => {
     await createTotpUrl(page);
 
-    await page.getByRole('button', { name: 'Back to List' }).click();
+    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
     await page.getByRole('button', { name: 'Add New' }).click();
 
     await expect(page.getByRole('heading', { name: 'Create TOTP URL' })).toBeVisible();

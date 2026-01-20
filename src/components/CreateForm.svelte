@@ -213,7 +213,7 @@
 
       <div class="space-y-2">
         <Button type="button" onclick={handleCreateAnother} variant="secondary" class="w-full">
-          Back to List
+          View Saved TOTPs
         </Button>
       </div>
     </CardContent>
