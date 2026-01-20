@@ -43,6 +43,7 @@ export default tseslint.config(
       'playwright-report/**',
       'test-results/**',
       'scripts/**',
+      'src/service-worker.ts',
       '*.config.js',
       '*.config.ts',
     ],

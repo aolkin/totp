@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { generatePassphrase, calculateStrength, getStrengthLabel } from '../lib/passphrase';
-  import { encrypt, encodeToURL, isValidBase32, normalizeBase32 } from '../lib/crypto';
+  import { generatePassphrase, calculateStrength, getStrengthLabel } from '$lib/passphrase';
+  import { encrypt, encodeToURL, isValidBase32, normalizeBase32 } from '$lib/crypto';
   import {
     DEFAULT_DIGITS,
     DEFAULT_PERIOD,
     DEFAULT_ALGORITHM,
     type TOTPConfig,
     type Algorithm,
-  } from '../lib/types';
-  import type { OTPAuthData } from '../lib/otpauth';
+  } from '$lib/types';
+  import type { OTPAuthData } from '$lib/otpauth';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
@@ -114,7 +114,7 @@
 
       const encrypted = await encrypt(config, passphrase);
       const fragment = encodeToURL(encrypted);
-      generatedURL = `${window.location.origin}${window.location.pathname}#${fragment}`;
+      generatedURL = `${window.location.origin}/#/view/${encodeURIComponent(fragment)}`;
       savedPassphrase = passphrase;
       wasSavedToBrowser = false;
 

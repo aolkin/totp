@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { generateTOTPCode, getTimeRemaining } from '../lib/totp';
-  import type { TOTPConfig, TOTPRecord, EncryptedData } from '../lib/types';
+  import { generateTOTPCode, getTimeRemaining } from '$lib/totp';
+  import type { TOTPConfig, TOTPRecord, EncryptedData } from '$lib/types';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent } from '$lib/components/ui/card';
   import { generateShareableURL } from '$lib/crypto';
