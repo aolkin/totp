@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('UI - Create Form', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/#/');
     // Dismiss the offline banner if visible (it can block clicks)
     await page.evaluate(() => {
       localStorage.setItem('offline_banner_dismissed', 'true');
