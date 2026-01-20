@@ -48,15 +48,17 @@
       result = result.filter((r) => r.label.toLowerCase().includes(query));
     }
 
+    const sortable = [...result];
+
     switch (sortOption) {
       case 'recent':
-        return result.sort((a, b) => b.lastUsed - a.lastUsed);
+        return sortable.sort((a, b) => b.lastUsed - a.lastUsed);
       case 'alphabetical':
-        return result.sort((a, b) => a.label.localeCompare(b.label));
+        return sortable.sort((a, b) => a.label.localeCompare(b.label));
       case 'created':
-        return result.sort((a, b) => b.created - a.created);
+        return sortable.sort((a, b) => b.created - a.created);
       default:
-        return result;
+        return sortable;
     }
   });
 
