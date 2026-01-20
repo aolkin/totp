@@ -6,12 +6,31 @@ A fully client-side browser-based TOTP generator
 
 - 🔒 Client-side encryption (AES-256-GCM)
 - 🔑 Stateless architecture (secrets in URL)
+- 💾 Optional browser storage (IndexedDB) for saved TOTPs
 - 📷 QR code scanning for easy TOTP setup
 - 📱 Progressive Web App with offline support
 - 🌐 Works without internet after first load
 - 🎨 Modern UI with Tailwind CSS and shadcn-svelte
 - ⚙️ Cache management and offline status indicator
 - 🔄 Automatic update notifications
+- 📤 Export/Import backup functionality
+
+## How It Works
+
+### Stateless Mode (URL-based)
+
+TOTP secrets are encrypted client-side and embedded in the URL fragment. No server storage required. Share URLs with team members who have the passphrase.
+
+### Persistent Mode (Browser Storage)
+
+Optionally save TOTPs to your browser's IndexedDB:
+
+- **Save to Browser:** Check "Save to this browser" when creating a TOTP
+- **List View:** Access all saved TOTPs from the root URL
+- **Passphrase Hints:** Add optional hints to help remember passphrases
+- **Export/Import:** Backup and restore your TOTPs as JSON files
+
+**Note:** Browser storage is local only - no cloud sync. Clearing browser data will delete saved TOTPs.
 
 ## Offline Support
 

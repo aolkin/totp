@@ -133,3 +133,24 @@ export function isValidBase32(secret: string): boolean {
 export function normalizeBase32(secret: string): string {
   return secret.replace(/\s/g, '').toUpperCase();
 }
+
+export function generateShareableURL(encrypted: EncryptedData): string {
+  return `${window.location.origin}${window.location.pathname}#${encodeToURL(encrypted)}`;
+}
+
+export function uint8ArrayToBase64(arr: Uint8Array): string {
+  let binary = '';
+  for (const byte of arr) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
+export function base64ToUint8Array(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}

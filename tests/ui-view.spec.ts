@@ -69,13 +69,13 @@ test.describe('UI - View Mode', () => {
       await expect(page.getByText('GitHub - test@example.com')).toBeVisible();
     });
 
-    test('should navigate back to create mode', async ({ page }) => {
+    test('should navigate back to list mode', async ({ page }) => {
       const { url } = await createTotpUrl(page, { passphrase: '' });
 
       await page.goto(url);
       await page.getByRole('button', { name: 'Create New TOTP' }).click();
 
-      await expect(page.getByRole('heading', { name: 'Create TOTP URL' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
     });
   });
 

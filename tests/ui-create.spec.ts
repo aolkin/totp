@@ -3,6 +3,13 @@ import { test, expect } from '@playwright/test';
 test.describe('UI - Create Form', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    // Dismiss the offline banner if visible (it can block clicks)
+    await page.evaluate(() => {
+      localStorage.setItem('offline_banner_dismissed', 'true');
+    });
+    await page.reload();
+    // App now starts in list mode, click Add New to get to create form
+    await page.getByRole('button', { name: 'Add New' }).click();
   });
 
   test.describe('Form validation', () => {
@@ -96,7 +103,8 @@ test.describe('UI - Create Form', () => {
     test('should allow creating another TOTP', async ({ page }) => {
       await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
       await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-      await page.getByRole('button', { name: 'Create Another' }).click();
+      await page.getByRole('button', { name: 'Back to List' }).click();
+      await page.getByRole('button', { name: 'Add New' }).click();
 
       await expect(page.getByRole('heading', { name: 'Create TOTP URL' })).toBeVisible();
     });
@@ -114,7 +122,8 @@ test.describe('UI - Create Form', () => {
         .inputValue();
 
       // Custom options
-      await page.getByRole('button', { name: 'Create Another' }).click();
+      await page.getByRole('button', { name: 'Back to List' }).click();
+      await page.getByRole('button', { name: 'Add New' }).click();
       await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
       await page.getByRole('textbox', { name: 'Passphrase' }).fill('testpassphrase12');
       await page.getByRole('textbox', { name: 'Label' }).fill('Long Label With Many Characters');

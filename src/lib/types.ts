@@ -22,6 +22,30 @@ export interface EncryptedData {
   ciphertext: Uint8Array;
 }
 
+export interface TOTPRecord {
+  id: number;
+  label: string;
+  created: number;
+  lastUsed: number;
+  encrypted: EncryptedData;
+  passphraseHint?: string;
+}
+
+export interface TOTPExport {
+  version: number;
+  exported: number;
+  totps: {
+    label: string;
+    created: number;
+    encrypted: {
+      salt: string;
+      iv: string;
+      ciphertext: string;
+    };
+    passphraseHint?: string;
+  }[];
+}
+
 export const DEFAULT_DIGITS = 6;
 export const DEFAULT_PERIOD = 30;
 export const DEFAULT_ALGORITHM: Algorithm = 'SHA1';

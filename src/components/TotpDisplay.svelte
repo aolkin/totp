@@ -1,20 +1,27 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { generateTOTPCode, getTimeRemaining } from '../lib/totp';
-  import type { TOTPConfig } from '../lib/types';
+  import type { TOTPConfig, TOTPRecord, EncryptedData } from '../lib/types';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent } from '$lib/components/ui/card';
+  import { generateShareableURL } from '$lib/crypto';
+  import { totpStorage } from '$lib/storage';
+  import { toast } from 'svelte-sonner';
 
   interface Props {
     config: TOTPConfig;
     onCreateNew: () => void;
+    onBackToList?: () => void;
+    record?: TOTPRecord;
+    encryptedData?: EncryptedData;
   }
 
-  const { config, onCreateNew }: Props = $props();
+  const { config, onCreateNew, onBackToList, record, encryptedData }: Props = $props();
 
   let code = $state('');
   let timeRemaining = $state(0);
   let intervalId: number | undefined;
+  let isSaving = $state(false);
 
   function updateCode() {
     code = generateTOTPCode(config);
@@ -43,8 +50,40 @@
   async function copyCode() {
     try {
       await navigator.clipboard.writeText(code);
+      toast.success('Code copied');
     } catch {
-      // Fallback handled by user
+      toast.error('Failed to copy code');
+    }
+  }
+
+  async function exportUrl() {
+    try {
+      const encrypted = record?.encrypted ?? encryptedData;
+      if (!encrypted) {
+        toast.error('No encrypted data available');
+        return;
+      }
+      await navigator.clipboard.writeText(generateShareableURL(encrypted));
+      toast.success('URL copied to clipboard');
+    } catch {
+      toast.error('Failed to export URL');
+    }
+  }
+
+  async function saveToBrowser() {
+    if (!encryptedData) {
+      toast.error('No encrypted data available');
+      return;
+    }
+
+    isSaving = true;
+    try {
+      await totpStorage.add(config.label || 'Unnamed TOTP', encryptedData);
+      toast.success('TOTP saved to browser');
+    } catch {
+      toast.error('Failed to save TOTP');
+    } finally {
+      isSaving = false;
     }
   }
 
@@ -110,7 +149,21 @@
     <div class="w-full space-y-2">
       <Button class="w-full" onclick={copyCode}>Copy Code</Button>
 
-      <Button variant="ghost" class="w-full text-sm" onclick={onCreateNew}>Create New TOTP</Button>
+      <Button variant="outline" class="w-full" onclick={exportUrl}>Export URL</Button>
+
+      {#if !record && encryptedData}
+        <Button variant="outline" class="w-full" onclick={saveToBrowser} disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Save to Browser'}
+        </Button>
+      {/if}
+
+      {#if record && onBackToList}
+        <Button variant="ghost" class="w-full text-sm" onclick={onBackToList}>Back to List</Button>
+      {:else}
+        <Button variant="ghost" class="w-full text-sm" onclick={onCreateNew}>
+          Create New TOTP
+        </Button>
+      {/if}
     </div>
   </CardContent>
 </Card>

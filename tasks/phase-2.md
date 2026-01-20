@@ -125,8 +125,6 @@ interface TOTPRecord {
 
 - "Enter passphrase for [Label]"
 - Optional hint displayed: "Hint: office-door-code"
-- Remember passphrase in session (sessionStorage) to avoid re-entering
-- "Forget passphrase" button to clear session
 
 **TOTP Display:**
 
@@ -194,17 +192,19 @@ This allows transitioning stored TOTP to stateless URL for sharing with team.
 
 ### Passphrase Management
 
-**Session caching:**
+**No passphrase caching:**
 
-- Store decrypted passphrases in sessionStorage
-- Clear on browser close or manual "Forget"
-- Never persist to localStorage
+- Passphrases are never stored in any form
+- Users must re-enter passphrase each time they view a TOTP
+- Passphrase hints can optionally be stored to help users remember
 
-**Master password option:**
+**Master password option (future):**
 
-- add "Save passphrases with master password" feature
+- Add "Save passphrases with master password" feature
 - Enables persisting passphrases locally in separate database encrypted with the chosen password
-- chosen password is kept in memory for encryption and decryption but never persisted. if the passphrases database is present, the user is prompted to enter it on page load but can skip if desired. as a result, the passphrase database can be locked by closing the tab.
+- Master password is kept in memory for encryption and decryption but never persisted
+- If the passphrases database is present, the user is prompted to enter it on page load but can skip if desired
+- As a result, the passphrase database can be locked by closing the tab
 
 ### Privacy
 
@@ -264,12 +264,6 @@ Use **Vitest** for unit tests of IndexedDB wrapper functions and **Playwright** 
 - Import JSON → Verify TOTPs restored
 - Test import with conflicts (same label)
 
-### tests/session.spec.ts
-
-- Enter passphrase → View TOTP → Navigate away → Return → No re-prompt
-- Test "Forget passphrase" clears session
-- Test sessionStorage cleared on browser close
-
 ### tests/masterpassword.spec.ts
 
 - Tests appropriate to the master password functionality.
@@ -325,14 +319,14 @@ class TOTPStorage {
 
 Phase 2 is complete when:
 
-- [ ] Can save TOTPs to IndexedDB
-- [ ] List view displays all saved TOTPs
-- [ ] Can view saved TOTPs with passphrase
-- [ ] Can export saved TOTPs as shareable URLs
-- [ ] Can delete saved TOTPs
-- [ ] Search and sorting work
-- [ ] Export/import JSON backup works
-- [ ] All code is checked for duplication and refactoring is done to ensure no duplication exists
-- [ ] All unnecessary comments are removed, code should be self-documenting
-- [ ] All tests pass
-- [ ] Phase 1 URLs still work (backwards compatible)
+- [x] Can save TOTPs to IndexedDB
+- [x] List view displays all saved TOTPs
+- [x] Can view saved TOTPs with passphrase
+- [x] Can export saved TOTPs as shareable URLs
+- [x] Can delete saved TOTPs
+- [x] Search and sorting work
+- [x] Export/import JSON backup works
+- [x] All code is checked for duplication and refactoring is done to ensure no duplication exists
+- [x] All unnecessary comments are removed, code should be self-documenting
+- [x] All tests pass
+- [x] Phase 1 URLs still work (backwards compatible)

@@ -12,9 +12,16 @@ export async function createTotpUrl(
     passphrase?: string;
   } = {},
 ): Promise<{ url: string; passphrase: string }> {
-  const { secret = 'JBSWY3DPEHPK3PXP', label, passphrase } = options;
+  const { secret = 'AAAABBBBCCCCDDDD', label, passphrase } = options;
 
   await page.goto('/');
+  // Dismiss the offline banner if visible (it can block clicks)
+  await page.evaluate(() => {
+    localStorage.setItem('offline_banner_dismissed', 'true');
+  });
+  await page.reload();
+  // App now starts in list mode, click Add New to get to create form
+  await page.getByRole('button', { name: 'Add New' }).click();
   await page.getByRole('textbox', { name: 'TOTP Secret' }).fill(secret);
 
   if (label) {

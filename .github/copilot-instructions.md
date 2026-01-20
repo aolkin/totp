@@ -68,12 +68,18 @@ npm run format:check  # Check if files are formatted correctly
 ```
 ├── src/
 │   ├── components/         # Svelte components
+│   │   ├── CreateForm.svelte
+│   │   ├── TotpDisplay.svelte
+│   │   ├── TotpList.svelte       # List view for saved TOTPs
+│   │   ├── PassphrasePrompt.svelte
+│   │   └── ...
 │   ├── lib/
 │   │   ├── components/ui/  # shadcn-svelte UI components
 │   │   ├── utils/          # Utility functions (including cn for Tailwind)
 │   │   ├── crypto.ts       # Encryption/decryption, URL encoding
 │   │   ├── totp.ts         # TOTP generation logic
 │   │   ├── passphrase.ts   # Passphrase generation
+│   │   ├── storage.ts      # IndexedDB storage for saved TOTPs
 │   │   └── types.ts        # TypeScript type definitions
 │   ├── App.svelte          # Root component
 │   ├── app.css             # Global styles and Tailwind directives
@@ -208,13 +214,19 @@ This project uses modern code quality tools to maintain consistency:
 
 ## Architecture Patterns
 
-### Stateless Design
+### Dual Mode Operation
 
-The application is stateless by design:
+**Stateless Mode (URL-based):**
 
-- No cookies, localStorage, or sessionStorage for secrets
-- All TOTP configuration is encrypted and encoded in the URL hash
-- Passphrase (if any) is only held in memory during the session
+- URL with fragment → Direct TOTP view
+- No storage involved
+- Shareable with anyone who has the passphrase
+
+**Persistent Mode (Browser Storage):**
+
+- Root domain → Saved TOTPs list (if any exist)
+- Click TOTP → Decrypt and view
+- TOTPs stored encrypted in IndexedDB
 
 ### URL Fragment Structure
 
@@ -227,6 +239,14 @@ The encrypted data contains:
 - Ciphertext (variable length)
 ```
 
+### IndexedDB Storage
+
+TOTPs can optionally be saved to browser's IndexedDB:
+
+- Database: `totp-storage`, Object Store: `secrets`
+- Each record contains: id, label, created, lastUsed, encrypted data, optional passphrase hint
+- Passphrases are NEVER stored - only used for encryption/decryption
+
 ### Optional Passphrase
 
 - Empty passphrase ("") = no passphrase protection
@@ -235,7 +255,7 @@ The encrypted data contains:
 
 ## Working with Types
 
-All types are defined in `src/lib/types.ts`. Refer to that file for the canonical type definitions including `TOTPConfig`, `TOTPMetadata`, `EncryptedData`, and default constants.
+All types are defined in `src/lib/types.ts`. Refer to that file for the canonical type definitions including `TOTPConfig`, `TOTPMetadata`, `EncryptedData`, `TOTPRecord`, and default constants.
 
 ## Testing Guidelines
 
