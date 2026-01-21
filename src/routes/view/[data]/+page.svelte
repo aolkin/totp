@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { onMount } from 'svelte';
   import TotpDisplay from '$lib/components/TotpDisplay.svelte';
   import PassphrasePrompt from '$lib/components/PassphrasePrompt.svelte';
   import { Button } from '$lib/components/ui/button';
@@ -93,11 +92,7 @@
     void goto('#/');
   }
 
-  onMount(() => {
-    void loadEncryptedData();
-  });
-
-  // Re-load when route params change
+  // Load encrypted data on initial render and when route params change
   $effect(() => {
     if (dataParam) {
       void loadEncryptedData();
