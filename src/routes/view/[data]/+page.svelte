@@ -89,10 +89,6 @@
     }
   }
 
-  function handleCreateNew() {
-    void goto('#/');
-  }
-
   function handleBackToList() {
     void goto('#/');
   }
@@ -124,7 +120,6 @@
 {:else if mode === 'display' && config}
   <TotpDisplay
     {config}
-    onCreateNew={handleCreateNew}
     onBackToList={handleBackToList}
     record={currentRecord}
     encryptedData={currentRecord ? undefined : encryptedData}

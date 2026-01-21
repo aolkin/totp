@@ -76,11 +76,13 @@ test.describe('Saved TOTP List', () => {
       passphrase: 'autopassword123',
     });
 
-    await page.goto('/');
+    await page.goto('/#/');
+    await page.waitForSelector('h1', { timeout: 30000 });
     await page.evaluate(() => {
       localStorage.setItem('offline_banner_dismissed', 'true');
     });
     await page.reload();
+    await page.waitForSelector('h1', { timeout: 30000 });
 
     await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
     await expect(page.getByText('Auto List Display')).toBeVisible();
