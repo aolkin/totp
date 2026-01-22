@@ -2,14 +2,9 @@
   import { Label } from '$lib/components/ui/label';
   import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 
-  interface AutoLockOption {
-    value: number;
-    label: string;
-  }
-
   interface Props {
     value: number;
-    options: AutoLockOption[];
+    options: { value: number; label: string }[];
     label?: string;
     onValueChange: (value: number) => void;
   }

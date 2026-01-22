@@ -32,12 +32,7 @@
 
   let { open = $bindable(false) }: Props = $props();
 
-  interface AutoLockOption {
-    value: number;
-    label: string;
-  }
-
-  const AUTO_LOCK_OPTIONS: AutoLockOption[] = [
+  const AUTO_LOCK_OPTIONS: { value: number; label: string }[] = [
     { value: 5, label: '5 minutes' },
     { value: 10, label: '10 minutes' },
     { value: 15, label: '15 minutes' },
