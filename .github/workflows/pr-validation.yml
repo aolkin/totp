@@ -41,8 +41,9 @@ jobs:
       - name: Run ESLint
         run: npm run lint
         env:
-          # Type-aware linting with parserOptions.project requires significant memory
-          NODE_OPTIONS: --max-old-space-size=8192
+          # Type-aware linting requires extra memory for TypeScript type checking
+          # Public repos have 16GB RAM available, allocating 6GB for Node.js
+          NODE_OPTIONS: --max-old-space-size=6144
 
       - name: Check Prettier formatting
         run: npm run format:check
