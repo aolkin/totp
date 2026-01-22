@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { generateTOTPCode, getTimeRemaining } from '../lib/totp';
-  import type { TOTPConfig, TOTPRecord, EncryptedData } from '../lib/types';
+  import { generateTOTPCode, getTimeRemaining } from '$lib/totp';
+  import type { TOTPConfig, TOTPRecord, EncryptedData } from '$lib/types';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent } from '$lib/components/ui/card';
   import { generateShareableURL } from '$lib/crypto';
@@ -10,12 +10,11 @@
 
   interface Props {
     config: TOTPConfig;
-    onBackToList: () => void;
     record?: TOTPRecord;
     encryptedData?: EncryptedData;
   }
 
-  const { config, onBackToList, record, encryptedData }: Props = $props();
+  const { config, record, encryptedData }: Props = $props();
 
   let code = $state('');
   let timeRemaining = $state(0);
@@ -156,9 +155,12 @@
         </Button>
       {/if}
 
-      <Button variant="ghost" class="w-full text-sm" onclick={onBackToList}>
+      <a
+        href="#/"
+        class="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md"
+      >
         View Saved TOTPs
-      </Button>
+      </a>
     </div>
   </CardContent>
 </Card>

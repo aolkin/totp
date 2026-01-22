@@ -4,14 +4,14 @@ test.describe('QR Scanner', () => {
   // Skip this test as the dialog content doesn't render properly in headless mode
   // The camera initialization seems to block content rendering
   test.skip('should open scan modal and display scanner UI', async ({ page, context }) => {
-    await page.goto('/');
+    await page.goto('/#/');
     // Dismiss the offline banner if visible (it can block clicks)
     await page.evaluate(() => {
       localStorage.setItem('offline_banner_dismissed', 'true');
     });
     await page.reload();
     // App now starts in list mode, click Add New to get to create form
-    await page.getByRole('button', { name: 'Add New' }).click();
+    await page.getByRole('link', { name: 'Add New' }).click();
     await context.grantPermissions(['camera']);
 
     // Verify Scan QR button is visible

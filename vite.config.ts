@@ -1,13 +1,12 @@
-import { defineConfig } from 'vite';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { resolve } from 'path';
+import { sveltekit } from '@sveltejs/kit/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [
-    svelte(),
     tailwindcss(),
+    sveltekit(),
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
@@ -23,16 +22,6 @@ export default defineConfig({
       },
     }),
   ],
-  base: '/',
-  resolve: {
-    alias: {
-      $lib: resolve(__dirname, './src/lib'),
-    },
-  },
-  build: {
-    outDir: 'site',
-    emptyOutDir: true,
-  },
   define: {
     __COMMIT_HASH__: JSON.stringify(process.env.VITE_COMMIT_HASH ?? 'dev'),
   },

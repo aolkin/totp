@@ -50,7 +50,7 @@ test.describe('TOTP Operations', () => {
       passphrase: 'viewpassword123',
     });
 
-    await page.getByRole('button', { name: 'View' }).click();
+    await page.getByRole('link', { name: 'View' }).click();
     await page.getByPlaceholder('Enter your passphrase').fill('viewpassword123');
     await page.getByRole('button', { name: 'Unlock' }).click();
 

@@ -135,7 +135,8 @@ export function normalizeBase32(secret: string): string {
 }
 
 export function generateShareableURL(encrypted: EncryptedData): string {
-  return `${window.location.origin}${window.location.pathname}#${encodeToURL(encrypted)}`;
+  const encoded = encodeToURL(encrypted);
+  return `${window.location.origin}/#/view/${encodeURIComponent(encoded)}`;
 }
 
 export function uint8ArrayToBase64(arr: Uint8Array): string {

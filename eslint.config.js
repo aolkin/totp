@@ -45,6 +45,9 @@ export default tseslint.config(
       'scripts/**',
       '*.config.js',
       '*.config.ts',
+      // Service worker is built separately by vite-plugin-pwa and uses Workbox APIs
+      // It's outside SvelteKit's tsconfig scope, so ESLint can't type-check it
+      'src/service-worker.ts',
     ],
   },
   {

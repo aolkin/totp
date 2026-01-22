@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import QrScanner from 'qr-scanner';
-  import { parseOTPAuthURL, type OTPAuthData } from '../lib/otpauth';
+  import { parseOTPAuthURL, type OTPAuthData } from '$lib/otpauth';
   import { Button } from '$lib/components/ui/button';
   import { Switch } from '$lib/components/ui/switch';
   import { Label } from '$lib/components/ui/label';

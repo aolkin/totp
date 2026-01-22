@@ -12,13 +12,13 @@ test.describe('Saved TOTP List', () => {
       passphrase: 'githubpass123',
     });
 
-    await page.getByRole('button', { name: 'Add New' }).click();
+    await page.getByRole('link', { name: 'Add New' }).click();
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('BBBBCCCCDDDDEEEE');
     await page.getByRole('textbox', { name: 'Label' }).fill('AWS Console');
     await page.locator('#passphrase').fill('awspassword123');
     await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
+    await page.getByRole('link', { name: 'View Saved TOTPs' }).click();
 
     await expect(page.getByText('GitHub Account')).toBeVisible();
     await expect(page.getByText('AWS Console')).toBeVisible();
@@ -38,7 +38,7 @@ test.describe('Saved TOTP List', () => {
       passphrase: 'testpassphrase123',
     });
 
-    await page.getByRole('button', { name: 'View' }).click();
+    await page.getByRole('link', { name: 'View' }).click();
     await expect(page.getByRole('heading', { name: 'Enter Passphrase' })).toBeVisible();
 
     await page.getByPlaceholder('Enter your passphrase').fill('testpassphrase123');
@@ -54,13 +54,13 @@ test.describe('Saved TOTP List', () => {
       passphrase: 'zebrapassword123',
     });
 
-    await page.getByRole('button', { name: 'Add New' }).click();
+    await page.getByRole('link', { name: 'Add New' }).click();
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('BBBBCCCCDDDDEEEE');
     await page.getByRole('textbox', { name: 'Label' }).fill('Alpha Account');
     await page.locator('#passphrase').fill('alphapassword123');
     await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
-    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
+    await page.getByRole('link', { name: 'View Saved TOTPs' }).click();
 
     const sortSelect = page.locator('.w-\\[140px\\]').first();
     await sortSelect.click();
@@ -76,11 +76,13 @@ test.describe('Saved TOTP List', () => {
       passphrase: 'autopassword123',
     });
 
-    await page.goto('/');
+    await page.goto('/#/');
+    await page.waitForSelector('h1', { timeout: 30000 });
     await page.evaluate(() => {
       localStorage.setItem('offline_banner_dismissed', 'true');
     });
     await page.reload();
+    await page.waitForSelector('h1', { timeout: 30000 });
 
     await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
     await expect(page.getByText('Auto List Display')).toBeVisible();
@@ -99,7 +101,7 @@ test.describe('Saved TOTP List', () => {
     await page.goto(url);
     await expect(page.getByRole('button', { name: 'Copy Code' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
+    await page.getByRole('link', { name: 'View Saved TOTPs' }).click();
     await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
     await expect(page.getByText('List Item')).toBeVisible();
   });

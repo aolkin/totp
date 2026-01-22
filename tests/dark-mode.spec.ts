@@ -4,7 +4,11 @@ test.describe('Dark Mode', () => {
   test('should toggle between light and dark mode based on system preference', async ({ page }) => {
     // Start in light mode
     await page.emulateMedia({ colorScheme: 'light' });
-    await page.goto('/');
+    await page.goto('/#/');
+
+    // Wait for the page to fully load and stabilize
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('h1', { timeout: 30000 });
 
     // Check light mode background color (white HSL)
     const lightBg = await page.evaluate(() => {

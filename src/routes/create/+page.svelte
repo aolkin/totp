@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { generatePassphrase, calculateStrength, getStrengthLabel } from '../lib/passphrase';
-  import { encrypt, encodeToURL, isValidBase32, normalizeBase32 } from '../lib/crypto';
+  import { generatePassphrase, calculateStrength, getStrengthLabel } from '$lib/passphrase';
+  import { encrypt, encodeToURL, isValidBase32, normalizeBase32 } from '$lib/crypto';
   import {
     DEFAULT_DIGITS,
     DEFAULT_PERIOD,
     DEFAULT_ALGORITHM,
     type TOTPConfig,
     type Algorithm,
-  } from '../lib/types';
-  import type { OTPAuthData } from '../lib/otpauth';
+  } from '$lib/types';
+  import type { OTPAuthData } from '$lib/otpauth';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
@@ -18,15 +18,7 @@
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { totpStorage } from '$lib/storage';
   import { toast } from 'svelte-sonner';
-
-  interface Props {
-    onSaved?: () => void;
-    onBack?: () => void;
-    showBackButton?: boolean;
-  }
-
-  const { onSaved, onBack, showBackButton = false }: Props = $props();
-  import QrScanner from './QrScanner.svelte';
+  import QrScanner from '$lib/components/QrScanner.svelte';
 
   let secret = $state('');
   let label = $state('');
@@ -114,7 +106,7 @@
 
       const encrypted = await encrypt(config, passphrase);
       const fragment = encodeToURL(encrypted);
-      generatedURL = `${window.location.origin}${window.location.pathname}#${fragment}`;
+      generatedURL = `${window.location.origin}/#/view/${encodeURIComponent(fragment)}`;
       savedPassphrase = passphrase;
       wasSavedToBrowser = false;
 
@@ -127,32 +119,6 @@
       showResult = true;
     } catch {
       error = 'Failed to generate URL. Please try again.';
-    }
-  }
-
-  function resetForm() {
-    secret = '';
-    label = '';
-    passphrase = generatePassphrase();
-    isCustomPassphrase = false;
-    showAdvanced = false;
-    digits = DEFAULT_DIGITS;
-    period = DEFAULT_PERIOD;
-    algorithm = DEFAULT_ALGORITHM;
-    saveToBrowser = false;
-    passphraseHint = '';
-    generatedURL = '';
-    savedPassphrase = '';
-    wasSavedToBrowser = false;
-    error = '';
-    showResult = false;
-  }
-
-  function handleCreateAnother() {
-    if (onSaved) {
-      onSaved();
-    } else {
-      resetForm();
     }
   }
 
@@ -212,9 +178,12 @@
       {/if}
 
       <div class="space-y-2">
-        <Button type="button" onclick={handleCreateAnother} variant="secondary" class="w-full">
+        <a
+          href="#/"
+          class="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80"
+        >
           View Saved TOTPs
-        </Button>
+        </a>
       </div>
     </CardContent>
   </Card>
@@ -223,9 +192,7 @@
     <CardHeader>
       <div class="flex items-center justify-between">
         <h2 class="text-2xl font-semibold">Create TOTP URL</h2>
-        {#if showBackButton && onBack}
-          <Button variant="ghost" onclick={onBack}>← Back</Button>
-        {/if}
+        <a href="#/" class="text-sm text-muted-foreground hover:text-foreground">← Back</a>
       </div>
     </CardHeader>
     <CardContent>

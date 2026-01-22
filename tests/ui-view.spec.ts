@@ -55,7 +55,7 @@ test.describe('UI - View Mode', () => {
 
       // Check buttons
       await expect(page.getByRole('button', { name: 'Copy Code' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'View Saved TOTPs' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'View Saved TOTPs' })).toBeVisible();
     });
 
     test('should display label when provided', async ({ page }) => {
@@ -73,7 +73,7 @@ test.describe('UI - View Mode', () => {
       const { url } = await createTotpUrl(page, { passphrase: '' });
 
       await page.goto(url);
-      await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
+      await page.getByRole('link', { name: 'View Saved TOTPs' }).click();
 
       await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
     });
@@ -82,7 +82,7 @@ test.describe('UI - View Mode', () => {
   test.describe('Error handling', () => {
     test('should show passphrase prompt for unrecognized encrypted data', async ({ page }) => {
       // An invalid fragment that can be decoded as base64 will show passphrase prompt
-      await page.goto('/#SGVsbG9Xb3JsZA');
+      await page.goto('/#/view/SGVsbG9Xb3JsZA');
 
       await expect(page.getByRole('heading', { name: 'Enter Passphrase' })).toBeVisible();
     });

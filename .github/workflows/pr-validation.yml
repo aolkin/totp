@@ -38,6 +38,10 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
+      - name: Generate SvelteKit types
+        # Run sync first to generate .svelte-kit/tsconfig.json needed for type-aware linting
+        run: npm run sync
+
       - name: Run ESLint
         run: npm run lint
 
