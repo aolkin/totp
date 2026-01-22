@@ -184,7 +184,9 @@ export function startAutoLockMonitor(onAutoLock?: (account: UnlockedAccount) => 
   autoLockInterval = setInterval(() => {
     const locked = checkAndLockInactiveAccounts();
     if (autoLockCallback) {
-      locked.forEach((account) => autoLockCallback?.(account));
+      locked.forEach((account) => {
+        autoLockCallback?.(account);
+      });
     }
   }, AUTO_LOCK_CHECK_INTERVAL);
 }
