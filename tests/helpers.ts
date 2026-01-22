@@ -23,7 +23,7 @@ export async function createTotpUrl(
   await page.reload();
   await page.waitForSelector('h1', { timeout: 30000 });
   // App now starts in list mode, click Add New to get to create form
-  await page.getByRole('button', { name: 'Add New' }).click();
+  await page.getByRole('link', { name: 'Add New' }).click();
   await page.getByRole('textbox', { name: 'TOTP Secret' }).fill(secret);
 
   if (label) {
@@ -67,7 +67,7 @@ export async function saveTotpToBrowser(
   });
   await page.reload();
   await page.waitForSelector('h1', { timeout: 30000 });
-  await page.getByRole('button', { name: 'Add New' }).click();
+  await page.getByRole('link', { name: 'Add New' }).click();
   await page.getByRole('textbox', { name: 'TOTP Secret' }).fill(secret);
   await page.getByRole('textbox', { name: 'Label' }).fill(label);
 
@@ -81,7 +81,7 @@ export async function saveTotpToBrowser(
 
   await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
   await expect(page.getByRole('heading', { name: 'URL Generated' })).toBeVisible();
-  await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
+  await page.getByRole('link', { name: 'View Saved TOTPs' }).click();
   await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
 }
 

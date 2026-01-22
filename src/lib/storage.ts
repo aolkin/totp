@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { TOTPRecord, EncryptedData, TOTPExport } from './types';
-import { uint8ArrayToBase64, base64ToUint8Array } from './crypto';
+import { uint8ArrayToBase64, base64ToUint8Array, encodeToURL } from './crypto';
 
 const DB_NAME = 'totp-storage';
 const DB_VERSION = 1;
@@ -54,6 +54,11 @@ class TOTPStorage {
   async getById(id: number): Promise<TOTPRecord | undefined> {
     const db = await this.dbPromise;
     return db.get(STORE_NAME, id);
+  }
+
+  async findByEncodedData(encodedData: string): Promise<TOTPRecord | undefined> {
+    const records = await this.getAll();
+    return records.find((record) => encodeToURL(record.encrypted) === encodedData);
   }
 
   async update(id: number, data: Partial<TOTPRecord>): Promise<void> {

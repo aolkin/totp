@@ -22,7 +22,7 @@ test.describe('Browser Storage', () => {
       localStorage.setItem('offline_banner_dismissed', 'true');
     });
     await page.reload();
-    await page.getByRole('button', { name: 'Add New' }).click();
+    await page.getByRole('link', { name: 'Add New' }).click();
 
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
     await page.getByRole('textbox', { name: 'Label' }).fill('Test Account');
@@ -56,14 +56,14 @@ test.describe('Browser Storage', () => {
       localStorage.setItem('offline_banner_dismissed', 'true');
     });
     await page.reload();
-    await page.getByRole('button', { name: 'Add New' }).click();
+    await page.getByRole('link', { name: 'Add New' }).click();
 
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
     await page.getByRole('textbox', { name: 'Label' }).fill('Not Saved Account');
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
 
     await expect(page.getByRole('heading', { name: 'URL Generated' })).toBeVisible();
-    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
+    await page.getByRole('link', { name: 'View Saved TOTPs' }).click();
 
     await expect(page.getByText('Not Saved Account')).not.toBeVisible();
   });

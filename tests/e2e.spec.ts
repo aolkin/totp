@@ -46,8 +46,8 @@ test.describe('E2E - Navigation Flows', () => {
   test('should reset form when returning to list and adding new', async ({ page }) => {
     await createTotpUrl(page);
 
-    await page.getByRole('button', { name: 'View Saved TOTPs' }).click();
-    await page.getByRole('button', { name: 'Add New' }).click();
+    await page.getByRole('link', { name: 'View Saved TOTPs' }).click();
+    await page.getByRole('link', { name: 'Add New' }).click();
 
     await expect(page.getByRole('heading', { name: 'Create TOTP URL' })).toBeVisible();
     expect(await page.getByRole('textbox', { name: 'TOTP Secret' }).inputValue()).toBe('');

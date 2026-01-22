@@ -20,12 +20,10 @@
   import { toast } from 'svelte-sonner';
 
   interface Props {
-    onSaved?: () => void;
-    onBack?: () => void;
     showBackButton?: boolean;
   }
 
-  const { onSaved, onBack, showBackButton = false }: Props = $props();
+  const { showBackButton = false }: Props = $props();
   import QrScanner from './QrScanner.svelte';
 
   let secret = $state('');
@@ -130,32 +128,6 @@
     }
   }
 
-  function resetForm() {
-    secret = '';
-    label = '';
-    passphrase = generatePassphrase();
-    isCustomPassphrase = false;
-    showAdvanced = false;
-    digits = DEFAULT_DIGITS;
-    period = DEFAULT_PERIOD;
-    algorithm = DEFAULT_ALGORITHM;
-    saveToBrowser = false;
-    passphraseHint = '';
-    generatedURL = '';
-    savedPassphrase = '';
-    wasSavedToBrowser = false;
-    error = '';
-    showResult = false;
-  }
-
-  function handleCreateAnother() {
-    if (onSaved) {
-      onSaved();
-    } else {
-      resetForm();
-    }
-  }
-
   async function copyURL() {
     try {
       await navigator.clipboard.writeText(generatedURL);
@@ -212,9 +184,12 @@
       {/if}
 
       <div class="space-y-2">
-        <Button type="button" onclick={handleCreateAnother} variant="secondary" class="w-full">
+        <a
+          href="#/"
+          class="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80"
+        >
           View Saved TOTPs
-        </Button>
+        </a>
       </div>
     </CardContent>
   </Card>
@@ -223,8 +198,8 @@
     <CardHeader>
       <div class="flex items-center justify-between">
         <h2 class="text-2xl font-semibold">Create TOTP URL</h2>
-        {#if showBackButton && onBack}
-          <Button variant="ghost" onclick={onBack}>← Back</Button>
+        {#if showBackButton}
+          <a href="#/" class="text-sm text-muted-foreground hover:text-foreground">← Back</a>
         {/if}
       </div>
     </CardHeader>

@@ -1,9 +1,7 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import TotpDisplay from '$lib/components/TotpDisplay.svelte';
   import PassphrasePrompt from '$lib/components/PassphrasePrompt.svelte';
-  import { Button } from '$lib/components/ui/button';
   import {
     decodeFromURL,
     decrypt,
@@ -24,28 +22,21 @@
 
   // Get the encrypted data from the URL parameter
   const dataParam = $derived($page.params.data);
-  // Get optional record ID from search params (for saved TOTPs)
-  const recordId = $derived($page.url.searchParams.get('id'));
 
   async function loadEncryptedData() {
     mode = 'loading';
 
     try {
-      // Load record if we have an ID
-      if (recordId) {
-        const id = parseInt(recordId, 10);
-        if (!isNaN(id)) {
-          const record = await totpStorage.getById(id);
-          if (record) {
-            currentRecord = record;
-            encryptedData = record.encrypted;
-          }
-        }
-      }
+      // Decode from URL parameter first
+      if (dataParam) {
+        const decoded = decodeURIComponent(dataParam);
+        encryptedData = decodeFromURL(decoded);
 
-      // If no record, decode from URL parameter
-      if (!encryptedData && dataParam) {
-        encryptedData = decodeFromURL(decodeURIComponent(dataParam));
+        // Try to find matching saved record by encoded data
+        const record = await totpStorage.findByEncodedData(decoded);
+        if (record) {
+          currentRecord = record;
+        }
       }
 
       if (!encryptedData) {
@@ -88,10 +79,6 @@
     }
   }
 
-  function handleBackToList() {
-    void goto('#/');
-  }
-
   // Load encrypted data on initial render and when route params change
   $effect(() => {
     if (dataParam) {
@@ -107,7 +94,6 @@
 {:else if mode === 'prompt'}
   <PassphrasePrompt
     onUnlock={handleUnlock}
-    onBack={handleBackToList}
     error={promptError}
     label={currentRecord?.label}
     hint={currentRecord?.passphraseHint}
@@ -115,13 +101,12 @@
 {:else if mode === 'display' && config}
   <TotpDisplay
     {config}
-    onBackToList={handleBackToList}
     record={currentRecord}
     encryptedData={currentRecord ? undefined : encryptedData}
   />
 {:else if mode === 'error'}
   <div class="text-center p-8">
     <p class="text-destructive mb-4">{errorMessage}</p>
-    <Button onclick={handleBackToList}>Go Back</Button>
+    <a href="#/" class="text-primary hover:underline">Go Back</a>
   </div>
 {/if}

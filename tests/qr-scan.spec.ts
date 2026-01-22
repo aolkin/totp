@@ -11,7 +11,7 @@ test.describe('QR Scanner', () => {
     });
     await page.reload();
     // App now starts in list mode, click Add New to get to create form
-    await page.getByRole('button', { name: 'Add New' }).click();
+    await page.getByRole('link', { name: 'Add New' }).click();
     await context.grantPermissions(['camera']);
 
     // Verify Scan QR button is visible

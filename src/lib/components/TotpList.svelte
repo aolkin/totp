@@ -21,17 +21,10 @@
   } from '$lib/components/ui/dialog';
   import type { TOTPRecord, TOTPExport } from '$lib/types';
   import { totpStorage } from '$lib/storage';
-  import { generateShareableURL } from '$lib/crypto';
+  import { generateShareableURL, encodeToURL } from '$lib/crypto';
   import { toast } from 'svelte-sonner';
 
   type SortOption = 'recent' | 'alphabetical' | 'created';
-
-  interface Props {
-    onView: (record: TOTPRecord) => void;
-    onAdd: () => void;
-  }
-
-  const { onView, onAdd }: Props = $props();
 
   let records = $state<TOTPRecord[]>([]);
   let searchQuery = $state('');
@@ -39,6 +32,11 @@
   let deleteDialogOpen = $state(false);
   let recordToDelete = $state<TOTPRecord | undefined>(undefined);
   let fileInput: HTMLInputElement | undefined;
+
+  function getViewUrl(record: TOTPRecord): string {
+    const encoded = encodeToURL(record.encrypted);
+    return `#/view/${encodeURIComponent(encoded)}`;
+  }
 
   const filteredRecords = $derived(() => {
     let result = records;
@@ -180,7 +178,12 @@
   <CardHeader>
     <div class="flex items-center justify-between">
       <h2 class="text-2xl font-semibold">Saved TOTPs</h2>
-      <Button onclick={onAdd}>+ Add New</Button>
+      <a
+        href="#/create"
+        class="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+      >
+        + Add New
+      </a>
     </div>
   </CardHeader>
   <CardContent class="space-y-4">
@@ -245,12 +248,12 @@
               </div>
 
               <div class="flex items-center gap-2 shrink-0">
-                <Button
-                  size="sm"
-                  onclick={() => {
-                    onView(record);
-                  }}>View</Button
+                <a
+                  href={getViewUrl(record)}
+                  class="inline-flex items-center justify-center h-9 px-3 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
                 >
+                  View
+                </a>
                 <DropdownMenu>
                   <DropdownMenuTrigger>
                     <Button variant="ghost" size="sm" aria-label="More actions">⋮</Button>
