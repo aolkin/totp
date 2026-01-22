@@ -22,9 +22,8 @@ export async function createTotpUrl(
   });
   await page.reload();
   await page.waitForSelector('h1', { timeout: 30000 });
-  await page.waitForLoadState('networkidle');
   // App now starts in list mode, click Add New to get to create form
-  await page.getByRole('link', { name: 'Add New' }).click({ force: true });
+  await page.getByRole('link', { name: 'Add New' }).click();
   await page.getByRole('textbox', { name: 'TOTP Secret' }).fill(secret);
 
   if (label) {
@@ -68,8 +67,7 @@ export async function saveTotpToBrowser(
   });
   await page.reload();
   await page.waitForSelector('h1', { timeout: 30000 });
-  await page.waitForLoadState('networkidle');
-  await page.getByRole('link', { name: 'Add New' }).click({ force: true });
+  await page.getByRole('link', { name: 'Add New' }).click();
   await page.getByRole('textbox', { name: 'TOTP Secret' }).fill(secret);
   await page.getByRole('textbox', { name: 'Label' }).fill(label);
 

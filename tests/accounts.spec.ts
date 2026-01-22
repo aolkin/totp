@@ -1,13 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 
 async function openAccountManager(page: Page) {
-  const settingsButton = page.getByRole('button', { name: 'Settings' });
-  await settingsButton.waitFor({ state: 'visible', timeout: 15000 });
-  await settingsButton.click();
-
-  const manageAccountsButton = page.getByRole('button', { name: 'Manage Accounts' });
-  await manageAccountsButton.waitFor({ state: 'visible', timeout: 15000 });
-  await manageAccountsButton.click();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('button', { name: 'Manage Accounts' }).click();
 }
 
 test.describe('Account Management', () => {
