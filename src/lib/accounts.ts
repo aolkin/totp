@@ -1,11 +1,14 @@
 import { get, writable } from 'svelte/store';
 import type { Account, EncryptedKey, UnlockedAccount } from './types';
 import { ACCOUNTS_STORE, openTotpDatabase } from './storage';
-import { uint8ArrayToBase64 } from './crypto';
+import {
+  uint8ArrayToBase64,
+  PBKDF2_ITERATIONS,
+  SALT_LENGTH,
+  IV_LENGTH,
+  importPbkdf2KeyMaterial,
+} from './crypto';
 
-const PBKDF2_ITERATIONS = 100000;
-const SALT_LENGTH = 16;
-const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
 const PASSWORD_HASH_BYTES = 32;
 const AUTO_LOCK_CHECK_INTERVAL = 30000;
@@ -17,19 +20,14 @@ export const unlockedAccounts = {
 };
 
 let autoLockInterval: ReturnType<typeof setInterval> | undefined;
-
-function textEncode(value: string): Uint8Array {
-  return new TextEncoder().encode(value);
-}
+let autoLockCallback: ((account: UnlockedAccount) => void) | undefined;
 
 async function derivePasswordHash(password: string, salt: Uint8Array): Promise<string> {
-  const keyMaterial = await crypto.subtle.importKey('raw', textEncode(password), 'PBKDF2', false, [
-    'deriveBits',
-  ]);
+  const keyMaterial = await importPbkdf2KeyMaterial(password);
   const bits = await crypto.subtle.deriveBits(
     {
       name: 'PBKDF2',
-      salt,
+      salt: salt.buffer as ArrayBuffer,
       iterations: PBKDF2_ITERATIONS,
       hash: 'SHA-256',
     },
@@ -40,13 +38,11 @@ async function derivePasswordHash(password: string, salt: Uint8Array): Promise<s
 }
 
 async function deriveKEK(password: string, salt: Uint8Array): Promise<CryptoKey> {
-  const keyMaterial = await crypto.subtle.importKey('raw', textEncode(password), 'PBKDF2', false, [
-    'deriveKey',
-  ]);
+  const keyMaterial = await importPbkdf2KeyMaterial(password);
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt,
+      salt: salt.buffer as ArrayBuffer,
       iterations: PBKDF2_ITERATIONS,
       hash: 'SHA-256',
     },
@@ -78,7 +74,7 @@ async function unwrapDEK(
     'raw',
     wrapped,
     kek,
-    { name: 'AES-GCM', iv: encrypted.iv },
+    { name: 'AES-GCM', iv: encrypted.iv.buffer as ArrayBuffer },
     { name: 'AES-GCM', length: 256 },
     extractable,
     ['encrypt', 'decrypt'],
@@ -175,12 +171,16 @@ export function checkAndLockInactiveAccounts(now = Date.now()): UnlockedAccount[
   return expired;
 }
 
-export function startAutoLockMonitor(): void {
+export function startAutoLockMonitor(onAutoLock?: (account: UnlockedAccount) => void): void {
+  autoLockCallback = onAutoLock;
   if (autoLockInterval) {
     return;
   }
   autoLockInterval = setInterval(() => {
-    checkAndLockInactiveAccounts();
+    const locked = checkAndLockInactiveAccounts();
+    if (autoLockCallback) {
+      locked.forEach((account) => autoLockCallback?.(account));
+    }
   }, AUTO_LOCK_CHECK_INTERVAL);
 }
 
@@ -189,6 +189,7 @@ export function stopAutoLockMonitor(): void {
     clearInterval(autoLockInterval);
     autoLockInterval = undefined;
   }
+  autoLockCallback = undefined;
 }
 
 export async function listAccounts(): Promise<Account[]> {

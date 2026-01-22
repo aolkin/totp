@@ -3,21 +3,22 @@ import { DEFAULT_DIGITS, DEFAULT_PERIOD, DEFAULT_ALGORITHM } from './types';
 
 export type { EncryptedData } from './types';
 
-const PBKDF2_ITERATIONS = 100000;
-const SALT_LENGTH = 16;
-const IV_LENGTH = 12;
+export const PBKDF2_ITERATIONS = 100000;
+export const SALT_LENGTH = 16;
+export const IV_LENGTH = 12;
 const NO_PASSPHRASE_KEY = 'NO_PASSPHRASE';
+
+export async function importPbkdf2KeyMaterial(passphrase: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  return crypto.subtle.importKey('raw', encoder.encode(passphrase), 'PBKDF2', false, [
+    'deriveKey',
+    'deriveBits',
+  ]);
+}
 
 export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const keyMaterial = passphrase || NO_PASSPHRASE_KEY;
-  const encoder = new TextEncoder();
-  const passwordKey = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(keyMaterial),
-    'PBKDF2',
-    false,
-    ['deriveKey'],
-  );
+  const passwordKey = await importPbkdf2KeyMaterial(keyMaterial);
 
   return crypto.subtle.deriveKey(
     {
