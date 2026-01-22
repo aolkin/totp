@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import TotpDisplay from '$lib/components/TotpDisplay.svelte';
   import PassphrasePrompt from '$lib/components/PassphrasePrompt.svelte';
+  import { Button } from '$lib/components/ui/button';
   import {
     decodeFromURL,
     decrypt,
@@ -107,6 +108,6 @@
 {:else if mode === 'error'}
   <div class="text-center p-8">
     <p class="text-destructive mb-4">{errorMessage}</p>
-    <a href="#/" class="text-primary hover:underline">Go Back</a>
+    <Button href="#/" variant="link">Go Back</Button>
   </div>
 {/if}
