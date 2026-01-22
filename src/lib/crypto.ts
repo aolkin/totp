@@ -10,10 +10,9 @@ const NO_PASSPHRASE_KEY = 'NO_PASSPHRASE';
 
 export async function importPbkdf2KeyMaterial(passphrase: string): Promise<CryptoKey> {
   const encoder = new TextEncoder();
-  return crypto.subtle.importKey('raw', encoder.encode(passphrase), 'PBKDF2', false, [
-    'deriveKey',
-    'deriveBits',
-  ]);
+  const bytes = encoder.encode(passphrase);
+  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  return crypto.subtle.importKey('raw', buffer, 'PBKDF2', false, ['deriveKey', 'deriveBits']);
 }
 
 export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {

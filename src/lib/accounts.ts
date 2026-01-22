@@ -13,6 +13,11 @@ const TAG_LENGTH = 16;
 const PASSWORD_HASH_BYTES = 32;
 const AUTO_LOCK_CHECK_INTERVAL = 30000;
 
+function toArrayBuffer(value: Uint8Array): ArrayBuffer {
+  const copy = value.slice();
+  return copy.buffer;
+}
+
 const unlockedAccountsStore = writable<Map<number, UnlockedAccount>>(new Map());
 
 export const unlockedAccounts = {
@@ -27,7 +32,7 @@ async function derivePasswordHash(password: string, salt: Uint8Array): Promise<s
   const bits = await crypto.subtle.deriveBits(
     {
       name: 'PBKDF2',
-      salt: salt.buffer as ArrayBuffer,
+      salt: toArrayBuffer(salt),
       iterations: PBKDF2_ITERATIONS,
       hash: 'SHA-256',
     },
@@ -42,7 +47,7 @@ async function deriveKEK(password: string, salt: Uint8Array): Promise<CryptoKey>
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: salt.buffer as ArrayBuffer,
+      salt: toArrayBuffer(salt),
       iterations: PBKDF2_ITERATIONS,
       hash: 'SHA-256',
     },
@@ -74,7 +79,7 @@ async function unwrapDEK(
     'raw',
     wrapped,
     kek,
-    { name: 'AES-GCM', iv: encrypted.iv.buffer as ArrayBuffer },
+    { name: 'AES-GCM', iv: toArrayBuffer(encrypted.iv) },
     { name: 'AES-GCM', length: 256 },
     extractable,
     ['encrypt', 'decrypt'],

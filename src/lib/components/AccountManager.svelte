@@ -263,13 +263,19 @@
 
   function handleCreateAutoLockChange(value: string | undefined) {
     if (value) {
-      createAutoLock = Number(value);
+      const parsed = Number(value);
+      if (!Number.isNaN(parsed)) {
+        createAutoLock = parsed;
+      }
     }
   }
 
   function handleEditAutoLockChange(value: string | undefined) {
     if (value) {
-      editAutoLock = Number(value);
+      const parsed = Number(value);
+      if (!Number.isNaN(parsed)) {
+        editAutoLock = parsed;
+      }
     }
   }
 </script>
