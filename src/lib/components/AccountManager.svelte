@@ -44,6 +44,8 @@
   let accounts = $state<Account[]>([]);
   let unlockedMap = $state<Map<number, UnlockedAccount>>(new Map());
   let loading = $state(false);
+  const AUTO_LOCK_REFRESH_INTERVAL = 30000;
+
   let now = $state(Date.now());
 
   let createOpen = $state(false);
@@ -94,7 +96,7 @@
     });
     const timer = window.setInterval(() => {
       now = Date.now();
-    }, 30000);
+    }, AUTO_LOCK_REFRESH_INTERVAL);
     return () => {
       unsubscribe();
       clearInterval(timer);

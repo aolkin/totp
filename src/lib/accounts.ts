@@ -7,16 +7,12 @@ import {
   SALT_LENGTH,
   IV_LENGTH,
   importPbkdf2KeyMaterial,
+  toArrayBuffer,
 } from './crypto';
 
 const TAG_LENGTH = 16;
 const PASSWORD_HASH_BYTES = 32;
 const AUTO_LOCK_CHECK_INTERVAL = 30000;
-
-function toArrayBuffer(value: Uint8Array): ArrayBuffer {
-  const copy = value.slice();
-  return copy.buffer;
-}
 
 const unlockedAccountsStore = writable<Map<number, UnlockedAccount>>(new Map());
 

@@ -8,10 +8,18 @@ export const SALT_LENGTH = 16;
 export const IV_LENGTH = 12;
 const NO_PASSPHRASE_KEY = 'NO_PASSPHRASE';
 
+/**
+ * Creates an ArrayBuffer copy for Web Crypto APIs that require ArrayBuffer inputs.
+ */
+export function toArrayBuffer(value: Uint8Array): ArrayBuffer {
+  const copy = value.slice();
+  return copy.buffer;
+}
+
 export async function importPbkdf2KeyMaterial(passphrase: string): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const bytes = encoder.encode(passphrase);
-  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const buffer = toArrayBuffer(bytes);
   return crypto.subtle.importKey('raw', buffer, 'PBKDF2', false, ['deriveKey', 'deriveBits']);
 }
 
