@@ -19,15 +19,15 @@
   }
 
   let {
-    mode,
+    mode, // eslint-disable-line prefer-const
     username = $bindable(''),
     password = $bindable(''),
     confirmPassword = $bindable(''),
     currentPassword = $bindable(''),
     newPassword = $bindable(''),
-    autoLock = $bindable(15),
-    changePassword = $bindable(false),
-    error = $bindable(''),
+    autoLock,
+    changePassword = $bindable(),
+    error, // eslint-disable-line prefer-const
   }: Props = $props();
 </script>
 
@@ -50,7 +50,7 @@
   <AutoLockSelect
     value={autoLock}
     options={AUTO_LOCK_OPTIONS}
-    onValueChange={(value) => {
+    onValueChange={(value: number) => {
       autoLock = value;
     }}
   />
