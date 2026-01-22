@@ -6,6 +6,11 @@
   import { Checkbox } from '$lib/components/ui/checkbox';
   import AutoLockSelect from '$lib/components/AutoLockSelect.svelte';
   import {
+    AUTO_LOCK_OPTIONS,
+    DEFAULT_AUTO_LOCK_MINUTES,
+    formatAutoLockLabel,
+  } from '$lib/auto-lock';
+  import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -31,17 +36,6 @@
   }
 
   let { open = $bindable(false) }: Props = $props();
-
-  const AUTO_LOCK_OPTIONS: { value: number; label: string }[] = [
-    { value: 5, label: '5 minutes' },
-    { value: 10, label: '10 minutes' },
-    { value: 15, label: '15 minutes' },
-    { value: 30, label: '30 minutes' },
-    { value: 60, label: '1 hour' },
-    { value: 0, label: 'Never' },
-  ];
-
-  const DEFAULT_AUTO_LOCK_MINUTES = 15;
 
   let accounts = $state<Account[]>([]);
   let unlockedMap = $state<Map<number, UnlockedAccount>>(new Map());
@@ -344,8 +338,7 @@
                   <div class="font-medium">{account.username}</div>
                   <div class="text-sm text-muted-foreground">
                     {isUnlocked(account.id) ? '✅ Unlocked' : '🔒 Locked'} • Auto-lock:{' '}
-                    {AUTO_LOCK_OPTIONS.find((option) => option.value === account.autoLockMinutes)
-                      ?.label ?? String(account.autoLockMinutes)}
+                    {formatAutoLockLabel(AUTO_LOCK_OPTIONS, account.autoLockMinutes)}
                   </div>
                   {#if getAutoLockCountdown(account)}
                     <div class="text-xs text-muted-foreground">{getAutoLockCountdown(account)}</div>

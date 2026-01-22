@@ -1,10 +1,11 @@
 <script lang="ts">
   import { Label } from '$lib/components/ui/label';
   import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
+  import { formatAutoLockLabel, type AutoLockOption } from '$lib/auto-lock';
 
   interface Props {
     value: number;
-    options: { value: number; label: string }[];
+    options: AutoLockOption[];
     label?: string;
     onValueChange: (value: number) => void;
   }
@@ -16,7 +17,7 @@
       return;
     }
     const parsed = Number(selected);
-    if (Number.isFinite(parsed)) {
+    if (Number.isFinite(parsed) && parsed >= 0) {
       onValueChange(parsed);
     }
   }
@@ -32,7 +33,7 @@
     }}
   >
     <SelectTrigger class="w-full">
-      <span>{options.find((option) => option.value === value)?.label ?? String(value)}</span>
+      <span>{formatAutoLockLabel(options, value)}</span>
     </SelectTrigger>
     <SelectContent>
       {#each options as option}
