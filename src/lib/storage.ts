@@ -1,33 +1,50 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { TOTPRecord, EncryptedData, TOTPExport } from './types';
+import type { TOTPRecord, EncryptedData, TOTPExport, Account } from './types';
 import { uint8ArrayToBase64, base64ToUint8Array, encodeToURL } from './crypto';
 
-const DB_NAME = 'totp-storage';
-const DB_VERSION = 1;
-const STORE_NAME = 'secrets';
+export const DB_NAME = 'totp-storage';
+export const DB_VERSION = 3;
+export const STORE_NAME = 'secrets';
+export const ACCOUNTS_STORE = 'accounts';
 
-interface TOTPDBSchema extends DBSchema {
+export interface TOTPDBSchema extends DBSchema {
   secrets: {
     key: number;
     value: TOTPRecord;
     // For autoIncrement stores, the key is optional when adding
   };
+  accounts: {
+    key: number;
+    value: Account;
+    indexes: { username: string };
+  };
+}
+
+export function openTotpDatabase(): Promise<IDBPDatabase<TOTPDBSchema>> {
+  return openDB<TOTPDBSchema>(DB_NAME, DB_VERSION, {
+    upgrade(db, oldVersion) {
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
+      }
+      if (oldVersion < 3 && !db.objectStoreNames.contains(ACCOUNTS_STORE)) {
+        const store = db.createObjectStore(ACCOUNTS_STORE, {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
+        store.createIndex('username', 'username', { unique: true });
+      }
+    },
+  });
 }
 
 class TOTPStorage {
   private dbPromise: Promise<IDBPDatabase<TOTPDBSchema>>;
 
   constructor() {
-    this.dbPromise = openDB<TOTPDBSchema>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          db.createObjectStore(STORE_NAME, {
-            keyPath: 'id',
-            autoIncrement: true,
-          });
-        }
-      },
-    });
+    this.dbPromise = openTotpDatabase();
   }
 
   async add(label: string, encrypted: EncryptedData, passphraseHint?: string): Promise<number> {
