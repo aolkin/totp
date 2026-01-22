@@ -3,8 +3,8 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
-  import { Checkbox } from '$lib/components/ui/checkbox';
-  import AutoLockSelect from '$lib/components/AutoLockSelect.svelte';
+  import AccountForm from '$lib/components/AccountForm.svelte';
+  import ErrorMessage from '$lib/components/ErrorMessage.svelte';
   import {
     AUTO_LOCK_OPTIONS,
     DEFAULT_AUTO_LOCK_MINUTES,
@@ -44,69 +44,93 @@
 
   let now = $state(Date.now());
 
-  interface CreateDialogState {
-    open: boolean;
-    username: string;
-    password: string;
-    confirmPassword: string;
-    autoLock: number;
-    error: string;
-  }
+  let activeDialog = $state<'create' | 'unlock' | 'edit' | 'delete' | undefined>(undefined);
+  let targetAccount = $state<Account | undefined>(undefined);
 
-  interface UnlockDialogState {
-    open: boolean;
-    target: Account | undefined;
-    password: string;
-    error: string;
-  }
+  const successMessages = {
+    create: 'Account created',
+    unlock: 'Account unlocked',
+    edit: 'Account updated',
+    delete: 'Account deleted',
+    lock: 'Account locked',
+  };
 
-  interface EditDialogState {
-    open: boolean;
-    target: Account | undefined;
-    autoLock: number;
-    changePassword: boolean;
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-    error: string;
-  }
+  const dialogConfig = $derived(() => {
+    const configs = {
+      create: {
+        title: 'Create Account',
+        description: 'Passwords cannot be recovered.',
+        submitText: 'Create Account',
+        submitVariant: 'default' as const,
+      },
+      unlock: {
+        title: 'Unlock Account',
+        description: `Account: ${targetAccount?.username}`,
+        submitText: 'Unlock',
+        submitVariant: 'default' as const,
+      },
+      edit: {
+        title: `Edit Account: ${targetAccount?.username}`,
+        description: 'Update auto-lock and password settings.',
+        submitText: 'Save Changes',
+        submitVariant: 'default' as const,
+      },
+      delete: {
+        title: 'Delete Account?',
+        description: `Are you sure you want to delete "${targetAccount?.username}"? This action is permanent.`,
+        submitText: 'Delete',
+        submitVariant: 'destructive' as const,
+      },
+    };
+    return activeDialog ? configs[activeDialog] : null;
+  });
 
-  interface DeleteDialogState {
-    open: boolean;
-    target: Account | undefined;
-  }
-
-  const createDialog = $state<CreateDialogState>({
-    open: false,
+  const formState = $state({
     username: '',
     password: '',
     confirmPassword: '',
-    autoLock: DEFAULT_AUTO_LOCK_MINUTES,
-    error: '',
-  });
-
-  const unlockDialog = $state<UnlockDialogState>({
-    open: false,
-    target: undefined,
-    password: '',
-    error: '',
-  });
-
-  const editDialog = $state<EditDialogState>({
-    open: false,
-    target: undefined,
-    autoLock: DEFAULT_AUTO_LOCK_MINUTES,
-    changePassword: false,
     currentPassword: '',
     newPassword: '',
-    confirmPassword: '',
+    autoLock: DEFAULT_AUTO_LOCK_MINUTES,
+    changePassword: false,
     error: '',
   });
 
-  const deleteDialog = $state<DeleteDialogState>({
-    open: false,
-    target: undefined,
-  });
+  function resetForm() {
+    formState.username = '';
+    formState.password = '';
+    formState.confirmPassword = '';
+    formState.currentPassword = '';
+    formState.newPassword = '';
+    formState.autoLock = DEFAULT_AUTO_LOCK_MINUTES;
+    formState.changePassword = false;
+    formState.error = '';
+  }
+
+  function validatePassword(password: string, confirmPassword: string): string | undefined {
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters.';
+    }
+    if (password !== confirmPassword) {
+      return 'Passwords do not match.';
+    }
+    return undefined;
+  }
+
+  function openDialog(type: 'create' | 'unlock' | 'edit' | 'delete', account?: Account) {
+    targetAccount = account;
+    if (type === 'create' || type === 'unlock') {
+      resetForm();
+    } else if (type === 'edit' && account) {
+      formState.autoLock = account.autoLockMinutes;
+      formState.changePassword = false;
+      formState.currentPassword = '';
+      formState.newPassword = '';
+      formState.confirmPassword = '';
+      formState.error = '';
+    }
+    activeDialog = type;
+  }
 
   async function loadAccounts() {
     loading = true;
@@ -158,147 +182,116 @@
     return `Auto-locks in ${String(remainingMinutes)}m`;
   }
 
-  function resetCreateForm() {
-    createDialog.username = '';
-    createDialog.password = '';
-    createDialog.confirmPassword = '';
-    createDialog.autoLock = DEFAULT_AUTO_LOCK_MINUTES;
-    createDialog.error = '';
-  }
-
   async function handleCreateAccount() {
-    createDialog.error = '';
-    if (!createDialog.username.trim()) {
-      createDialog.error = 'Username is required.';
+    formState.error = '';
+    if (!formState.username.trim()) {
+      formState.error = 'Username is required.';
       return;
     }
-    if (createDialog.password.length < 8) {
-      createDialog.error = 'Password must be at least 8 characters.';
-      return;
-    }
-    if (createDialog.password !== createDialog.confirmPassword) {
-      createDialog.error = 'Passwords do not match.';
+    const passwordError = validatePassword(formState.password, formState.confirmPassword);
+    if (passwordError) {
+      formState.error = passwordError;
       return;
     }
     try {
-      await createAccount(
-        createDialog.username.trim(),
-        createDialog.password,
-        createDialog.autoLock,
-      );
-      toast.success('Account created');
-      createDialog.open = false;
-      resetCreateForm();
+      await createAccount(formState.username.trim(), formState.password, formState.autoLock);
+      toast.success(successMessages.create);
+      activeDialog = undefined;
+      resetForm();
       await loadAccounts();
     } catch (error) {
-      createDialog.error = error instanceof Error ? error.message : 'Failed to create account.';
+      formState.error = error instanceof Error ? error.message : 'Failed to create account.';
     }
-  }
-
-  function openUnlockDialog(account: Account) {
-    unlockDialog.target = account;
-    unlockDialog.password = '';
-    unlockDialog.error = '';
-    unlockDialog.open = true;
   }
 
   async function handleUnlock() {
-    if (!unlockDialog.target) {
-      return;
-    }
-    unlockDialog.error = '';
+    if (!targetAccount) return;
+    formState.error = '';
     try {
-      await unlockAccount(unlockDialog.target.id, unlockDialog.password);
-      toast.success('Account unlocked');
-      unlockDialog.open = false;
-      unlockDialog.password = '';
+      await unlockAccount(targetAccount.id, formState.password);
+      toast.success(successMessages.unlock);
+      activeDialog = undefined;
       await loadAccounts();
     } catch (error) {
-      unlockDialog.error = error instanceof Error ? error.message : 'Failed to unlock account.';
+      formState.error = error instanceof Error ? error.message : 'Failed to unlock account.';
     }
   }
 
   function handleLock(accountId: number) {
     lockAccount(accountId);
-    toast.success('Account locked');
-  }
-
-  function openEditDialog(account: Account) {
-    editDialog.target = account;
-    editDialog.autoLock = account.autoLockMinutes;
-    editDialog.changePassword = false;
-    editDialog.currentPassword = '';
-    editDialog.newPassword = '';
-    editDialog.confirmPassword = '';
-    editDialog.error = '';
-    editDialog.open = true;
+    toast.success(successMessages.lock);
   }
 
   async function handleEditSave() {
-    if (!editDialog.target) {
-      return;
-    }
-    editDialog.error = '';
+    if (!targetAccount) return;
+    formState.error = '';
     try {
-      await updateAutoLockMinutes(editDialog.target.id, editDialog.autoLock);
+      await updateAutoLockMinutes(targetAccount.id, formState.autoLock);
     } catch (error) {
-      editDialog.error = error instanceof Error ? error.message : 'Failed to update account.';
+      formState.error = error instanceof Error ? error.message : 'Failed to update account.';
       return;
     }
 
-    if (editDialog.changePassword) {
-      if (!isUnlocked(editDialog.target.id)) {
-        editDialog.error = 'Unlock this account before changing its password.';
+    if (formState.changePassword) {
+      if (!isUnlocked(targetAccount.id)) {
+        formState.error = 'Unlock this account before changing its password.';
         return;
       }
-      if (editDialog.newPassword.length < 8) {
-        editDialog.error = 'New password must be at least 8 characters.';
+      if (!formState.currentPassword) {
+        formState.error = 'Enter your current password.';
         return;
       }
-      if (editDialog.newPassword !== editDialog.confirmPassword) {
-        editDialog.error = 'New passwords do not match.';
-        return;
-      }
-      if (!editDialog.currentPassword) {
-        editDialog.error = 'Enter your current password.';
+      const passwordError = validatePassword(formState.newPassword, formState.confirmPassword);
+      if (passwordError) {
+        formState.error = passwordError;
         return;
       }
       try {
         await changeAccountPassword(
-          editDialog.target.id,
-          editDialog.currentPassword,
-          editDialog.newPassword,
+          targetAccount.id,
+          formState.currentPassword,
+          formState.newPassword,
         );
       } catch (error) {
-        editDialog.error = error instanceof Error ? error.message : 'Failed to change password.';
+        formState.error = error instanceof Error ? error.message : 'Failed to change password.';
         return;
       }
     }
 
-    toast.success('Account updated');
-    editDialog.open = false;
+    toast.success(successMessages.edit);
+    activeDialog = undefined;
     await loadAccounts();
   }
 
-  function openDeleteDialog(account: Account) {
-    deleteDialog.target = account;
-    deleteDialog.open = true;
-  }
-
   async function handleDelete() {
-    if (!deleteDialog.target) {
-      return;
-    }
+    if (!targetAccount) return;
     try {
-      await deleteAccount(deleteDialog.target.id);
-      toast.success('Account deleted');
+      await deleteAccount(targetAccount.id);
+      toast.success(successMessages.delete);
       await loadAccounts();
     } catch (error) {
       console.error('Failed to delete account:', error);
       toast.error('Failed to delete account');
     } finally {
-      deleteDialog.open = false;
-      deleteDialog.target = undefined;
+      activeDialog = undefined;
+      targetAccount = undefined;
+    }
+  }
+
+  async function handleSubmit() {
+    switch (activeDialog) {
+      case 'create':
+        await handleCreateAccount();
+        break;
+      case 'unlock':
+        await handleUnlock();
+        break;
+      case 'edit':
+        await handleEditSave();
+        break;
+      case 'delete':
+        await handleDelete();
+        break;
     }
   }
 </script>
@@ -318,7 +311,7 @@
         <Button
           size="sm"
           onclick={() => {
-            createDialog.open = true;
+            openDialog('create');
           }}>+ New</Button
         >
       </div>
@@ -360,7 +353,7 @@
                     <Button
                       size="sm"
                       onclick={() => {
-                        openUnlockDialog(account);
+                        openDialog('unlock', account);
                       }}>Unlock</Button
                     >
                   {/if}
@@ -368,7 +361,7 @@
                     size="sm"
                     variant="outline"
                     onclick={() => {
-                      openEditDialog(account);
+                      openDialog('edit', account);
                     }}
                   >
                     Edit
@@ -377,7 +370,7 @@
                     size="sm"
                     variant="destructive"
                     onclick={() => {
-                      openDeleteDialog(account);
+                      openDialog('delete', account);
                     }}
                   >
                     Delete Account
@@ -392,170 +385,57 @@
   </DialogContent>
 </Dialog>
 
-<Dialog bind:open={createDialog.open}>
-  <DialogContent class="sm:max-w-lg">
-    <DialogHeader>
-      <DialogTitle>Create Account</DialogTitle>
-      <DialogDescription>Passwords cannot be recovered.</DialogDescription>
-    </DialogHeader>
-    <div class="space-y-4">
-      <div class="space-y-2">
-        <Label for="create-username">Username</Label>
-        <Input id="create-username" bind:value={createDialog.username} placeholder="alice@work" />
-      </div>
-      <div class="space-y-2">
-        <Label for="create-password">Password</Label>
-        <Input id="create-password" type="password" bind:value={createDialog.password} />
-      </div>
-      <div class="space-y-2">
-        <Label for="create-confirm">Confirm Password</Label>
-        <Input id="create-confirm" type="password" bind:value={createDialog.confirmPassword} />
-      </div>
-      <AutoLockSelect
-        value={createDialog.autoLock}
-        options={AUTO_LOCK_OPTIONS}
-        onValueChange={(value: number) => {
-          createDialog.autoLock = value;
-        }}
-      />
-      <div class="rounded-md border border-muted bg-muted/40 p-3 text-sm text-muted-foreground">
-        Accounts are stored only in this browser. Deleting an account is permanent.
-      </div>
-      {#if createDialog.error}
-        <div
-          class="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
-        >
-          {createDialog.error}
-        </div>
-      {/if}
-    </div>
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onclick={() => {
-          createDialog.open = false;
-        }}>Cancel</Button
-      >
-      <Button onclick={handleCreateAccount}>Create Account</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+{#if dialogConfig}
+  <Dialog
+    open={true}
+    onOpenChange={(isOpen) => {
+      if (!isOpen) activeDialog = undefined;
+    }}
+  >
+    <DialogContent class={activeDialog === 'create' || activeDialog === 'edit' ? 'sm:max-w-lg' : 'sm:max-w-md'}>
+      <DialogHeader>
+        <DialogTitle>{dialogConfig.title}</DialogTitle>
+        <DialogDescription>{dialogConfig.description}</DialogDescription>
+      </DialogHeader>
 
-<Dialog bind:open={unlockDialog.open}>
-  <DialogContent class="sm:max-w-md">
-    <DialogHeader>
-      <DialogTitle>Unlock Account</DialogTitle>
-      <DialogDescription>Account: {unlockDialog.target?.username}</DialogDescription>
-    </DialogHeader>
-    <div class="space-y-3">
-      <Label for="unlock-password">Password</Label>
-      <Input id="unlock-password" type="password" bind:value={unlockDialog.password} />
-      {#if unlockDialog.error}
-        <div
-          class="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
-        >
-          {unlockDialog.error}
-        </div>
-      {/if}
-    </div>
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onclick={() => {
-          unlockDialog.open = false;
-        }}>Cancel</Button
-      >
-      <Button onclick={handleUnlock}>Unlock</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-
-<Dialog bind:open={editDialog.open}>
-  <DialogContent class="sm:max-w-lg">
-    <DialogHeader>
-      <DialogTitle>Edit Account: {editDialog.target?.username}</DialogTitle>
-      <DialogDescription>Update auto-lock and password settings.</DialogDescription>
-    </DialogHeader>
-    <div class="space-y-4">
-      <AutoLockSelect
-        value={editDialog.autoLock}
-        options={AUTO_LOCK_OPTIONS}
-        onValueChange={(value: number) => {
-          editDialog.autoLock = value;
-        }}
-      />
-
-      <div class="flex items-center space-x-2">
-        <Checkbox id="edit-change-password" bind:checked={editDialog.changePassword} />
-        <Label for="edit-change-password" class="text-sm font-medium cursor-pointer">
-          Update password
-        </Label>
-      </div>
-
-      {#if editDialog.changePassword}
+      {#if activeDialog === 'create'}
+        <AccountForm
+          mode="create"
+          bind:username={formState.username}
+          bind:password={formState.password}
+          bind:confirmPassword={formState.confirmPassword}
+          bind:autoLock={formState.autoLock}
+          bind:error={formState.error}
+        />
+      {:else if activeDialog === 'unlock'}
         <div class="space-y-3">
-          <div class="text-xs text-muted-foreground">
-            Unlock the account before changing its password.
-          </div>
-          <div class="space-y-2">
-            <Label for="edit-current-password">Current Password</Label>
-            <Input
-              id="edit-current-password"
-              type="password"
-              bind:value={editDialog.currentPassword}
-            />
-          </div>
-          <div class="space-y-2">
-            <Label for="edit-new-password">New Password</Label>
-            <Input id="edit-new-password" type="password" bind:value={editDialog.newPassword} />
-          </div>
-          <div class="space-y-2">
-            <Label for="edit-confirm-password">Confirm New Password</Label>
-            <Input
-              id="edit-confirm-password"
-              type="password"
-              bind:value={editDialog.confirmPassword}
-            />
-          </div>
+          <Label for="unlock-password">Password</Label>
+          <Input id="unlock-password" type="password" bind:value={formState.password} />
+          <ErrorMessage error={formState.error} />
         </div>
+      {:else if activeDialog === 'edit'}
+        <AccountForm
+          mode="edit"
+          bind:autoLock={formState.autoLock}
+          bind:changePassword={formState.changePassword}
+          bind:currentPassword={formState.currentPassword}
+          bind:newPassword={formState.newPassword}
+          bind:confirmPassword={formState.confirmPassword}
+          bind:error={formState.error}
+        />
       {/if}
 
-      {#if editDialog.error}
-        <div
-          class="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
+      <DialogFooter>
+        <Button
+          variant="outline"
+          onclick={() => {
+            activeDialog = undefined;
+          }}>Cancel</Button
         >
-          {editDialog.error}
-        </div>
-      {/if}
-    </div>
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onclick={() => {
-          editDialog.open = false;
-        }}>Cancel</Button
-      >
-      <Button onclick={handleEditSave}>Save Changes</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-
-<Dialog bind:open={deleteDialog.open}>
-  <DialogContent class="sm:max-w-md">
-    <DialogHeader>
-      <DialogTitle>Delete Account?</DialogTitle>
-      <DialogDescription>
-        Are you sure you want to delete "{deleteDialog.target?.username}"? This action is permanent.
-      </DialogDescription>
-    </DialogHeader>
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onclick={() => {
-          deleteDialog.open = false;
-        }}>Cancel</Button
-      >
-      <Button variant="destructive" onclick={handleDelete}>Delete</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+        <Button variant={dialogConfig.submitVariant} onclick={handleSubmit}>
+          {dialogConfig.submitText}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+{/if}
