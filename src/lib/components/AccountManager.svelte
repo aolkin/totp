@@ -112,7 +112,7 @@
       return 'Password must be at least 8 characters';
     }
     if (password !== confirmPassword) {
-      return 'Passwords do not match.';
+      return 'Passwords do not match';
     }
     return undefined;
   }
