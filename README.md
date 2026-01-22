@@ -59,6 +59,9 @@ The app can optionally be installed as a PWA for the best experience, but instal
 ### Commands
 
 ```bash
+# After installing dependencies
+npm run sync
+
 # Development server
 npm run dev
 
