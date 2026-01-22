@@ -23,6 +23,8 @@ This is a **fully client-side browser-based TOTP (Time-based One-Time Password) 
 
 ## Build, Test, and Development Commands
 
+**Required setup:** After `npm install`, run `npm run sync` before type checking, linting, or other build/test commands.
+
 ```bash
 # Development server (runs on http://localhost:5173)
 npm run dev
