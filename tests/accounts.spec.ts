@@ -1,16 +1,22 @@
 import { test, expect, type Page } from '@playwright/test';
 
 async function openAccountManager(page: Page) {
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(100);
-  await page.getByRole('button', { name: 'Settings' }).click({ force: true });
-  await page.getByRole('button', { name: 'Manage Accounts' }).click({ force: true });
+  const settingsButton = page.getByRole('button', { name: 'Settings' });
+  await settingsButton.waitFor({ state: 'visible' });
+  await settingsButton.click({ force: true });
+
+  const manageAccountsButton = page.getByRole('button', { name: 'Manage Accounts' });
+  await manageAccountsButton.waitFor({ state: 'visible' });
+  await manageAccountsButton.click({ force: true });
 }
 
 test.describe('Account Management', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => indexedDB.deleteDatabase('totp-storage'));
+    await page.goto('/#/');
+    await page.evaluate(() => {
+      indexedDB.deleteDatabase('totp-storage');
+      localStorage.setItem('offline_banner_dismissed', 'true');
+    });
     await page.reload();
   });
 
