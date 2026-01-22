@@ -209,13 +209,13 @@ The `view/[data]/+page.svelte` route receives encrypted data via `$page.params.d
 import { goto } from '$app/navigation';
 
 // Navigate to create
-goto('/create');
+goto('#/create');
 
 // Navigate to view with encrypted data
-goto(`/view/${encodeURIComponent(encodedData)}`);
+goto(`#/view/${encodeURIComponent(encodedData)}`);
 
 // Navigate back to list
-goto('/');
+goto('#/');
 ```
 
 ### Link Navigation
