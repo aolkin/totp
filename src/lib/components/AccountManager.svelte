@@ -153,11 +153,6 @@
     return unlockedMap.get(accountId);
   }
 
-  function formatAutoLock(minutes: number): string {
-    const option = AUTO_LOCK_OPTIONS.find((item) => item.value === minutes);
-    return option ? option.label : `${String(minutes)} minutes`;
-  }
-
   function getAutoLockCountdown(account: Account): string | undefined {
     const unlocked = getUnlockedAccount(account.id);
     if (!unlocked || account.autoLockMinutes === 0) {
@@ -349,7 +344,8 @@
                   <div class="font-medium">{account.username}</div>
                   <div class="text-sm text-muted-foreground">
                     {isUnlocked(account.id) ? '✅ Unlocked' : '🔒 Locked'} • Auto-lock:{' '}
-                    {formatAutoLock(account.autoLockMinutes)}
+                    {AUTO_LOCK_OPTIONS.find((option) => option.value === account.autoLockMinutes)
+                      ?.label ?? String(account.autoLockMinutes)}
                   </div>
                   {#if getAutoLockCountdown(account)}
                     <div class="text-xs text-muted-foreground">{getAutoLockCountdown(account)}</div>
