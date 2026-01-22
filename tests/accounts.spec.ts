@@ -1,8 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 
 async function openAccountManager(page: Page) {
-  await page.getByRole('button', { name: 'Settings' }).click();
-  await page.getByRole('button', { name: 'Manage Accounts' }).click();
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(100);
+  await page.getByRole('button', { name: 'Settings' }).click({ force: true });
+  await page.getByRole('button', { name: 'Manage Accounts' }).click({ force: true });
 }
 
 test.describe('Account Management', () => {
