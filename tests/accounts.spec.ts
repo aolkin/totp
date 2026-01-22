@@ -2,12 +2,12 @@ import { test, expect, type Page } from '@playwright/test';
 
 async function openAccountManager(page: Page) {
   const settingsButton = page.getByRole('button', { name: 'Settings' });
-  await settingsButton.waitFor({ state: 'visible' });
-  await settingsButton.click({ force: true });
+  await settingsButton.waitFor({ state: 'visible', timeout: 15000 });
+  await settingsButton.click();
 
   const manageAccountsButton = page.getByRole('button', { name: 'Manage Accounts' });
-  await manageAccountsButton.waitFor({ state: 'visible' });
-  await manageAccountsButton.click({ force: true });
+  await manageAccountsButton.waitFor({ state: 'visible', timeout: 15000 });
+  await manageAccountsButton.click();
 }
 
 test.describe('Account Management', () => {
@@ -16,8 +16,10 @@ test.describe('Account Management', () => {
     await page.evaluate(() => {
       indexedDB.deleteDatabase('totp-storage');
       localStorage.setItem('offline_banner_dismissed', 'true');
+      localStorage.setItem('update_banner_dismissed', 'true');
     });
     await page.reload();
+    await page.waitForSelector('h1');
   });
 
   test('can create account with username and password', async ({ page }) => {
