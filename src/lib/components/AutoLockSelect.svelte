@@ -16,7 +16,7 @@
       return;
     }
     const parsed = Number(selected);
-    if (!Number.isNaN(parsed)) {
+    if (Number.isFinite(parsed)) {
       onValueChange(parsed);
     }
   }
