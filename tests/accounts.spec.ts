@@ -37,7 +37,7 @@ test.describe('Account Management', () => {
     await page.getByLabel('Confirm Password').fill('short');
     await page.getByRole('button', { name: 'Create Account' }).click();
 
-    await expect(page.getByText('Password must be at least 8 characters')).toBeVisible();
+    await expect(page.getByText('Password must be at least 8 characters.')).toBeVisible();
   });
 
   test('rejects mismatched password confirmation', async ({ page }) => {
