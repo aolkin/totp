@@ -38,23 +38,20 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
+      - name: Build project
+        # Run build first to generate .svelte-kit/tsconfig.json needed for type-aware linting
+        run: npm run build
+        env:
+          VITE_COMMIT_HASH: ${{ github.sha }}
+
       - name: Run ESLint
         run: npm run lint
-        env:
-          # Type-aware linting requires extra memory for TypeScript type checking
-          # Public repos have 16GB RAM available, allocating 6GB for Node.js
-          NODE_OPTIONS: --max-old-space-size=6144
 
       - name: Check Prettier formatting
         run: npm run format:check
 
       - name: Run TypeScript type checking
         run: npm run check
-
-      - name: Build project
-        run: npm run build
-        env:
-          VITE_COMMIT_HASH: ${{ github.sha }}
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
