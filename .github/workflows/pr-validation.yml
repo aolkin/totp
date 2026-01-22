@@ -41,7 +41,8 @@ jobs:
       - name: Run ESLint
         run: npm run lint
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          # Type-aware linting with parserOptions.project requires significant memory
+          NODE_OPTIONS: --max-old-space-size=8192
 
       - name: Check Prettier formatting
         run: npm run format:check
