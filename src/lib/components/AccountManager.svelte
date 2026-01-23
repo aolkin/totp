@@ -17,9 +17,11 @@
     DialogFooter,
     DialogHeader,
     DialogTitle,
+    DialogTrigger,
   } from '$lib/components/ui/dialog';
   import { toast } from 'svelte-sonner';
   import type { Account, UnlockedAccount } from '$lib/types';
+  import type { Snippet } from 'svelte';
   import {
     listAccounts,
     createAccount,
@@ -32,10 +34,10 @@
   } from '$lib/accounts';
 
   interface Props {
-    open?: boolean;
+    trigger: Snippet;
   }
 
-  let { open = $bindable(false) }: Props = $props();
+  const { trigger }: Props = $props();
 
   let accounts = $state<Account[]>([]);
   let unlockedMap = $state<Map<number, UnlockedAccount>>(new Map());
@@ -143,12 +145,6 @@
       loading = false;
     }
   }
-
-  $effect(() => {
-    if (open) {
-      void loadAccounts();
-    }
-  });
 
   onMount(() => {
     const unsubscribe = unlockedAccounts.subscribe((map) => {
@@ -296,159 +292,161 @@
   }
 </script>
 
-{#if open}
-  <Dialog
-    open={true}
-    onOpenChange={(isOpen) => {
-      if (!isOpen) open = false;
-    }}
-  >
-    <DialogContent class="sm:max-w-2xl">
-      <DialogHeader>
-        <DialogTitle>Accounts</DialogTitle>
-        <DialogDescription>Manage account access and auto-lock settings.</DialogDescription>
-      </DialogHeader>
+<Dialog
+  onOpenChange={(isOpen) => {
+    if (isOpen) {
+      void loadAccounts();
+    }
+  }}
+>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props}>
+        {@render trigger()}
+      </div>
+    {/snippet}
+  </DialogTrigger>
+  <DialogContent class="sm:max-w-2xl">
+    <DialogHeader>
+      <DialogTitle>Accounts</DialogTitle>
+      <DialogDescription>Manage account access and auto-lock settings.</DialogDescription>
+    </DialogHeader>
 
-      <div class="space-y-4">
-        <div class="flex items-center justify-between gap-4">
-          <div class="text-sm text-muted-foreground">
-            {accounts.length === 0 ? 'No accounts yet.' : `${String(accounts.length)} account(s)`}.
-          </div>
-          <Button
-            size="sm"
-            onclick={() => {
-              openDialog('create');
-            }}>+ New</Button
-          >
+    <div class="space-y-4">
+      <div class="flex items-center justify-between gap-4">
+        <div class="text-sm text-muted-foreground">
+          {accounts.length === 0 ? 'No accounts yet.' : `${String(accounts.length)} account(s)`}.
         </div>
+        <Button
+          size="sm"
+          onclick={() => {
+            openDialog('create');
+          }}>+ New</Button
+        >
+      </div>
 
-        {#if loading}
-          <div class="text-sm text-muted-foreground">Loading accounts...</div>
-        {:else if accounts.length === 0}
-          <div
-            class="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground"
-          >
-            Create your first account to enable secure passphrase storage.
-          </div>
-        {:else}
-          <div class="space-y-3">
-            {#each accounts as account (account.id)}
-              <div class="rounded-md border bg-card p-4">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div class="space-y-1">
-                    <div class="font-medium">{account.username}</div>
-                    <div class="text-sm text-muted-foreground">
-                      {isUnlocked(account.id) ? '✅ Unlocked' : '🔒 Locked'} • Auto-lock:{' '}
-                      {formatAutoLockLabel(AUTO_LOCK_OPTIONS, account.autoLockMinutes)}
-                    </div>
-                    {#if getAutoLockCountdown(account)}
-                      <div class="text-xs text-muted-foreground">
-                        {getAutoLockCountdown(account)}
-                      </div>
-                    {/if}
+      {#if loading}
+        <div class="text-sm text-muted-foreground">Loading accounts...</div>
+      {:else if accounts.length === 0}
+        <div class="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+          Create your first account to enable secure passphrase storage.
+        </div>
+      {:else}
+        <div class="space-y-3">
+          {#each accounts as account (account.id)}
+            <div class="rounded-md border bg-card p-4">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="space-y-1">
+                  <div class="font-medium">{account.username}</div>
+                  <div class="text-sm text-muted-foreground">
+                    {isUnlocked(account.id) ? '✅ Unlocked' : '🔒 Locked'} • Auto-lock:{' '}
+                    {formatAutoLockLabel(AUTO_LOCK_OPTIONS, account.autoLockMinutes)}
                   </div>
+                  {#if getAutoLockCountdown(account)}
+                    <div class="text-xs text-muted-foreground">
+                      {getAutoLockCountdown(account)}
+                    </div>
+                  {/if}
+                </div>
 
-                  <div class="flex flex-wrap gap-2">
-                    {#if isUnlocked(account.id)}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onclick={() => {
-                          handleLock(account.id);
-                        }}
-                      >
-                        Lock
-                      </Button>
-                    {:else}
-                      <Button
-                        size="sm"
-                        onclick={() => {
-                          openDialog('unlock', account);
-                        }}>Unlock</Button
-                      >
-                    {/if}
+                <div class="flex flex-wrap gap-2">
+                  {#if isUnlocked(account.id)}
                     <Button
                       size="sm"
                       variant="outline"
                       onclick={() => {
-                        openDialog('edit', account);
+                        handleLock(account.id);
                       }}
                     >
-                      Edit
+                      Lock
                     </Button>
+                  {:else}
                     <Button
                       size="sm"
-                      variant="destructive"
                       onclick={() => {
-                        openDialog('delete', account);
-                      }}
+                        openDialog('unlock', account);
+                      }}>Unlock</Button
                     >
-                      Delete Account
-                    </Button>
-                  </div>
+                  {/if}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onclick={() => {
+                      openDialog('edit', account);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onclick={() => {
+                      openDialog('delete', account);
+                    }}
+                  >
+                    Delete Account
+                  </Button>
                 </div>
               </div>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    </DialogContent>
-  </Dialog>
-{/if}
-
-{#if dialogConfig}
-  <Dialog
-    open={true}
-    onOpenChange={(isOpen) => {
-      if (!isOpen) activeDialog = undefined;
-    }}
-  >
-    <DialogContent
-      class={activeDialog === 'create' || activeDialog === 'edit' ? 'sm:max-w-lg' : 'sm:max-w-md'}
-    >
-      <DialogHeader>
-        <DialogTitle>{dialogConfig.title}</DialogTitle>
-        <DialogDescription>{dialogConfig.description}</DialogDescription>
-      </DialogHeader>
-
-      {#if activeDialog === 'create'}
-        <AccountForm
-          mode="create"
-          bind:username={formState.username}
-          bind:password={formState.password}
-          bind:confirmPassword={formState.confirmPassword}
-          bind:autoLock={formState.autoLock}
-          bind:error={formState.error}
-        />
-      {:else if activeDialog === 'unlock'}
-        <div class="space-y-3">
-          <Label for="unlock-password">Password</Label>
-          <Input id="unlock-password" type="password" bind:value={formState.password} />
-          <ErrorMessage error={formState.error} />
+            </div>
+          {/each}
         </div>
-      {:else if activeDialog === 'edit'}
-        <AccountForm
-          mode="edit"
-          bind:autoLock={formState.autoLock}
-          bind:changePassword={formState.changePassword}
-          bind:currentPassword={formState.currentPassword}
-          bind:newPassword={formState.newPassword}
-          bind:confirmPassword={formState.confirmPassword}
-          bind:error={formState.error}
-        />
       {/if}
+    </div>
+  </DialogContent>
+</Dialog>
 
-      <DialogFooter>
-        <Button
-          variant="outline"
-          onclick={() => {
-            activeDialog = undefined;
-          }}>Cancel</Button
-        >
-        <Button variant={dialogConfig.submitVariant} onclick={handleSubmit}>
-          {dialogConfig.submitText}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-{/if}
+<Dialog
+  open={activeDialog !== undefined}
+  onOpenChange={(isOpen) => {
+    if (!isOpen) activeDialog = undefined;
+  }}
+>
+  <DialogContent
+    class={activeDialog === 'create' || activeDialog === 'edit' ? 'sm:max-w-lg' : 'sm:max-w-md'}
+  >
+    <DialogHeader>
+      <DialogTitle>{dialogConfig()?.title}</DialogTitle>
+      <DialogDescription>{dialogConfig()?.description}</DialogDescription>
+    </DialogHeader>
+
+    {#if activeDialog === 'create'}
+      <AccountForm
+        mode="create"
+        bind:username={formState.username}
+        bind:password={formState.password}
+        bind:confirmPassword={formState.confirmPassword}
+        bind:autoLock={formState.autoLock}
+        bind:error={formState.error}
+      />
+    {:else if activeDialog === 'unlock'}
+      <div class="space-y-3">
+        <Label for="unlock-password">Password</Label>
+        <Input id="unlock-password" type="password" bind:value={formState.password} />
+        <ErrorMessage error={formState.error} />
+      </div>
+    {:else if activeDialog === 'edit'}
+      <AccountForm
+        mode="edit"
+        bind:autoLock={formState.autoLock}
+        bind:changePassword={formState.changePassword}
+        bind:currentPassword={formState.currentPassword}
+        bind:newPassword={formState.newPassword}
+        bind:confirmPassword={formState.confirmPassword}
+        bind:error={formState.error}
+      />
+    {/if}
+
+    <DialogFooter>
+      <Button
+        variant="outline"
+        onclick={() => {
+          activeDialog = undefined;
+        }}>Cancel</Button
+      >
+      <Button variant={dialogConfig()?.submitVariant} onclick={handleSubmit}>
+        {dialogConfig()?.submitText}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>

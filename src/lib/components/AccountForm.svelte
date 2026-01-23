@@ -13,9 +13,9 @@
     confirmPassword?: string;
     currentPassword?: string;
     newPassword?: string;
-    autoLock: number;
+    autoLock?: number;
     changePassword?: boolean;
-    error: string;
+    error?: string;
   }
 
   let {
@@ -25,9 +25,9 @@
     confirmPassword = $bindable(''),
     currentPassword = $bindable(''),
     newPassword = $bindable(''),
-    autoLock,
+    autoLock = $bindable(0),
     changePassword = $bindable(),
-    error, // eslint-disable-line prefer-const
+    error = $bindable(''),
   }: Props = $props();
 </script>
 

@@ -24,7 +24,6 @@
   const { children }: Props = $props();
 
   let showSettings = $state(false);
-  let showAccounts = $state(false);
 
   function handleUpdate() {
     window.location.reload();
@@ -99,12 +98,11 @@
         <div class="rounded-md border bg-card p-4 space-y-2">
           <div class="font-semibold">Accounts</div>
           <div class="text-sm text-muted-foreground">Manage accounts and auto-lock settings.</div>
-          <Button variant="outline" size="sm" onclick={() => (showAccounts = true)}>
-            Manage Accounts
-          </Button>
-        </div>
-        <div class="rounded-md border bg-card p-4 space-y-2">
-          <div class="font-semibold">Security</div>
+          <AccountManager>
+            {#snippet trigger()}
+              <Button variant="outline" size="sm">Manage Accounts</Button>
+            {/snippet}
+          </AccountManager>
           <Button variant="outline" size="sm" onclick={lockAllAccounts}>
             Lock All Accounts Now
           </Button>
@@ -117,5 +115,3 @@
     {@render children()}
   </div>
 </main>
-
-<AccountManager bind:open={showAccounts} />
