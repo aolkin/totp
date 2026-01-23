@@ -42,7 +42,7 @@ test.describe('Account Management', () => {
     await page.getByLabel('Confirm Password').fill('short');
     await page.getByRole('button', { name: 'Create Account' }).click();
 
-    await expect(page.getByText('Password must be at least 8 characters.')).toBeVisible();
+    await expect(page.getByText('Password must be at least 8 characters')).toBeVisible();
   });
 
   test('rejects mismatched password confirmation', async ({ page }) => {
@@ -68,13 +68,13 @@ test.describe('Account Management', () => {
 
     await expect(page.getByText('✅ Unlocked')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Lock' }).click();
+    await page.getByRole('button', { name: 'Lock', exact: true }).click();
     await expect(page.getByText('Account locked')).toBeVisible();
     await expect(page.getByText('🔒 Locked')).toBeVisible();
 
     await page.getByRole('button', { name: 'Unlock' }).click();
     await page.getByLabel('Password').fill('testpass123');
-    await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+    await page.getByRole('button', { name: 'Unlock Account' }).click();
 
     await expect(page.getByText('Account unlocked')).toBeVisible();
     await expect(page.getByText('✅ Unlocked')).toBeVisible();
@@ -89,10 +89,10 @@ test.describe('Account Management', () => {
     await page.getByLabel('Confirm Password').fill('correctpass');
     await page.getByRole('button', { name: 'Create Account' }).click();
 
-    await page.getByRole('button', { name: 'Lock' }).click();
+    await page.getByRole('button', { name: 'Lock', exact: true }).click();
     await page.getByRole('button', { name: 'Unlock' }).click();
     await page.getByLabel('Password').fill('wrongpass');
-    await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+    await page.getByRole('button', { name: 'Unlock Account' }).click();
 
     await expect(page.getByText('Incorrect password')).toBeVisible();
   });
@@ -109,8 +109,12 @@ test.describe('Account Management', () => {
     await expect(page.getByText('Auto-lock: 15 minutes')).toBeVisible();
 
     await page.getByRole('button', { name: 'Edit' }).click();
-    await page.getByRole('combobox').click();
-    await page.getByRole('option', { name: '5 minutes' }).click();
+    // Click the select trigger button within the edit dialog
+    await page
+      .getByRole('dialog', { name: /Edit Account/ })
+      .getByRole('button', { name: '15 minutes' })
+      .click();
+    await page.getByRole('option', { name: '5 minutes', exact: true }).click();
     await page.getByRole('button', { name: 'Save Changes' }).click();
 
     await expect(page.getByText('Account updated')).toBeVisible();
@@ -129,16 +133,16 @@ test.describe('Account Management', () => {
     await page.getByRole('button', { name: 'Edit' }).click();
     await page.getByLabel('Update password').check();
     await page.getByLabel('Current Password').fill('oldpass123');
-    await page.getByLabel('New Password').fill('newpass123');
+    await page.getByLabel('New Password', { exact: true }).fill('newpass123');
     await page.getByLabel('Confirm New Password').fill('newpass123');
     await page.getByRole('button', { name: 'Save Changes' }).click();
 
     await expect(page.getByText('Account updated')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Lock' }).click();
+    await page.getByRole('button', { name: 'Lock', exact: true }).click();
     await page.getByRole('button', { name: 'Unlock' }).click();
     await page.getByLabel('Password').fill('newpass123');
-    await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+    await page.getByRole('button', { name: 'Unlock Account' }).click();
 
     await expect(page.getByText('Account unlocked')).toBeVisible();
   });
@@ -168,19 +172,27 @@ test.describe('Account Management', () => {
     await page.getByLabel('Password', { exact: true }).fill('password1');
     await page.getByLabel('Confirm Password').fill('password1');
     await page.getByRole('button', { name: 'Create Account' }).click();
+    await expect(page.getByText('Account created')).toBeVisible();
+    await expect(page.getByText('user1')).toBeVisible();
 
     await page.getByRole('button', { name: '+ New' }).click();
     await page.getByLabel('Username').fill('user2');
     await page.getByLabel('Password', { exact: true }).fill('password2');
     await page.getByLabel('Confirm Password').fill('password2');
     await page.getByRole('button', { name: 'Create Account' }).click();
+    await expect(page.getByText('Account created')).toBeVisible();
+    await expect(page.getByText('user2')).toBeVisible();
 
     const unlockedCount = await page.getByText('✅ Unlocked').count();
     expect(unlockedCount).toBe(2);
 
     await page.getByRole('button', { name: 'Close' }).first().click();
     await page.getByRole('button', { name: 'Lock All Accounts Now' }).click();
+
+    // Wait for lock to complete and reopen dialog
+    await page.waitForTimeout(500);
     await page.getByRole('button', { name: 'Manage Accounts' }).click();
+    await expect(page.getByRole('dialog', { name: 'Accounts' })).toBeVisible();
 
     const lockedCount = await page.getByText('🔒 Locked').count();
     expect(lockedCount).toBe(2);
@@ -194,12 +206,16 @@ test.describe('Account Management', () => {
     await page.getByLabel('Password', { exact: true }).fill('pass1234');
     await page.getByLabel('Confirm Password').fill('pass1234');
     await page.getByRole('button', { name: 'Create Account' }).click();
+    await expect(page.getByText('Account created')).toBeVisible();
+    await expect(page.getByText('multi1')).toBeVisible();
 
     await page.getByRole('button', { name: '+ New' }).click();
     await page.getByLabel('Username').fill('multi2');
     await page.getByLabel('Password', { exact: true }).fill('pass5678');
     await page.getByLabel('Confirm Password').fill('pass5678');
     await page.getByRole('button', { name: 'Create Account' }).click();
+    await expect(page.getByText('Account created')).toBeVisible();
+    await expect(page.getByText('multi2')).toBeVisible();
 
     const unlockedCount = await page.getByText('✅ Unlocked').count();
     expect(unlockedCount).toBe(2);

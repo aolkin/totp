@@ -99,8 +99,8 @@
           <div class="font-semibold">Accounts</div>
           <div class="text-sm text-muted-foreground">Manage accounts and auto-lock settings.</div>
           <AccountManager>
-            {#snippet trigger()}
-              <Button variant="outline" size="sm">Manage Accounts</Button>
+            {#snippet trigger(props)}
+              <Button {...props} variant="outline" size="sm">Manage Accounts</Button>
             {/snippet}
           </AccountManager>
           <Button variant="outline" size="sm" onclick={lockAllAccounts}>

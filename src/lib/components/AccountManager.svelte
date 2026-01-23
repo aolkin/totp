@@ -34,7 +34,7 @@
   } from '$lib/accounts';
 
   interface Props {
-    trigger: Snippet;
+    trigger: Snippet<[Record<string, unknown>]>;
   }
 
   const { trigger }: Props = $props();
@@ -68,7 +68,7 @@
       unlock: {
         title: 'Unlock Account',
         description: `Account: ${targetAccount?.username ?? ''}`,
-        submitText: 'Unlock',
+        submitText: 'Unlock Account',
         submitVariant: 'default' as const,
       },
       edit: {
@@ -301,9 +301,7 @@
 >
   <DialogTrigger>
     {#snippet child({ props })}
-      <div {...props}>
-        {@render trigger()}
-      </div>
+      {@render trigger(props as Record<string, unknown>)}
     {/snippet}
   </DialogTrigger>
   <DialogContent class="sm:max-w-2xl">
