@@ -42,7 +42,7 @@ export function openTotpDatabase(): Promise<IDBPDatabase<TOTPDBSchema>> {
 }
 
 class TOTPStorage extends DbRepository<TOTPRecord> {
-  protected storeName = STORE_NAME;
+  protected storeName = 'secrets' as const;
 
   async addTotp(label: string, encrypted: EncryptedData, passphraseHint?: string): Promise<number> {
     const now = Date.now();

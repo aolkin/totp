@@ -1,6 +1,5 @@
 import { get, writable } from 'svelte/store';
 import type { Account, EncryptedKey, UnlockedAccount } from './types';
-import { ACCOUNTS_STORE } from './storage';
 import { DbRepository } from './db-repository';
 import {
   uint8ArrayToBase64,
@@ -19,14 +18,14 @@ const AUTO_LOCK_CHECK_INTERVAL = 30000;
  * Repository class for Account database operations
  */
 class AccountRepository extends DbRepository<Account> {
-  protected storeName = ACCOUNTS_STORE;
+  protected storeName = 'accounts' as const;
 
   /**
    * Get account by username using the username index
    */
   async getByUsername(username: string): Promise<Account | undefined> {
     const db = await this.dbPromise;
-    return db.getFromIndex('accounts', 'username', username);
+    return db.getFromIndex(this.storeName, 'username', username);
   }
 }
 
