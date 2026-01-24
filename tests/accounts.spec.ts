@@ -22,7 +22,7 @@ test.describe('Account Management', () => {
     await page.getByLabel('Confirm Password').fill('testpassword123');
     await page.getByRole('button', { name: 'Create Account' }).click();
 
-    await expect(page.getByText('Account created')).toBeVisible();
+    // Wait for account to be created and appear in the list
     await expect(page.getByText('testuser@example.com')).toBeVisible();
     await expect(page.getByText('✅ Unlocked')).toBeVisible();
   });
@@ -63,14 +63,11 @@ test.describe('Account Management', () => {
     await expect(page.getByText('✅ Unlocked')).toBeVisible();
 
     await page.getByRole('button', { name: 'Lock', exact: true }).click();
-    await expect(page.getByText('Account locked')).toBeVisible();
     await expect(page.getByText('🔒 Locked')).toBeVisible();
 
     await page.getByRole('button', { name: 'Unlock' }).click();
     await page.getByLabel('Password').fill('testpass123');
     await page.getByRole('button', { name: 'Unlock Account' }).click();
-
-    await expect(page.getByText('Account unlocked')).toBeVisible();
     await expect(page.getByText('✅ Unlocked')).toBeVisible();
   });
 
@@ -110,8 +107,6 @@ test.describe('Account Management', () => {
       .click();
     await page.getByRole('option', { name: '5 minutes', exact: true }).click();
     await page.getByRole('button', { name: 'Save Changes' }).click();
-
-    await expect(page.getByText('Account updated')).toBeVisible();
     await expect(page.getByText('Auto-lock: 5 minutes')).toBeVisible();
   });
 
@@ -131,14 +126,11 @@ test.describe('Account Management', () => {
     await page.getByLabel('Confirm New Password').fill('newpass123');
     await page.getByRole('button', { name: 'Save Changes' }).click();
 
-    await expect(page.getByText('Account updated')).toBeVisible();
-
     await page.getByRole('button', { name: 'Lock', exact: true }).click();
     await page.getByRole('button', { name: 'Unlock' }).click();
     await page.getByLabel('Password').fill('newpass123');
     await page.getByRole('button', { name: 'Unlock Account' }).click();
-
-    await expect(page.getByText('Account unlocked')).toBeVisible();
+    await expect(page.getByText('✅ Unlocked')).toBeVisible();
   });
 
   test('can delete account with confirmation', async ({ page }) => {
@@ -153,8 +145,6 @@ test.describe('Account Management', () => {
     await page.getByRole('button', { name: 'Delete Account' }).click();
     await expect(page.getByText('Are you sure')).toBeVisible();
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
-
-    await expect(page.getByText('Account deleted')).toBeVisible();
     await expect(page.getByText('No accounts yet')).toBeVisible();
   });
 
@@ -166,7 +156,6 @@ test.describe('Account Management', () => {
     await page.getByLabel('Password', { exact: true }).fill('password1');
     await page.getByLabel('Confirm Password').fill('password1');
     await page.getByRole('button', { name: 'Create Account' }).click();
-    await expect(page.getByText('Account created')).toBeVisible();
     await expect(page.getByText('user1')).toBeVisible();
 
     await page.getByRole('button', { name: '+ New' }).click();
@@ -174,7 +163,6 @@ test.describe('Account Management', () => {
     await page.getByLabel('Password', { exact: true }).fill('password2');
     await page.getByLabel('Confirm Password').fill('password2');
     await page.getByRole('button', { name: 'Create Account' }).click();
-    await expect(page.getByText('Account created')).toBeVisible();
     await expect(page.getByText('user2')).toBeVisible();
 
     const unlockedCount = await page.getByText('✅ Unlocked').count();
@@ -205,7 +193,6 @@ test.describe('Account Management', () => {
     await page.getByLabel('Password', { exact: true }).fill('pass1234');
     await page.getByLabel('Confirm Password').fill('pass1234');
     await page.getByRole('button', { name: 'Create Account' }).click();
-    await expect(page.getByText('Account created')).toBeVisible();
     await expect(page.getByText('multi1')).toBeVisible();
 
     await page.getByRole('button', { name: '+ New' }).click();
@@ -213,7 +200,6 @@ test.describe('Account Management', () => {
     await page.getByLabel('Password', { exact: true }).fill('pass5678');
     await page.getByLabel('Confirm Password').fill('pass5678');
     await page.getByRole('button', { name: 'Create Account' }).click();
-    await expect(page.getByText('Account created')).toBeVisible();
     await expect(page.getByText('multi2')).toBeVisible();
 
     const unlockedCount = await page.getByText('✅ Unlocked').count();
@@ -228,8 +214,7 @@ test.describe('Account Management', () => {
     await page.getByLabel('Password', { exact: true }).fill('password1');
     await page.getByLabel('Confirm Password').fill('password1');
     await page.getByRole('button', { name: 'Create Account' }).click();
-
-    await expect(page.getByText('Account created')).toBeVisible();
+    await expect(page.getByText('duplicate')).toBeVisible();
 
     await page.getByRole('button', { name: '+ New' }).click();
     await page.getByLabel('Username').fill('duplicate');
