@@ -76,7 +76,7 @@
 
     isSaving = true;
     try {
-      await totpStorage.add(config.label || 'Unnamed TOTP', encryptedData);
+      await totpStorage.addTotp(config.label || 'Unnamed TOTP', encryptedData);
       toast.success('TOTP saved to browser');
     } catch {
       toast.error('Failed to save TOTP');

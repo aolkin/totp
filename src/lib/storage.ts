@@ -1,6 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { TOTPRecord, EncryptedData, TOTPExport, Account } from './types';
 import { uint8ArrayToBase64, base64ToUint8Array, encodeToURL } from './crypto';
+import { DbRepository } from './db-repository';
 
 export const DB_NAME = 'totp-storage';
 export const DB_VERSION = 3;
@@ -40,15 +41,10 @@ export function openTotpDatabase(): Promise<IDBPDatabase<TOTPDBSchema>> {
   });
 }
 
-class TOTPStorage {
-  private dbPromise: Promise<IDBPDatabase<TOTPDBSchema>>;
+class TOTPStorage extends DbRepository<TOTPRecord> {
+  protected storeName = STORE_NAME;
 
-  constructor() {
-    this.dbPromise = openTotpDatabase();
-  }
-
-  async add(label: string, encrypted: EncryptedData, passphraseHint?: string): Promise<number> {
-    const db = await this.dbPromise;
+  async addTotp(label: string, encrypted: EncryptedData, passphraseHint?: string): Promise<number> {
     const now = Date.now();
 
     const record: Omit<TOTPRecord, 'id'> = {
@@ -59,18 +55,7 @@ class TOTPStorage {
       passphraseHint,
     };
 
-    // autoIncrement will generate the id, so we cast to the full type
-    return db.add(STORE_NAME, record as TOTPRecord);
-  }
-
-  async getAll(): Promise<TOTPRecord[]> {
-    const db = await this.dbPromise;
-    return db.getAll(STORE_NAME);
-  }
-
-  async getById(id: number): Promise<TOTPRecord | undefined> {
-    const db = await this.dbPromise;
-    return db.get(STORE_NAME, id);
+    return super.add(record);
   }
 
   async findByEncodedData(encodedData: string): Promise<TOTPRecord | undefined> {
@@ -78,28 +63,8 @@ class TOTPStorage {
     return records.find((record) => encodeToURL(record.encrypted) === encodedData);
   }
 
-  async update(id: number, data: Partial<TOTPRecord>): Promise<void> {
-    const db = await this.dbPromise;
-    const existing = await db.get(STORE_NAME, id);
-    if (!existing) {
-      throw new Error('Record not found');
-    }
-    const updated = { ...existing, ...data };
-    await db.put(STORE_NAME, updated);
-  }
-
   async updateLastUsed(id: number): Promise<void> {
-    return this.update(id, { lastUsed: Date.now() });
-  }
-
-  async delete(id: number): Promise<void> {
-    const db = await this.dbPromise;
-    await db.delete(STORE_NAME, id);
-  }
-
-  async count(): Promise<number> {
-    const db = await this.dbPromise;
-    return db.count(STORE_NAME);
+    await this.update(id, { lastUsed: Date.now() });
   }
 
   async exportAll(): Promise<TOTPExport> {
@@ -134,7 +99,7 @@ class TOTPStorage {
         ciphertext: base64ToUint8Array(totp.encrypted.ciphertext),
       };
 
-      await this.add(totp.label, encrypted, totp.passphraseHint);
+      await this.addTotp(totp.label, encrypted, totp.passphraseHint);
       imported++;
     }
 

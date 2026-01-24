@@ -1,18 +1,36 @@
 import { get, writable } from 'svelte/store';
 import type { Account, EncryptedKey, UnlockedAccount } from './types';
-import { ACCOUNTS_STORE, openTotpDatabase } from './storage';
+import { ACCOUNTS_STORE } from './storage';
+import { DbRepository } from './db-repository';
 import {
   uint8ArrayToBase64,
-  PBKDF2_ITERATIONS,
-  SALT_LENGTH,
-  IV_LENGTH,
-  importPbkdf2KeyMaterial,
+  derivePbkdf2Key,
+  derivePbkdf2Bits,
+  generateSalt,
+  generateIV,
   toArrayBuffer,
 } from './crypto';
 
 const TAG_LENGTH = 16;
 const PASSWORD_HASH_BYTES = 32;
 const AUTO_LOCK_CHECK_INTERVAL = 30000;
+
+/**
+ * Repository class for Account database operations
+ */
+class AccountRepository extends DbRepository<Account> {
+  protected storeName = ACCOUNTS_STORE;
+
+  /**
+   * Get account by username using the username index
+   */
+  async getByUsername(username: string): Promise<Account | undefined> {
+    const db = await this.dbPromise;
+    return db.getFromIndex('accounts', 'username', username);
+  }
+}
+
+const accountRepository = new AccountRepository();
 
 const unlockedAccountsStore = writable<Map<number, UnlockedAccount>>(new Map());
 
@@ -24,39 +42,20 @@ let autoLockInterval: ReturnType<typeof setInterval> | undefined;
 let autoLockCallback: ((account: UnlockedAccount) => void) | undefined;
 
 async function derivePasswordHash(password: string, salt: Uint8Array): Promise<string> {
-  const keyMaterial = await importPbkdf2KeyMaterial(password);
-  const bits = await crypto.subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      salt: toArrayBuffer(salt),
-      iterations: PBKDF2_ITERATIONS,
-      hash: 'SHA-256',
-    },
-    keyMaterial,
-    PASSWORD_HASH_BYTES * 8,
-  );
-  return uint8ArrayToBase64(new Uint8Array(bits));
+  const bits = await derivePbkdf2Bits(password, salt, PASSWORD_HASH_BYTES * 8);
+  return uint8ArrayToBase64(bits);
 }
 
 async function deriveKEK(password: string, salt: Uint8Array): Promise<CryptoKey> {
-  const keyMaterial = await importPbkdf2KeyMaterial(password);
-  return crypto.subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt: toArrayBuffer(salt),
-      iterations: PBKDF2_ITERATIONS,
-      hash: 'SHA-256',
-    },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['wrapKey', 'unwrapKey'],
-  );
+  return derivePbkdf2Key(password, salt, ['wrapKey', 'unwrapKey']);
 }
 
 async function wrapDEK(dek: CryptoKey, kek: CryptoKey): Promise<EncryptedKey> {
-  const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-  const wrapped = await crypto.subtle.wrapKey('raw', dek, kek, { name: 'AES-GCM', iv });
+  const iv = generateIV();
+  const wrapped = await crypto.subtle.wrapKey('raw', dek, kek, {
+    name: 'AES-GCM',
+    iv: toArrayBuffer(iv),
+  });
   const wrappedBytes = new Uint8Array(wrapped);
   return {
     iv,
@@ -196,29 +195,19 @@ export function stopAutoLockMonitor(): void {
 }
 
 export async function listAccounts(): Promise<Account[]> {
-  const db = await openTotpDatabase();
-  return db.getAll(ACCOUNTS_STORE);
+  return accountRepository.getAll();
 }
 
 export async function getAccountById(accountId: number): Promise<Account | undefined> {
-  const db = await openTotpDatabase();
-  return db.get(ACCOUNTS_STORE, accountId);
+  return accountRepository.getById(accountId);
 }
 
 export async function getAccountByUsername(username: string): Promise<Account | undefined> {
-  const db = await openTotpDatabase();
-  return db.getFromIndex(ACCOUNTS_STORE, 'username', username);
+  return accountRepository.getByUsername(username);
 }
 
 async function updateAccountRecord(accountId: number, updates: Partial<Account>): Promise<Account> {
-  const db = await openTotpDatabase();
-  const existing = await db.get(ACCOUNTS_STORE, accountId);
-  if (!existing) {
-    throw new Error('Account not found');
-  }
-  const updated = { ...existing, ...updates };
-  await db.put(ACCOUNTS_STORE, updated);
-  return updated;
+  return accountRepository.update(accountId, updates);
 }
 
 export async function createAccount(
@@ -231,14 +220,13 @@ export async function createAccount(
   }
   assertPasswordLength(password);
 
-  const db = await openTotpDatabase();
-  const existing = await db.getFromIndex(ACCOUNTS_STORE, 'username', username);
+  const existing = await accountRepository.getByUsername(username);
   if (existing) {
     throw new Error('Username already exists');
   }
 
-  const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
-  const keySalt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+  const salt = generateSalt();
+  const keySalt = generateSalt();
   const passwordHash = await derivePasswordHash(password, salt);
 
   const dek = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, [
@@ -258,7 +246,7 @@ export async function createAccount(
     encryptedDEK,
     autoLockMinutes,
   };
-  const accountId = await db.add(ACCOUNTS_STORE, accountData as Account);
+  const accountId = await accountRepository.add(accountData);
   const account: Account = { ...accountData, id: accountId };
   setUnlockedAccount({
     accountId,
@@ -333,8 +321,8 @@ export async function changeAccountPassword(
 
   const currentKek = await deriveKEK(currentPassword, account.keySalt);
   const dek = await unwrapDEK(account.encryptedDEK, currentKek, true);
-  const newSalt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
-  const newKeySalt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+  const newSalt = generateSalt();
+  const newKeySalt = generateSalt();
   const newPasswordHash = await derivePasswordHash(newPassword, newSalt);
   const newKek = await deriveKEK(newPassword, newKeySalt);
   const encryptedDEK = await wrapDEK(dek, newKek);
@@ -350,7 +338,6 @@ export async function changeAccountPassword(
 }
 
 export async function deleteAccount(accountId: number): Promise<void> {
-  const db = await openTotpDatabase();
-  await db.delete(ACCOUNTS_STORE, accountId);
+  await accountRepository.delete(accountId);
   lockAccount(accountId);
 }
