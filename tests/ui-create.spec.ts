@@ -1,14 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('UI - Create Form', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/#/');
-    // Dismiss the offline banner if visible (it can block clicks)
-    await page.evaluate(() => {
-      localStorage.setItem('offline_banner_dismissed', 'true');
-    });
-    await page.reload();
-    // App now starts in list mode, click Add New to get to create form
     await page.getByRole('link', { name: 'Add New' }).click();
   });
 

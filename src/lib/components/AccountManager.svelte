@@ -23,7 +23,7 @@
   import type { Account, UnlockedAccount } from '$lib/types';
   import type { Snippet } from 'svelte';
   import {
-    listAccounts,
+    accountRepository,
     createAccount,
     unlockAccount,
     lockAccount,
@@ -137,7 +137,7 @@
   async function loadAccounts() {
     loading = true;
     try {
-      accounts = await listAccounts();
+      accounts = await accountRepository.getAll();
     } catch (error) {
       console.error('Failed to load accounts:', error);
       toast.error('Failed to load accounts');

@@ -3,9 +3,9 @@ import { DEFAULT_DIGITS, DEFAULT_PERIOD, DEFAULT_ALGORITHM } from './types';
 
 export type { EncryptedData } from './types';
 
-export const PBKDF2_ITERATIONS = 100000;
-export const SALT_LENGTH = 16;
-export const IV_LENGTH = 12;
+const PBKDF2_ITERATIONS = 100000;
+const SALT_LENGTH = 16;
+const IV_LENGTH = 12;
 const NO_PASSPHRASE_KEY = 'NO_PASSPHRASE';
 
 export type KeyUsage = 'encrypt' | 'decrypt' | 'wrapKey' | 'unwrapKey';
@@ -18,7 +18,7 @@ export function toArrayBuffer(value: Uint8Array): ArrayBuffer {
   return copy.buffer;
 }
 
-export async function importPbkdf2KeyMaterial(passphrase: string): Promise<CryptoKey> {
+async function importPbkdf2KeyMaterial(passphrase: string): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const bytes = encoder.encode(passphrase);
   const buffer = toArrayBuffer(bytes);

@@ -1,11 +1,7 @@
-import { test, expect } from '@playwright/test';
-import { createTotpUrl, saveTotpToBrowser, clearStorage } from './helpers';
+import { test, expect } from './fixtures';
+import { createTotpUrl, saveTotpToBrowser } from './helpers';
 
 test.describe('Saved TOTP List', () => {
-  test.beforeEach(async ({ page }) => {
-    await clearStorage(page);
-  });
-
   test('should display and search saved TOTPs', async ({ page }) => {
     await saveTotpToBrowser(page, {
       label: 'GitHub Account',
@@ -77,12 +73,6 @@ test.describe('Saved TOTP List', () => {
     });
 
     await page.goto('/#/');
-    await page.waitForSelector('h1', { timeout: 30000 });
-    await page.evaluate(() => {
-      localStorage.setItem('offline_banner_dismissed', 'true');
-    });
-    await page.reload();
-    await page.waitForSelector('h1', { timeout: 30000 });
 
     await expect(page.getByRole('heading', { name: 'Saved TOTPs' })).toBeVisible();
     await expect(page.getByText('Auto List Display')).toBeVisible();

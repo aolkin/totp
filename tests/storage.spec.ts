@@ -1,11 +1,7 @@
-import { test, expect } from '@playwright/test';
-import { saveTotpToBrowser, clearStorage } from './helpers';
+import { test, expect } from './fixtures';
+import { saveTotpToBrowser } from './helpers';
 
 test.describe('Browser Storage', () => {
-  test.beforeEach(async ({ page }) => {
-    await clearStorage(page);
-  });
-
   test('should save TOTP with passphrase and display in list', async ({ page }) => {
     await saveTotpToBrowser(page, {
       label: 'GitHub Account',
@@ -18,10 +14,6 @@ test.describe('Browser Storage', () => {
 
   test('should require passphrase and label when saving to browser', async ({ page }) => {
     await page.goto('/#/');
-    await page.evaluate(() => {
-      localStorage.setItem('offline_banner_dismissed', 'true');
-    });
-    await page.reload();
     await page.getByRole('link', { name: 'Add New' }).click();
 
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');
@@ -52,10 +44,6 @@ test.describe('Browser Storage', () => {
 
   test('should allow creating without saving', async ({ page }) => {
     await page.goto('/#/');
-    await page.evaluate(() => {
-      localStorage.setItem('offline_banner_dismissed', 'true');
-    });
-    await page.reload();
     await page.getByRole('link', { name: 'Add New' }).click();
 
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('AAAABBBBCCCCDDDD');

@@ -29,7 +29,7 @@ class AccountRepository extends DbRepository<Account> {
   }
 }
 
-const accountRepository = new AccountRepository();
+export const accountRepository = new AccountRepository();
 
 const unlockedAccountsStore = writable<Map<number, UnlockedAccount>>(new Map());
 
@@ -117,14 +117,6 @@ function removeUnlockedAccount(accountId: number) {
   });
 }
 
-export function getUnlockedAccount(accountId: number): UnlockedAccount | undefined {
-  return get(unlockedAccountsStore).get(accountId);
-}
-
-export function isAccountUnlocked(accountId: number): boolean {
-  return getUnlockedAccount(accountId) !== undefined;
-}
-
 export function recordAccountActivity(accountId?: number): void {
   const now = Date.now();
   if (accountId !== undefined) {
@@ -193,22 +185,6 @@ export function stopAutoLockMonitor(): void {
   autoLockCallback = undefined;
 }
 
-export async function listAccounts(): Promise<Account[]> {
-  return accountRepository.getAll();
-}
-
-export async function getAccountById(accountId: number): Promise<Account | undefined> {
-  return accountRepository.getById(accountId);
-}
-
-export async function getAccountByUsername(username: string): Promise<Account | undefined> {
-  return accountRepository.getByUsername(username);
-}
-
-async function updateAccountRecord(accountId: number, updates: Partial<Account>): Promise<Account> {
-  return accountRepository.update(accountId, updates);
-}
-
 export async function createAccount(
   username: string,
   password: string,
@@ -259,7 +235,7 @@ export async function createAccount(
 }
 
 export async function unlockAccount(accountId: number, password: string): Promise<UnlockedAccount> {
-  const account = await getAccountById(accountId);
+  const account = await accountRepository.getById(accountId);
   if (!account) {
     throw new Error('Account not found');
   }
@@ -281,7 +257,7 @@ export async function unlockAccount(accountId: number, password: string): Promis
     lastActivity: now,
   };
   setUnlockedAccount(unlocked);
-  await updateAccountRecord(account.id, { lastUsed: now });
+  await accountRepository.update(account.id, { lastUsed: now });
   return unlocked;
 }
 
@@ -297,7 +273,7 @@ export async function updateAutoLockMinutes(
   accountId: number,
   autoLockMinutes: number,
 ): Promise<Account> {
-  const account = await updateAccountRecord(accountId, { autoLockMinutes });
+  const account = await accountRepository.update(accountId, { autoLockMinutes });
   updateUnlockedAccount(accountId, { autoLockMinutes });
   return account;
 }
@@ -308,7 +284,7 @@ export async function changeAccountPassword(
   newPassword: string,
 ): Promise<Account> {
   assertPasswordLength(newPassword);
-  const account = await getAccountById(accountId);
+  const account = await accountRepository.getById(accountId);
   if (!account) {
     throw new Error('Account not found');
   }
@@ -325,7 +301,7 @@ export async function changeAccountPassword(
   const newPasswordHash = await derivePasswordHash(newPassword, newSalt);
   const newKek = await deriveKEK(newPassword, newKeySalt);
   const encryptedDEK = await wrapDEK(dek, newKek);
-  const updated = await updateAccountRecord(accountId, {
+  const updated = await accountRepository.update(accountId, {
     passwordHash: newPasswordHash,
     salt: newSalt,
     keySalt: newKeySalt,

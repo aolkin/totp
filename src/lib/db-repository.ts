@@ -1,5 +1,5 @@
 import type { IDBPDatabase } from 'idb';
-import { openTotpDatabase, type TOTPDBSchema } from './storage';
+import { openTotpDatabase, type TOTPDBSchema } from './database';
 
 /**
  * Generic repository base class for IndexedDB operations

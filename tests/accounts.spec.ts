@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import type { Page } from '@playwright/test';
 
 async function openAccountManager(page: Page) {
   await page.getByRole('button', { name: 'Settings' }).click();
@@ -8,13 +9,6 @@ async function openAccountManager(page: Page) {
 test.describe('Account Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/#/');
-    await page.evaluate(() => {
-      indexedDB.deleteDatabase('totp-storage');
-      localStorage.setItem('offline_banner_dismissed', 'true');
-      localStorage.setItem('update_banner_dismissed', 'true');
-    });
-    await page.reload();
-    await page.waitForSelector('h1');
   });
 
   test('can create account with username and password', async ({ page }) => {
