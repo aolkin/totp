@@ -181,12 +181,17 @@ test.describe('Account Management', () => {
     expect(unlockedCount).toBe(2);
 
     await page.getByRole('button', { name: 'Close' }).first().click();
+    await expect(page.getByRole('dialog', { name: 'Accounts' })).not.toBeVisible();
+
     await page.getByRole('button', { name: 'Lock All Accounts Now' }).click();
 
-    // Wait for lock to complete and reopen dialog
-    await page.waitForTimeout(500);
     await page.getByRole('button', { name: 'Manage Accounts' }).click();
     await expect(page.getByRole('dialog', { name: 'Accounts' })).toBeVisible();
+
+    // Wait for accounts to load and display as locked
+    await expect(page.getByText('user1')).toBeVisible();
+    await expect(page.getByText('user2')).toBeVisible();
+    await expect(page.getByText('🔒 Locked').first()).toBeVisible();
 
     const lockedCount = await page.getByText('🔒 Locked').count();
     expect(lockedCount).toBe(2);
