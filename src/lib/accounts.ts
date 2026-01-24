@@ -17,7 +17,7 @@ const AUTO_LOCK_CHECK_INTERVAL = 30000;
 /**
  * Repository class for Account database operations
  */
-class AccountRepository extends DbRepository<Account> {
+class AccountRepository extends DbRepository<'accounts'> {
   protected storeName = 'accounts' as const;
 
   /**

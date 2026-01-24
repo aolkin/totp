@@ -11,7 +11,7 @@ export {
   openTotpDatabase,
 } from './database';
 
-class TOTPStorage extends DbRepository<TOTPRecord> {
+class TOTPStorage extends DbRepository<'secrets'> {
   protected storeName = 'secrets' as const;
 
   async addTotp(label: string, encrypted: EncryptedData, passphraseHint?: string): Promise<number> {

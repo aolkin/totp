@@ -6,6 +6,8 @@ export const DB_VERSION = 3;
 export const STORE_NAME = 'secrets';
 export const ACCOUNTS_STORE = 'accounts';
 
+export type TOTPStoreName = 'secrets' | 'accounts';
+
 export interface TOTPDBSchema extends DBSchema {
   secrets: {
     key: number;

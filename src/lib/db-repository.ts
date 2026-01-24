@@ -1,19 +1,13 @@
 import type { IDBPDatabase } from 'idb';
-import { openTotpDatabase, type TOTPDBSchema } from './database';
+import { openTotpDatabase, type TOTPDBSchema, type TOTPStoreName } from './database';
 
 /**
  * Generic repository base class for IndexedDB operations
  * Reduces duplication across storage classes
- *
- * Note: Type assertions are used for IDB operations because the IDB library's
- * typing system doesn't allow for clean generic store name handling.
- * These assertions are safe because:
- * 1. storeName is constrained to valid store names in implementations
- * 2. T is constrained to match the actual record types in the stores
  */
-export abstract class DbRepository<T extends { id?: number }> {
+export abstract class DbRepository<TStoreName extends TOTPStoreName> {
   protected dbPromise: Promise<IDBPDatabase<TOTPDBSchema>>;
-  protected abstract storeName: 'secrets' | 'accounts';
+  protected abstract storeName: TStoreName;
 
   constructor() {
     this.dbPromise = openTotpDatabase();
@@ -22,46 +16,43 @@ export abstract class DbRepository<T extends { id?: number }> {
   /**
    * Get a record by ID
    */
-  async getById(id: number): Promise<T | undefined> {
+  async getById(id: number): Promise<TOTPDBSchema[TStoreName]['value'] | undefined> {
     const db = await this.dbPromise;
-    // Safe: storeName is constrained to valid store names, T matches the record type
-    return (await db.get(this.storeName as never, id)) as T | undefined;
+    return await db.get(this.storeName, id);
   }
 
   /**
    * Get all records from the store
    */
-  async getAll(): Promise<T[]> {
+  async getAll(): Promise<TOTPDBSchema[TStoreName]['value'][]> {
     const db = await this.dbPromise;
-    // Safe: storeName is constrained to valid store names, T matches the record type
-    return (await db.getAll(this.storeName as never)) as T[];
+    return await db.getAll(this.storeName);
   }
 
   /**
    * Add a new record to the store
    * Returns the auto-generated ID
    */
-  async add(record: Omit<T, 'id'>): Promise<number> {
+  async add(record: Omit<TOTPDBSchema[TStoreName]['value'], 'id'>): Promise<number> {
     const db = await this.dbPromise;
-    // Safe: storeName is constrained to valid store names, record matches store schema
-    // IDB returns IDBValidKey but our stores use auto-increment number keys
-    return (await db.add(this.storeName as never, record as never)) as number;
+    return await db.add(this.storeName, record as never);
   }
 
   /**
    * Update an existing record
    * Throws if record doesn't exist
    */
-  async update(id: number, updates: Partial<T>): Promise<T> {
+  async update(
+    id: number,
+    updates: Partial<TOTPDBSchema[TStoreName]['value']>,
+  ): Promise<TOTPDBSchema[TStoreName]['value']> {
     const db = await this.dbPromise;
-    // Safe: storeName is constrained to valid store names
-    const existing = (await db.get(this.storeName as never, id)) as T | undefined;
+    const existing = await db.get(this.storeName, id);
     if (!existing) {
       throw new Error(`${this.storeName} record not found`);
     }
-    // Safe: existing comes from the store, updates is Partial<T>, result is T
-    const updated = { ...existing, ...updates } as T;
-    await db.put(this.storeName as never, updated as never);
+    const updated = { ...existing, ...updates };
+    await db.put(this.storeName, updated);
     return updated;
   }
 
@@ -70,8 +61,7 @@ export abstract class DbRepository<T extends { id?: number }> {
    */
   async delete(id: number): Promise<void> {
     const db = await this.dbPromise;
-    // Safe: storeName is constrained to valid store names
-    await db.delete(this.storeName as never, id);
+    await db.delete(this.storeName, id);
   }
 
   /**
@@ -79,7 +69,6 @@ export abstract class DbRepository<T extends { id?: number }> {
    */
   async count(): Promise<number> {
     const db = await this.dbPromise;
-    // Safe: storeName is constrained to valid store names
-    return db.count(this.storeName as never);
+    return db.count(this.storeName);
   }
 }
