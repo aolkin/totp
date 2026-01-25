@@ -16,6 +16,9 @@ const config = {
     paths: {
       base: '',
     },
+    serviceWorker: {
+      register: false,
+    },
   },
 };
 
