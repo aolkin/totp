@@ -59,10 +59,10 @@
       <div class="space-y-3">
         <div class="flex items-center gap-2">
           {#if isCached}
-            <span class="text-green-600">✓</span>
+            <span class="text-primary">✓</span>
             <span class="text-sm">Ready to work offline</span>
           {:else}
-            <span class="text-yellow-600">⚠</span>
+            <span class="text-muted-foreground">⚠</span>
             <span class="text-sm">Downloading for offline use...</span>
           {/if}
         </div>
@@ -75,9 +75,9 @@
             <div class="flex items-center gap-2">
               <span>Storage:</span>
               {#if isPersisted}
-                <span class="text-green-600">Protected from cleanup ✓</span>
+                <span class="text-primary">Protected from cleanup ✓</span>
               {:else}
-                <span class="text-yellow-600">May be cleared by browser</span>
+                <span class="text-muted-foreground">May be cleared by browser</span>
               {/if}
             </div>
             <div>Build: <code class="text-xs">{__COMMIT_HASH__.substring(0, 7)}</code></div>

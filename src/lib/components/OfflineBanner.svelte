@@ -5,7 +5,6 @@
   import InstallInstructions from './InstallInstructions.svelte';
 
   let visible = $state(false);
-  let autoHideTimeout: ReturnType<typeof setTimeout> | undefined = undefined;
   let deferredPrompt = $state<Event | undefined>(undefined);
   let showInstructions = $state(false);
 
@@ -13,10 +12,6 @@
     const dismissed = localStorage.getItem('offline_banner_dismissed');
     if (!dismissed) {
       visible = true;
-
-      autoHideTimeout = setTimeout(() => {
-        handleDismiss();
-      }, 10000);
     }
 
     const beforeInstallHandler = (e: Event) => {
@@ -26,9 +21,6 @@
     window.addEventListener('beforeinstallprompt', beforeInstallHandler);
 
     return () => {
-      if (autoHideTimeout) {
-        clearTimeout(autoHideTimeout);
-      }
       window.removeEventListener('beforeinstallprompt', beforeInstallHandler);
     };
   });
@@ -58,13 +50,13 @@
 
 {#if visible}
   <div class="fixed top-0 left-0 right-0 z-50 p-4">
-    <Card class="mx-auto max-w-2xl border-blue-500 bg-blue-50">
+    <Card class="mx-auto max-w-2xl border-primary bg-accent">
       <CardContent class="p-6">
         <div class="flex items-start gap-4">
           <div class="shrink-0 text-2xl">📱</div>
           <div class="flex-1">
-            <h2 class="text-lg font-semibold text-blue-900 mb-2">Install for Best Experience</h2>
-            <p class="text-sm text-blue-800 mb-4">
+            <h2 class="text-lg font-semibold mb-2">Install for Best Experience</h2>
+            <p class="text-sm text-muted-foreground mb-4">
               Add this app to your home screen for quick access and offline use.
             </p>
             <div class="flex gap-2 flex-wrap">
@@ -74,7 +66,7 @@
           </div>
           <button
             onclick={handleDismiss}
-            class="shrink-0 text-blue-700 hover:text-blue-900"
+            class="shrink-0 text-foreground hover:text-foreground/80"
             aria-label="Close"
           >
             ✕

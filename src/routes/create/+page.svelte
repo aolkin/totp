@@ -160,19 +160,23 @@
           >
         </div>
       {:else}
-        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+        <div
+          class="p-3 bg-destructive/10 border border-destructive/30 rounded-md text-destructive text-sm"
+        >
           Anyone with this URL can access the TOTP code.
         </div>
       {/if}
 
       {#if wasSavedToBrowser}
-        <div class="p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm">
+        <div class="p-3 bg-primary/10 border border-primary/30 rounded-md text-primary text-sm">
           ✓ Saved to browser storage
         </div>
       {/if}
 
       {#if !wasSavedToBrowser}
-        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+        <div
+          class="p-3 bg-destructive/10 border border-destructive/30 rounded-md text-destructive text-sm"
+        >
           Save this URL{savedPassphrase ? ' and passphrase' : ''}. They cannot be recovered.
         </div>
       {/if}
