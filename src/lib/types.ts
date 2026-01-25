@@ -56,6 +56,7 @@ export interface TOTPRecord {
   lastUsed: number;
   encrypted: EncryptedData;
   passphraseHint?: string;
+  savedWithAccount?: number;
 }
 
 export interface TOTPExport {
@@ -71,6 +72,14 @@ export interface TOTPExport {
     };
     passphraseHint?: string;
   }[];
+}
+
+export interface EncryptedPassphrase {
+  id: number;
+  accountId: number;
+  totpId: number;
+  encrypted: EncryptedKey;
+  created: number;
 }
 
 export const DEFAULT_DIGITS = 6;

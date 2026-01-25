@@ -12,9 +12,10 @@
     config: TOTPConfig;
     record?: TOTPRecord;
     encryptedData?: EncryptedData;
+    onSaveToAccount?: () => void;
   }
 
-  const { config, record, encryptedData }: Props = $props();
+  const { config, record, encryptedData, onSaveToAccount }: Props = $props();
 
   let code = $state('');
   let timeRemaining = $state(0);
@@ -152,6 +153,12 @@
       {#if !record && encryptedData}
         <Button variant="outline" class="w-full" onclick={saveToBrowser} disabled={isSaving}>
           {isSaving ? 'Saving...' : 'Save to Browser'}
+        </Button>
+      {/if}
+
+      {#if record && !record.savedWithAccount && onSaveToAccount}
+        <Button variant="outline" class="w-full" onclick={onSaveToAccount}>
+          Save Passphrase to Account
         </Button>
       {/if}
 

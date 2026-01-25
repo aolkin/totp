@@ -14,7 +14,12 @@ export {
 class TOTPStorage extends DbRepository<'secrets'> {
   protected storeName = 'secrets' as const;
 
-  async addTotp(label: string, encrypted: EncryptedData, passphraseHint?: string): Promise<number> {
+  async addTotp(
+    label: string,
+    encrypted: EncryptedData,
+    passphraseHint?: string,
+    savedWithAccount?: number,
+  ): Promise<number> {
     const now = Date.now();
 
     const record: Omit<TOTPRecord, 'id'> = {
@@ -23,6 +28,7 @@ class TOTPStorage extends DbRepository<'secrets'> {
       lastUsed: now,
       encrypted,
       passphraseHint,
+      savedWithAccount,
     };
 
     return super.add(record);
@@ -74,6 +80,15 @@ class TOTPStorage extends DbRepository<'secrets'> {
     }
 
     return imported;
+  }
+
+  async clearSavedWithAccount(accountId: number): Promise<void> {
+    const records = await this.getAll();
+    for (const record of records) {
+      if (record.savedWithAccount === accountId) {
+        await this.update(record.id, { savedWithAccount: undefined });
+      }
+    }
   }
 }
 
