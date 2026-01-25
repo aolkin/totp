@@ -3,9 +3,8 @@
   import { onMount } from 'svelte';
   import TotpDisplay from '$lib/components/TotpDisplay.svelte';
   import PassphrasePrompt from '$lib/components/PassphrasePrompt.svelte';
+  import UnlockAccountDialog from '$lib/components/UnlockAccountDialog.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
   import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
   import {
     Dialog,
@@ -24,12 +23,7 @@
   import type { TOTPConfig, TOTPRecord, Account } from '$lib/types';
   import { totpStorage } from '$lib/storage';
   import { getPassphraseFromAccount, savePassphraseToAccount } from '$lib/passphrase-storage';
-  import {
-    accountRepository,
-    unlockedAccounts,
-    unlockAccount,
-    recordAccountActivity,
-  } from '$lib/accounts';
+  import { accountRepository, unlockedAccounts, recordAccountActivity } from '$lib/accounts';
   import { toast } from 'svelte-sonner';
 
   type ViewMode = 'loading' | 'prompt' | 'display' | 'error';
@@ -46,7 +40,6 @@
   let unlockedMap = $state(new Map());
   let showUnlockDialog = $state(false);
   let accountToUnlock = $state<Account | undefined>(undefined);
-  let unlockPassword = $state('');
   let unlockError = $state('');
 
   let showSaveToAccountDialog = $state(false);
@@ -131,13 +124,13 @@
     }
   }
 
-  async function handleUnlockForView() {
+  async function handleUnlockForView(password: string) {
     if (!accountToUnlock || !currentRecord || !encryptedData) return;
     unlockError = '';
     try {
-      await unlockAccount(accountToUnlock.id, unlockPassword);
+      const { unlockAccount } = await import('$lib/accounts');
+      await unlockAccount(accountToUnlock.id, password);
       showUnlockDialog = false;
-      unlockPassword = '';
 
       const passphrase = await getPassphraseFromAccount(accountToUnlock.id, currentRecord.id);
       if (passphrase) {
@@ -153,6 +146,7 @@
       accountToUnlock = undefined;
     } catch (err) {
       unlockError = err instanceof Error ? err.message : 'Failed to unlock account';
+      throw err;
     }
   }
 
@@ -241,35 +235,28 @@
   </div>
 {/if}
 
-<Dialog bind:open={showUnlockDialog}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Unlock Account</DialogTitle>
-      <DialogDescription>Account: {accountToUnlock?.username ?? ''}</DialogDescription>
-    </DialogHeader>
-    <div class="space-y-3">
-      <Label for="unlock-password-view">Password</Label>
-      <Input id="unlock-password-view" type="password" bind:value={unlockPassword} />
-      {#if unlockError}
-        <div class="text-sm text-destructive">{unlockError}</div>
-      {/if}
-    </div>
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onclick={() => {
-          showUnlockDialog = false;
-          unlockPassword = '';
-          unlockError = '';
-          mode = 'prompt';
-        }}>Cancel</Button
-      >
-      <Button onclick={handleUnlockForView}>Unlock</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<UnlockAccountDialog
+  open={showUnlockDialog}
+  account={accountToUnlock}
+  error={unlockError}
+  onUnlock={handleUnlockForView}
+  onCancel={() => {
+    showUnlockDialog = false;
+    accountToUnlock = undefined;
+    unlockError = '';
+    mode = 'prompt';
+  }}
+/>
 
-<Dialog bind:open={showSaveToAccountDialog}>
+<Dialog
+  open={showSaveToAccountDialog}
+  onOpenChange={(isOpen) => {
+    if (!isOpen) {
+      showSaveToAccountDialog = false;
+      selectedAccountForSave = undefined;
+    }
+  }}
+>
   <DialogContent>
     <DialogHeader>
       <DialogTitle>Save Passphrase to Account</DialogTitle>
@@ -278,7 +265,7 @@
       </DialogDescription>
     </DialogHeader>
     <div class="space-y-3">
-      <Label for="account-select-save">Select Account</Label>
+      <label for="account-select-save" class="text-sm font-medium">Select Account</label>
       <Select
         type="single"
         value={selectedAccountForSave ? String(selectedAccountForSave) : undefined}

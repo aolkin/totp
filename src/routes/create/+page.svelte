@@ -24,20 +24,13 @@
   import {
     accountRepository,
     unlockedAccounts,
-    unlockAccount,
+    createAccount,
     recordAccountActivity,
   } from '$lib/accounts';
   import { toast } from 'svelte-sonner';
   import QrScanner from '$lib/components/QrScanner.svelte';
-  import AccountForm from '$lib/components/AccountForm.svelte';
-  import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-  } from '$lib/components/ui/dialog';
+  import UnlockAccountDialog from '$lib/components/UnlockAccountDialog.svelte';
+  import CreateAccountDialog from '$lib/components/CreateAccountDialog.svelte';
 
   type SaveOption = 'none' | 'browser' | 'account';
 
@@ -64,16 +57,8 @@
   let unlockedMap = $state(new Map());
   let showUnlockDialog = $state(false);
   let accountToUnlock = $state<Account | undefined>(undefined);
-  let unlockPassword = $state('');
   let unlockError = $state('');
   let showCreateAccountDialog = $state(false);
-  let createAccountForm = $state({
-    username: '',
-    password: '',
-    confirmPassword: '',
-    autoLock: 15,
-    error: '',
-  });
 
   onMount(() => {
     void loadAccounts();
@@ -122,56 +107,28 @@
     return unlockedMap.has(accountId);
   }
 
-  async function handleUnlockAccount() {
+  async function handleUnlockAccount(password: string) {
     if (!accountToUnlock) return;
     unlockError = '';
     try {
-      await unlockAccount(accountToUnlock.id, unlockPassword);
+      const { unlockAccount } = await import('$lib/accounts');
+      await unlockAccount(accountToUnlock.id, password);
       selectedAccountId = accountToUnlock.id;
       toast.success('Account unlocked');
       showUnlockDialog = false;
-      unlockPassword = '';
       accountToUnlock = undefined;
     } catch (err) {
       unlockError = err instanceof Error ? err.message : 'Failed to unlock account';
+      throw err;
     }
   }
 
-  async function handleCreateAccountSubmit() {
-    createAccountForm.error = '';
-    if (!createAccountForm.username.trim()) {
-      createAccountForm.error = 'Username is required.';
-      return;
-    }
-    if (createAccountForm.password.length < 8) {
-      createAccountForm.error = 'Password must be at least 8 characters';
-      return;
-    }
-    if (createAccountForm.password !== createAccountForm.confirmPassword) {
-      createAccountForm.error = 'Passwords do not match';
-      return;
-    }
-    try {
-      const { createAccount } = await import('$lib/accounts');
-      const account = await createAccount(
-        createAccountForm.username.trim(),
-        createAccountForm.password,
-        createAccountForm.autoLock,
-      );
-      toast.success('Account created');
-      showCreateAccountDialog = false;
-      createAccountForm = {
-        username: '',
-        password: '',
-        confirmPassword: '',
-        autoLock: 15,
-        error: '',
-      };
-      await loadAccounts();
-      selectedAccountId = account.id;
-    } catch (err) {
-      createAccountForm.error = err instanceof Error ? err.message : 'Failed to create account';
-    }
+  async function handleCreateAccountSubmit(username: string, password: string, autoLock: number) {
+    const account = await createAccount(username, password, autoLock);
+    toast.success('Account created');
+    showCreateAccountDialog = false;
+    await loadAccounts();
+    selectedAccountId = account.id;
   }
 
   function handleAccountSelection(value: string | undefined) {
@@ -570,62 +527,22 @@
 
 <QrScanner bind:open={showScanner} onScan={handleScan} onClose={() => (showScanner = false)} />
 
-<Dialog bind:open={showUnlockDialog}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Unlock Account</DialogTitle>
-      <DialogDescription>Account: {accountToUnlock?.username ?? ''}</DialogDescription>
-    </DialogHeader>
-    <div class="space-y-3">
-      <Label for="unlock-password">Password</Label>
-      <Input id="unlock-password" type="password" bind:value={unlockPassword} />
-      {#if unlockError}
-        <div class="text-sm text-destructive">{unlockError}</div>
-      {/if}
-    </div>
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onclick={() => {
-          showUnlockDialog = false;
-          unlockPassword = '';
-          unlockError = '';
-        }}>Cancel</Button
-      >
-      <Button onclick={handleUnlockAccount}>Unlock</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<UnlockAccountDialog
+  open={showUnlockDialog}
+  account={accountToUnlock}
+  error={unlockError}
+  onUnlock={handleUnlockAccount}
+  onCancel={() => {
+    showUnlockDialog = false;
+    accountToUnlock = undefined;
+    unlockError = '';
+  }}
+/>
 
-<Dialog bind:open={showCreateAccountDialog}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Create Account</DialogTitle>
-      <DialogDescription>Passwords cannot be recovered.</DialogDescription>
-    </DialogHeader>
-    <AccountForm
-      mode="create"
-      bind:username={createAccountForm.username}
-      bind:password={createAccountForm.password}
-      bind:confirmPassword={createAccountForm.confirmPassword}
-      bind:autoLock={createAccountForm.autoLock}
-      bind:error={createAccountForm.error}
-    />
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onclick={() => {
-          showCreateAccountDialog = false;
-          createAccountForm = {
-            username: '',
-            password: '',
-            confirmPassword: '',
-            autoLock: 15,
-            error: '',
-          };
-        }}>Cancel</Button
-      >
-      <Button onclick={handleCreateAccountSubmit}>Create Account</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<CreateAccountDialog
+  open={showCreateAccountDialog}
+  onCreate={handleCreateAccountSubmit}
+  onCancel={() => {
+    showCreateAccountDialog = false;
+  }}
+/>
