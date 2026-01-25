@@ -9,6 +9,8 @@ import {
   generateIV,
   toArrayBuffer,
 } from './crypto';
+import { deletePassphrasesForAccount } from './passphrase-storage';
+import { totpStorage } from './storage';
 
 const TAG_LENGTH = 16;
 const PASSWORD_HASH_BYTES = 32;
@@ -313,9 +315,6 @@ export async function changeAccountPassword(
 }
 
 export async function deleteAccount(accountId: number): Promise<void> {
-  const { deletePassphrasesForAccount } = await import('./passphrase-storage');
-  const { totpStorage } = await import('./storage');
-
   await deletePassphrasesForAccount(accountId);
   await totpStorage.clearSavedWithAccount(accountId);
   await accountRepository.delete(accountId);

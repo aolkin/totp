@@ -138,6 +138,8 @@
     if (!recordToDelete) return;
 
     try {
+      const { deletePassphrasesForTotp } = await import('$lib/passphrase-storage');
+      await deletePassphrasesForTotp(recordToDelete.id);
       await totpStorage.delete(recordToDelete.id);
       const idToDelete = recordToDelete.id;
       records = records.filter((r) => r.id !== idToDelete);

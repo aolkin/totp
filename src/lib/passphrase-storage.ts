@@ -99,7 +99,6 @@ export async function savePassphraseToAccount(
   if (existing) {
     await passphraseRepository.update(existing.id, {
       encrypted,
-      created: Date.now(),
     });
   } else {
     await passphraseRepository.add({
