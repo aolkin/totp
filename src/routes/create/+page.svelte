@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { generatePassphrase, calculateStrength, getStrengthLabel } from '$lib/passphrase';
   import { encrypt, encodeToURL, isValidBase32, normalizeBase32 } from '$lib/crypto';
   import {
@@ -7,6 +8,7 @@
     DEFAULT_ALGORITHM,
     type TOTPConfig,
     type Algorithm,
+    type Account,
   } from '$lib/types';
   import type { OTPAuthData } from '$lib/otpauth';
   import { Button } from '$lib/components/ui/button';
@@ -14,11 +16,30 @@
   import { Label } from '$lib/components/ui/label';
   import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
   import { Progress } from '$lib/components/ui/progress';
-  import { Checkbox } from '$lib/components/ui/checkbox';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
+  import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
+  import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group';
   import { totpStorage } from '$lib/storage';
+  import { savePassphraseToAccount } from '$lib/passphrase-storage';
+  import {
+    accountRepository,
+    unlockedAccounts,
+    unlockAccount,
+    recordAccountActivity,
+  } from '$lib/accounts';
   import { toast } from 'svelte-sonner';
   import QrScanner from '$lib/components/QrScanner.svelte';
+  import AccountForm from '$lib/components/AccountForm.svelte';
+  import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+  } from '$lib/components/ui/dialog';
+
+  type SaveOption = 'none' | 'browser' | 'account';
 
   let secret = $state('');
   let label = $state('');
@@ -27,7 +48,8 @@
   let showAdvanced = $state(false);
   let digits = $state(DEFAULT_DIGITS);
   let period = $state(DEFAULT_PERIOD);
-  let saveToBrowser = $state(false);
+  let saveOption = $state<SaveOption>('none');
+  let selectedAccountId = $state<number | undefined>(undefined);
   let passphraseHint = $state('');
   let algorithm = $state<Algorithm>(DEFAULT_ALGORITHM);
   let showScanner = $state(false);
@@ -37,6 +59,37 @@
   let wasSavedToBrowser = $state(false);
   let error = $state('');
   let showResult = $state(false);
+
+  let accounts = $state<Account[]>([]);
+  let unlockedMap = $state(new Map());
+  let showUnlockDialog = $state(false);
+  let accountToUnlock = $state<Account | undefined>(undefined);
+  let unlockPassword = $state('');
+  let unlockError = $state('');
+  let showCreateAccountDialog = $state(false);
+  let createAccountForm = $state({
+    username: '',
+    password: '',
+    confirmPassword: '',
+    autoLock: 15,
+    error: '',
+  });
+
+  onMount(() => {
+    void loadAccounts();
+    const unsub = unlockedAccounts.subscribe((map) => {
+      unlockedMap = map;
+    });
+    return unsub;
+  });
+
+  async function loadAccounts() {
+    try {
+      accounts = await accountRepository.getAll();
+    } catch (error) {
+      console.error('Failed to load accounts:', error);
+    }
+  }
 
   function handleScan(data: OTPAuthData): void {
     secret = data.secret;
@@ -65,6 +118,83 @@
   const strength = $derived(isCustomPassphrase ? calculateStrength(passphrase) : 4);
   const strengthLabel = $derived(getStrengthLabel(strength));
 
+  function isAccountUnlocked(accountId: number): boolean {
+    return unlockedMap.has(accountId);
+  }
+
+  async function handleUnlockAccount() {
+    if (!accountToUnlock) return;
+    unlockError = '';
+    try {
+      await unlockAccount(accountToUnlock.id, unlockPassword);
+      selectedAccountId = accountToUnlock.id;
+      toast.success('Account unlocked');
+      showUnlockDialog = false;
+      unlockPassword = '';
+      accountToUnlock = undefined;
+    } catch (err) {
+      unlockError = err instanceof Error ? err.message : 'Failed to unlock account';
+    }
+  }
+
+  async function handleCreateAccountSubmit() {
+    createAccountForm.error = '';
+    if (!createAccountForm.username.trim()) {
+      createAccountForm.error = 'Username is required.';
+      return;
+    }
+    if (createAccountForm.password.length < 8) {
+      createAccountForm.error = 'Password must be at least 8 characters';
+      return;
+    }
+    if (createAccountForm.password !== createAccountForm.confirmPassword) {
+      createAccountForm.error = 'Passwords do not match';
+      return;
+    }
+    try {
+      const { createAccount } = await import('$lib/accounts');
+      const account = await createAccount(
+        createAccountForm.username.trim(),
+        createAccountForm.password,
+        createAccountForm.autoLock,
+      );
+      toast.success('Account created');
+      showCreateAccountDialog = false;
+      createAccountForm = {
+        username: '',
+        password: '',
+        confirmPassword: '',
+        autoLock: 15,
+        error: '',
+      };
+      await loadAccounts();
+      selectedAccountId = account.id;
+    } catch (err) {
+      createAccountForm.error = err instanceof Error ? err.message : 'Failed to create account';
+    }
+  }
+
+  function handleAccountSelection(value: string | undefined) {
+    if (!value) return;
+
+    if (value === 'create-new') {
+      showCreateAccountDialog = true;
+      return;
+    }
+
+    const accountId = parseInt(value, 10);
+    const account = accounts.find((a) => a.id === accountId);
+
+    if (!account) return;
+
+    if (!isAccountUnlocked(accountId)) {
+      accountToUnlock = account;
+      showUnlockDialog = true;
+    } else {
+      selectedAccountId = accountId;
+    }
+  }
+
   async function handleSubmit() {
     error = '';
 
@@ -85,14 +215,25 @@
       return;
     }
 
-    if (saveToBrowser && !passphrase) {
-      error = 'A passphrase is required when saving to browser.';
+    if (saveOption !== 'none' && !passphrase) {
+      error = 'A passphrase is required when saving.';
       return;
     }
 
-    if (saveToBrowser && !label.trim()) {
-      error = 'A label is required when saving to browser.';
+    if (saveOption !== 'none' && !label.trim()) {
+      error = 'A label is required when saving.';
       return;
+    }
+
+    if (saveOption === 'account') {
+      if (!selectedAccountId) {
+        error = 'Please select an account.';
+        return;
+      }
+      if (!isAccountUnlocked(selectedAccountId)) {
+        error = 'Selected account must be unlocked.';
+        return;
+      }
     }
 
     try {
@@ -110,10 +251,21 @@
       savedPassphrase = passphrase;
       wasSavedToBrowser = false;
 
-      if (saveToBrowser) {
+      if (saveOption === 'browser') {
         await totpStorage.addTotp(label || 'Unnamed TOTP', encrypted, passphraseHint || undefined);
         wasSavedToBrowser = true;
         toast.success('TOTP saved to browser');
+      } else if (saveOption === 'account' && selectedAccountId) {
+        const totpId = await totpStorage.addTotp(
+          label || 'Unnamed TOTP',
+          encrypted,
+          passphraseHint || undefined,
+          selectedAccountId,
+        );
+        await savePassphraseToAccount(selectedAccountId, totpId, passphrase);
+        recordAccountActivity(selectedAccountId);
+        wasSavedToBrowser = true;
+        toast.success('TOTP and passphrase saved to account');
       }
 
       showResult = true;
@@ -232,7 +384,7 @@
         </div>
 
         <div class="space-y-2">
-          <Label for="label">Label {saveToBrowser ? '*' : '(optional)'}</Label>
+          <Label for="label">Label {saveOption !== 'none' ? '*' : '(optional)'}</Label>
           <Input type="text" id="label" bind:value={label} placeholder="Service - account" />
           <p class="text-sm text-muted-foreground">A description to identify this TOTP</p>
         </div>
@@ -261,18 +413,33 @@
         </div>
 
         <div class="space-y-4 p-4 border rounded-md">
-          <div class="flex items-center space-x-2">
-            <Checkbox id="save-to-browser" bind:checked={saveToBrowser} />
-            <Label for="save-to-browser" class="text-sm font-medium cursor-pointer">
-              Save to this browser
-            </Label>
-          </div>
+          <Label>Save Options</Label>
+          <RadioGroup value={saveOption} onValueChange={(v) => (saveOption = v as SaveOption)}>
+            <div class="flex items-center space-x-2">
+              <RadioGroupItem value="none" id="save-none" />
+              <Label for="save-none" class="text-sm font-normal cursor-pointer">
+                Don't save (URL only)
+              </Label>
+            </div>
+            <div class="flex items-center space-x-2">
+              <RadioGroupItem value="browser" id="save-browser" />
+              <Label for="save-browser" class="text-sm font-normal cursor-pointer">
+                Save TOTP to browser (passphrase required each time)
+              </Label>
+            </div>
+            <div class="flex items-center space-x-2">
+              <RadioGroupItem value="account" id="save-account" />
+              <Label for="save-account" class="text-sm font-normal cursor-pointer">
+                Save TOTP and passphrase to account
+              </Label>
+            </div>
+          </RadioGroup>
 
-          {#if saveToBrowser}
+          {#if saveOption === 'browser'}
             <Alert>
               <AlertDescription>
-                A label and passphrase are required when saving to browser. The passphrase will not
-                be stored - you'll need to enter it each time you view this TOTP.
+                A label and passphrase are required. The passphrase will not be stored - you'll need
+                to enter it each time you view this TOTP.
               </AlertDescription>
             </Alert>
 
@@ -286,6 +453,58 @@
               />
               <p class="text-sm text-muted-foreground">
                 This hint will be shown when viewing the TOTP to help you remember the passphrase.
+              </p>
+            </div>
+          {/if}
+
+          {#if saveOption === 'account'}
+            <div class="space-y-2">
+              <Label for="account-select">Select Account</Label>
+              <Select
+                type="single"
+                value={selectedAccountId ? String(selectedAccountId) : undefined}
+                onValueChange={handleAccountSelection}
+              >
+                <SelectTrigger id="account-select">
+                  <span class="truncate">
+                    {#if selectedAccountId}
+                      {accounts.find((a) => a.id === selectedAccountId)?.username ??
+                        'Select account'}
+                      {isAccountUnlocked(selectedAccountId) ? '(unlocked)' : '(locked)'}
+                    {:else}
+                      Select account
+                    {/if}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {#each accounts as account (account.id)}
+                    <SelectItem value={String(account.id)}>
+                      {account.username}
+                      {isAccountUnlocked(account.id) ? '(unlocked)' : '(locked - click to unlock)'}
+                    </SelectItem>
+                  {/each}
+                  <SelectItem value="create-new">+ Create new account...</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Alert>
+              <AlertDescription>
+                The TOTP and passphrase will be encrypted with your account's encryption key. You
+                won't need to enter the passphrase when viewing if your account is unlocked.
+              </AlertDescription>
+            </Alert>
+
+            <div class="space-y-2">
+              <Label for="passphrase-hint-account">Passphrase Hint (optional)</Label>
+              <Input
+                type="text"
+                id="passphrase-hint-account"
+                bind:value={passphraseHint}
+                placeholder="e.g., office door code"
+              />
+              <p class="text-sm text-muted-foreground">
+                This hint will be shown if you need to manually enter the passphrase.
               </p>
             </div>
           {/if}
@@ -350,3 +569,63 @@
 {/if}
 
 <QrScanner bind:open={showScanner} onScan={handleScan} onClose={() => (showScanner = false)} />
+
+<Dialog bind:open={showUnlockDialog}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Unlock Account</DialogTitle>
+      <DialogDescription>Account: {accountToUnlock?.username ?? ''}</DialogDescription>
+    </DialogHeader>
+    <div class="space-y-3">
+      <Label for="unlock-password">Password</Label>
+      <Input id="unlock-password" type="password" bind:value={unlockPassword} />
+      {#if unlockError}
+        <div class="text-sm text-destructive">{unlockError}</div>
+      {/if}
+    </div>
+    <DialogFooter>
+      <Button
+        variant="outline"
+        onclick={() => {
+          showUnlockDialog = false;
+          unlockPassword = '';
+          unlockError = '';
+        }}>Cancel</Button
+      >
+      <Button onclick={handleUnlockAccount}>Unlock</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
+<Dialog bind:open={showCreateAccountDialog}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Create Account</DialogTitle>
+      <DialogDescription>Passwords cannot be recovered.</DialogDescription>
+    </DialogHeader>
+    <AccountForm
+      mode="create"
+      bind:username={createAccountForm.username}
+      bind:password={createAccountForm.password}
+      bind:confirmPassword={createAccountForm.confirmPassword}
+      bind:autoLock={createAccountForm.autoLock}
+      bind:error={createAccountForm.error}
+    />
+    <DialogFooter>
+      <Button
+        variant="outline"
+        onclick={() => {
+          showCreateAccountDialog = false;
+          createAccountForm = {
+            username: '',
+            password: '',
+            confirmPassword: '',
+            autoLock: 15,
+            error: '',
+          };
+        }}>Cancel</Button
+      >
+      <Button onclick={handleCreateAccountSubmit}>Create Account</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>

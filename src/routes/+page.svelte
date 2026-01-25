@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
@@ -19,19 +20,47 @@
     DialogHeader,
     DialogTitle,
   } from '$lib/components/ui/dialog';
-  import type { TOTPRecord, TOTPExport } from '$lib/types';
+  import type { TOTPRecord, TOTPExport, Account } from '$lib/types';
   import { totpStorage } from '$lib/storage';
   import { generateShareableURL, encodeToURL } from '$lib/crypto';
+  import { accountRepository, unlockedAccounts } from '$lib/accounts';
   import { toast } from 'svelte-sonner';
 
   type SortOption = 'recent' | 'alphabetical' | 'created';
 
   let records = $state<TOTPRecord[]>([]);
+  let accounts = $state<Account[]>([]);
+  let unlockedMap = $state(new Map());
   let searchQuery = $state('');
   let sortOption = $state<SortOption>('recent');
   let deleteDialogOpen = $state(false);
   let recordToDelete = $state<TOTPRecord | undefined>(undefined);
   let fileInput: HTMLInputElement | undefined;
+
+  onMount(() => {
+    void loadAccounts();
+    const unsub = unlockedAccounts.subscribe((map) => {
+      unlockedMap = map;
+    });
+    return unsub;
+  });
+
+  async function loadAccounts() {
+    try {
+      accounts = await accountRepository.getAll();
+    } catch (error) {
+      console.error('Failed to load accounts:', error);
+    }
+  }
+
+  function getAccountForRecord(record: TOTPRecord): Account | undefined {
+    if (!record.savedWithAccount) return undefined;
+    return accounts.find((a) => a.id === record.savedWithAccount);
+  }
+
+  function isAccountUnlocked(accountId: number): boolean {
+    return unlockedMap.has(accountId);
+  }
 
   function getViewUrl(record: TOTPRecord): string {
     const encoded = encodeToURL(record.encrypted);
@@ -245,6 +274,16 @@
                 <p class="text-sm text-muted-foreground mt-1">
                   Created {formatRelativeTime(record.created)}
                 </p>
+                {#if record.savedWithAccount}
+                  {@const account = getAccountForRecord(record)}
+                  {#if account}
+                    <p class="text-sm text-muted-foreground mt-1">
+                      {isAccountUnlocked(account.id) ? '👤' : '🔒'}
+                      {account.username}
+                      {isAccountUnlocked(account.id) ? '(unlocked)' : '(locked)'}
+                    </p>
+                  {/if}
+                {/if}
               </div>
 
               <div class="flex items-center gap-2 shrink-0">
