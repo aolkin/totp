@@ -66,7 +66,7 @@
           </div>
           <button
             onclick={handleDismiss}
-            class="shrink-0 text-foreground hover:text-foreground/80"
+            class="shrink-0 text-foreground hover:text-foreground/80 cursor-pointer"
             aria-label="Close"
           >
             ✕

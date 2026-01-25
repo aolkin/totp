@@ -83,7 +83,7 @@
     <h1 class="text-2xl font-semibold">TOTP Authenticator</h1>
     <button
       onclick={() => (showSettings = !showSettings)}
-      class="absolute right-0 top-0 text-sm text-muted-foreground hover:text-foreground"
+      class="absolute right-0 top-0 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
       aria-label="Settings"
     >
       ⚙️
