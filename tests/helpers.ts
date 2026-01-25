@@ -57,7 +57,9 @@ export async function saveTotpToBrowser(
   await page.getByRole('textbox', { name: 'TOTP Secret' }).fill(secret);
   await page.getByRole('textbox', { name: 'Label' }).fill(label);
 
-  await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
+  await page
+    .getByRole('radio', { name: 'Save TOTP to browser (passphrase required each time)' })
+    .click();
 
   await page.locator('#passphrase').fill(passphrase);
 

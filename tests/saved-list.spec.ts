@@ -12,7 +12,9 @@ test.describe('Saved TOTP List', () => {
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('BBBBCCCCDDDDEEEE');
     await page.getByRole('textbox', { name: 'Label' }).fill('AWS Console');
     await page.locator('#passphrase').fill('awspassword123');
-    await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
+    await page
+      .getByRole('radio', { name: 'Save TOTP to browser (passphrase required each time)' })
+      .click();
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
     await page.getByRole('link', { name: 'View Saved TOTPs' }).click();
 
@@ -54,7 +56,9 @@ test.describe('Saved TOTP List', () => {
     await page.getByRole('textbox', { name: 'TOTP Secret' }).fill('BBBBCCCCDDDDEEEE');
     await page.getByRole('textbox', { name: 'Label' }).fill('Alpha Account');
     await page.locator('#passphrase').fill('alphapassword123');
-    await page.getByRole('checkbox', { name: 'Save to this browser' }).click();
+    await page
+      .getByRole('radio', { name: 'Save TOTP to browser (passphrase required each time)' })
+      .click();
     await page.getByRole('button', { name: 'Generate TOTP URL' }).click();
     await page.getByRole('link', { name: 'View Saved TOTPs' }).click();
 
