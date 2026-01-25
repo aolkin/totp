@@ -38,7 +38,6 @@
 
   let accounts = $state<Account[]>([]);
   let unlockedMap = $state(new Map());
-  let showUnlockDialog = $state(false);
   let accountToUnlock = $state<Account | undefined>(undefined);
   let unlockError = $state('');
 
@@ -93,7 +92,6 @@
               const account = await accountRepository.getById(record.savedWithAccount);
               if (account && !isAccountUnlocked(record.savedWithAccount)) {
                 accountToUnlock = account;
-                showUnlockDialog = true;
                 return;
               }
             }
@@ -130,7 +128,6 @@
     try {
       const { unlockAccount } = await import('$lib/accounts');
       await unlockAccount(accountToUnlock.id, password);
-      showUnlockDialog = false;
 
       const passphrase = await getPassphraseFromAccount(accountToUnlock.id, currentRecord.id);
       if (passphrase) {
@@ -236,12 +233,11 @@
 {/if}
 
 <UnlockAccountDialog
-  open={showUnlockDialog}
+  open={accountToUnlock !== undefined}
   account={accountToUnlock}
   error={unlockError}
   onUnlock={handleUnlockForView}
   onCancel={() => {
-    showUnlockDialog = false;
     accountToUnlock = undefined;
     unlockError = '';
     mode = 'prompt';

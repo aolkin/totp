@@ -55,7 +55,6 @@
 
   let accounts = $state<Account[]>([]);
   let unlockedMap = $state(new Map());
-  let showUnlockDialog = $state(false);
   let accountToUnlock = $state<Account | undefined>(undefined);
   let unlockError = $state('');
   let showCreateAccountDialog = $state(false);
@@ -115,7 +114,6 @@
       await unlockAccount(accountToUnlock.id, password);
       selectedAccountId = accountToUnlock.id;
       toast.success('Account unlocked');
-      showUnlockDialog = false;
       accountToUnlock = undefined;
     } catch (err) {
       unlockError = err instanceof Error ? err.message : 'Failed to unlock account';
@@ -146,7 +144,6 @@
 
     if (!isAccountUnlocked(accountId)) {
       accountToUnlock = account;
-      showUnlockDialog = true;
     } else {
       selectedAccountId = accountId;
     }
@@ -528,12 +525,11 @@
 <QrScanner bind:open={showScanner} onScan={handleScan} onClose={() => (showScanner = false)} />
 
 <UnlockAccountDialog
-  open={showUnlockDialog}
+  open={accountToUnlock !== undefined}
   account={accountToUnlock}
   error={unlockError}
   onUnlock={handleUnlockAccount}
   onCancel={() => {
-    showUnlockDialog = false;
     accountToUnlock = undefined;
     unlockError = '';
   }}
