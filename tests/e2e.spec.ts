@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { createTotpUrl } from './helpers';
 
 test.describe('E2E - Cross-Tab Flows', () => {

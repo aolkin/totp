@@ -111,7 +111,7 @@
       wasSavedToBrowser = false;
 
       if (saveToBrowser) {
-        await totpStorage.add(label || 'Unnamed TOTP', encrypted, passphraseHint || undefined);
+        await totpStorage.addTotp(label || 'Unnamed TOTP', encrypted, passphraseHint || undefined);
         wasSavedToBrowser = true;
         toast.success('TOTP saved to browser');
       }

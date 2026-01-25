@@ -8,16 +8,72 @@ const SALT_LENGTH = 16;
 const IV_LENGTH = 12;
 const NO_PASSPHRASE_KEY = 'NO_PASSPHRASE';
 
+export type KeyUsage = 'encrypt' | 'decrypt' | 'wrapKey' | 'unwrapKey';
+
+/**
+ * Creates an ArrayBuffer copy for Web Crypto APIs that require ArrayBuffer inputs.
+ */
+export function toArrayBuffer(value: Uint8Array): ArrayBuffer {
+  const copy = value.slice();
+  return copy.buffer;
+}
+
+async function importPbkdf2KeyMaterial(passphrase: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(passphrase);
+  const buffer = toArrayBuffer(bytes);
+  return crypto.subtle.importKey('raw', buffer, 'PBKDF2', false, ['deriveKey', 'deriveBits']);
+}
+
+/**
+ * Generic PBKDF2 key derivation for AES-GCM
+ */
+export async function derivePbkdf2Key(
+  password: string,
+  salt: Uint8Array,
+  usages: KeyUsage[],
+  extractable = false,
+): Promise<CryptoKey> {
+  const keyMaterial = await importPbkdf2KeyMaterial(password);
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: toArrayBuffer(salt),
+      iterations: PBKDF2_ITERATIONS,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    extractable,
+    usages,
+  );
+}
+
+/**
+ * Generic PBKDF2 bits derivation for password hashing
+ */
+export async function derivePbkdf2Bits(
+  password: string,
+  salt: Uint8Array,
+  bits: number,
+): Promise<Uint8Array> {
+  const keyMaterial = await importPbkdf2KeyMaterial(password);
+  const derived = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: toArrayBuffer(salt),
+      iterations: PBKDF2_ITERATIONS,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    bits,
+  );
+  return new Uint8Array(derived);
+}
+
 export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const keyMaterial = passphrase || NO_PASSPHRASE_KEY;
-  const encoder = new TextEncoder();
-  const passwordKey = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(keyMaterial),
-    'PBKDF2',
-    false,
-    ['deriveKey'],
-  );
+  const passwordKey = await importPbkdf2KeyMaterial(keyMaterial);
 
   return crypto.subtle.deriveKey(
     {
@@ -34,8 +90,8 @@ export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<C
 }
 
 export async function encrypt(config: TOTPConfig, passphrase: string): Promise<EncryptedData> {
-  const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
-  const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  const salt = generateSalt();
+  const iv = generateIV();
   const key = await deriveKey(passphrase, salt);
 
   const metadata: TOTPMetadata = { s: config.secret };
@@ -56,7 +112,11 @@ export async function encrypt(config: TOTPConfig, passphrase: string): Promise<E
   const encoder = new TextEncoder();
   const plaintext = encoder.encode(JSON.stringify(metadata));
 
-  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext);
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: toArrayBuffer(iv) },
+    key,
+    plaintext,
+  );
 
   return {
     salt,
@@ -154,4 +214,18 @@ export function base64ToUint8Array(base64: string): Uint8Array {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+}
+
+/**
+ * Generate a random salt for PBKDF2
+ */
+export function generateSalt(): Uint8Array {
+  return crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+}
+
+/**
+ * Generate a random initialization vector for AES-GCM
+ */
+export function generateIV(): Uint8Array {
+  return crypto.getRandomValues(new Uint8Array(IV_LENGTH));
 }

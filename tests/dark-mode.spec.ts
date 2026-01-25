@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Dark Mode', () => {
   test('should toggle between light and dark mode based on system preference', async ({ page }) => {

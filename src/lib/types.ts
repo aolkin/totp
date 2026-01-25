@@ -22,6 +22,33 @@ export interface EncryptedData {
   ciphertext: Uint8Array;
 }
 
+export interface EncryptedKey {
+  iv: Uint8Array;
+  ciphertext: Uint8Array;
+  tag: Uint8Array;
+}
+
+export interface Account {
+  id: number;
+  username: string;
+  created: number;
+  lastUsed: number;
+  passwordHash: string;
+  salt: Uint8Array;
+  keySalt: Uint8Array;
+  encryptedDEK: EncryptedKey;
+  autoLockMinutes: number;
+}
+
+export interface UnlockedAccount {
+  accountId: number;
+  username: string;
+  dataEncryptionKey: CryptoKey;
+  autoLockMinutes: number;
+  unlockedAt: number;
+  lastActivity: number;
+}
+
 export interface TOTPRecord {
   id: number;
   label: string;

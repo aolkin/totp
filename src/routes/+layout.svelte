@@ -6,6 +6,16 @@
   import UpdateBanner from '$lib/components/UpdateBanner.svelte';
   import CacheInfo from '$lib/components/CacheInfo.svelte';
   import { requestPersistentStorage } from '$lib/offline';
+  import { toast } from 'svelte-sonner';
+  import {
+    recordAccountActivity,
+    startAutoLockMonitor,
+    stopAutoLockMonitor,
+    lockAllAccounts,
+  } from '$lib/accounts';
+  import AccountManager from '$lib/components/AccountManager.svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { Separator } from '$lib/components/ui/separator';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -45,6 +55,22 @@
           console.error('Service worker registration failed:', error);
         });
     }
+    startAutoLockMonitor((account) => {
+      toast.warning(`Account "${account.username}" locked due to inactivity`);
+    });
+    const handleActivity = () => {
+      recordAccountActivity();
+    };
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('touchstart', handleActivity);
+
+    return () => {
+      stopAutoLockMonitor();
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('touchstart', handleActivity);
+    };
   });
 </script>
 
@@ -66,7 +92,22 @@
 
   {#if showSettings}
     <div class="w-full max-w-2xl mb-8">
-      <CacheInfo />
+      <div class="space-y-6">
+        <CacheInfo />
+        <Separator />
+        <div class="rounded-md border bg-card p-4 space-y-2">
+          <div class="font-semibold">Accounts</div>
+          <div class="text-sm text-muted-foreground">Manage accounts and auto-lock settings.</div>
+          <AccountManager>
+            {#snippet trigger(props)}
+              <Button {...props} variant="outline" size="sm">Manage Accounts</Button>
+            {/snippet}
+          </AccountManager>
+          <Button variant="outline" size="sm" onclick={lockAllAccounts}>
+            Lock All Accounts Now
+          </Button>
+        </div>
+      </div>
     </div>
   {/if}
 

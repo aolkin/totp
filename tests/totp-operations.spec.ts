@@ -1,12 +1,8 @@
-import { test, expect } from '@playwright/test';
-import { saveTotpToBrowser, clearStorage } from './helpers';
+import { test, expect } from './fixtures';
+import { saveTotpToBrowser } from './helpers';
 import type { TOTPExport } from '../src/lib/types';
 
 test.describe('TOTP Operations', () => {
-  test.beforeEach(async ({ page }) => {
-    await clearStorage(page);
-  });
-
   test('should delete TOTP with confirmation dialog', async ({ page }) => {
     await saveTotpToBrowser(page, {
       label: 'To Be Deleted',
