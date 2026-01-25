@@ -17,6 +17,7 @@ test.describe('Account Management', () => {
     await expect(page.getByText('No accounts yet')).toBeVisible();
 
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
     await page.getByLabel('Username').fill('testuser@example.com');
     await page.getByLabel('Password', { exact: true }).fill('testpassword123');
     await page.getByLabel('Confirm Password').fill('testpassword123');
@@ -30,6 +31,7 @@ test.describe('Account Management', () => {
   test('rejects password shorter than 8 characters', async ({ page }) => {
     await openAccountManager(page);
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
 
     await page.getByLabel('Username').fill('testuser');
     await page.getByLabel('Password', { exact: true }).fill('short');
@@ -42,6 +44,7 @@ test.describe('Account Management', () => {
   test('rejects mismatched password confirmation', async ({ page }) => {
     await openAccountManager(page);
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
 
     await page.getByLabel('Username').fill('testuser');
     await page.getByLabel('Password', { exact: true }).fill('password123');
@@ -54,6 +57,7 @@ test.describe('Account Management', () => {
   test('can lock and unlock account', async ({ page }) => {
     await openAccountManager(page);
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
 
     await page.getByLabel('Username').fill('locktest');
     await page.getByLabel('Password', { exact: true }).fill('testpass123');
@@ -66,6 +70,7 @@ test.describe('Account Management', () => {
     await expect(page.getByText('🔒 Locked')).toBeVisible();
 
     await page.getByRole('button', { name: 'Unlock' }).click();
+    await expect(page.getByRole('dialog', { name: 'Unlock Account' })).toBeVisible();
     await page.getByLabel('Password').fill('testpass123');
     await page.getByRole('button', { name: 'Unlock Account' }).click();
     await expect(page.getByText('✅ Unlocked')).toBeVisible();
@@ -74,6 +79,7 @@ test.describe('Account Management', () => {
   test('rejects incorrect password on unlock', async ({ page }) => {
     await openAccountManager(page);
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
 
     await page.getByLabel('Username').fill('unlocktest');
     await page.getByLabel('Password', { exact: true }).fill('correctpass');
@@ -82,6 +88,7 @@ test.describe('Account Management', () => {
 
     await page.getByRole('button', { name: 'Lock', exact: true }).click();
     await page.getByRole('button', { name: 'Unlock' }).click();
+    await expect(page.getByRole('dialog', { name: 'Unlock Account' })).toBeVisible();
     await page.getByLabel('Password').fill('wrongpass');
     await page.getByRole('button', { name: 'Unlock Account' }).click();
 
@@ -91,6 +98,7 @@ test.describe('Account Management', () => {
   test('can update auto-lock settings', async ({ page }) => {
     await openAccountManager(page);
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
 
     await page.getByLabel('Username').fill('autolocktest');
     await page.getByLabel('Password', { exact: true }).fill('testpass123');
@@ -100,7 +108,7 @@ test.describe('Account Management', () => {
     await expect(page.getByText('Auto-lock: 15 minutes')).toBeVisible();
 
     await page.getByRole('button', { name: 'Edit' }).click();
-    // Click the select trigger button within the edit dialog
+    await expect(page.getByRole('dialog', { name: /Edit Account/ })).toBeVisible();
     await page
       .getByRole('dialog', { name: /Edit Account/ })
       .getByRole('button', { name: '15 minutes' })
@@ -113,6 +121,7 @@ test.describe('Account Management', () => {
   test('can change account password', async ({ page }) => {
     await openAccountManager(page);
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
 
     await page.getByLabel('Username').fill('passwordchange');
     await page.getByLabel('Password', { exact: true }).fill('oldpass123');
@@ -120,6 +129,7 @@ test.describe('Account Management', () => {
     await page.getByRole('button', { name: 'Create Account' }).click();
 
     await page.getByRole('button', { name: 'Edit' }).click();
+    await expect(page.getByRole('dialog', { name: /Edit Account/ })).toBeVisible();
     await page.getByLabel('Update password').check();
     await page.getByLabel('Current Password').fill('oldpass123');
     await page.getByLabel('New Password', { exact: true }).fill('newpass123');
@@ -128,6 +138,7 @@ test.describe('Account Management', () => {
 
     await page.getByRole('button', { name: 'Lock', exact: true }).click();
     await page.getByRole('button', { name: 'Unlock' }).click();
+    await expect(page.getByRole('dialog', { name: 'Unlock Account' })).toBeVisible();
     await page.getByLabel('Password').fill('newpass123');
     await page.getByRole('button', { name: 'Unlock Account' }).click();
     await expect(page.getByText('✅ Unlocked')).toBeVisible();
@@ -136,6 +147,7 @@ test.describe('Account Management', () => {
   test('can delete account with confirmation', async ({ page }) => {
     await openAccountManager(page);
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
 
     await page.getByLabel('Username').fill('deletetest');
     await page.getByLabel('Password', { exact: true }).fill('testpass123');
@@ -143,6 +155,7 @@ test.describe('Account Management', () => {
     await page.getByRole('button', { name: 'Create Account' }).click();
 
     await page.getByRole('button', { name: 'Delete Account' }).click();
+    await expect(page.getByRole('dialog', { name: 'Delete Account?' })).toBeVisible();
     await expect(page.getByText('Are you sure')).toBeVisible();
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
     await expect(page.getByText('No accounts yet')).toBeVisible();
@@ -152,6 +165,7 @@ test.describe('Account Management', () => {
     await openAccountManager(page);
 
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
     await page.getByLabel('Username').fill('user1');
     await page.getByLabel('Password', { exact: true }).fill('password1');
     await page.getByLabel('Confirm Password').fill('password1');
@@ -159,6 +173,7 @@ test.describe('Account Management', () => {
     await expect(page.getByText('user1')).toBeVisible();
 
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
     await page.getByLabel('Username').fill('user2');
     await page.getByLabel('Password', { exact: true }).fill('password2');
     await page.getByLabel('Confirm Password').fill('password2');
@@ -189,6 +204,7 @@ test.describe('Account Management', () => {
     await openAccountManager(page);
 
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
     await page.getByLabel('Username').fill('multi1');
     await page.getByLabel('Password', { exact: true }).fill('pass1234');
     await page.getByLabel('Confirm Password').fill('pass1234');
@@ -196,6 +212,7 @@ test.describe('Account Management', () => {
     await expect(page.getByText('multi1')).toBeVisible();
 
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
     await page.getByLabel('Username').fill('multi2');
     await page.getByLabel('Password', { exact: true }).fill('pass5678');
     await page.getByLabel('Confirm Password').fill('pass5678');
@@ -210,6 +227,7 @@ test.describe('Account Management', () => {
     await openAccountManager(page);
 
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
     await page.getByLabel('Username').fill('duplicate');
     await page.getByLabel('Password', { exact: true }).fill('password1');
     await page.getByLabel('Confirm Password').fill('password1');
@@ -217,6 +235,7 @@ test.describe('Account Management', () => {
     await expect(page.getByText('duplicate')).toBeVisible();
 
     await page.getByRole('button', { name: '+ New' }).click();
+    await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
     await page.getByLabel('Username').fill('duplicate');
     await page.getByLabel('Password', { exact: true }).fill('password2');
     await page.getByLabel('Confirm Password').fill('password2');
