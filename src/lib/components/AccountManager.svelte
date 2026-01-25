@@ -32,6 +32,7 @@
     changeAccountPassword,
     unlockedAccounts,
   } from '$lib/accounts';
+  import { getTOTPCountForAccount } from '$lib/passphrase-storage';
 
   interface Props {
     trigger: Snippet<[Record<string, unknown>]>;
@@ -42,6 +43,7 @@
   let accounts = $state<Account[]>([]);
   let unlockedMap = $state<Map<number, UnlockedAccount>>(new Map());
   let loading = $state(false);
+  let totpCounts = $state<Map<number, number>>(new Map());
   const AUTO_LOCK_REFRESH_INTERVAL = 30000;
 
   let now = $state(Date.now());
@@ -79,7 +81,15 @@
       },
       delete: {
         title: 'Delete Account?',
-        description: `Are you sure you want to delete "${targetAccount?.username ?? ''}"? This action is permanent.`,
+        description: targetAccount
+          ? (() => {
+              const count = totpCounts.get(targetAccount.id) ?? 0;
+              if (count > 0) {
+                return `This will delete ${String(count)} saved passphrase${count !== 1 ? 's' : ''}. TOTPs will remain but require manual passphrase entry.\n\nAre you sure you want to delete "${targetAccount.username}"?`;
+              }
+              return `Are you sure you want to delete "${targetAccount.username}"? This action is permanent.`;
+            })()
+          : 'This action is permanent.',
         submitText: 'Delete',
         submitVariant: 'destructive' as const,
       },
@@ -138,6 +148,12 @@
     loading = true;
     try {
       accounts = await accountRepository.getAll();
+      const counts = new Map<number, number>();
+      for (const account of accounts) {
+        const count = await getTOTPCountForAccount(account.id);
+        counts.set(account.id, count);
+      }
+      totpCounts = counts;
     } catch (error) {
       console.error('Failed to load accounts:', error);
       toast.error('Failed to load accounts');
@@ -337,8 +353,12 @@
                 <div class="space-y-1">
                   <div class="font-medium">{account.username}</div>
                   <div class="text-sm text-muted-foreground">
-                    {isUnlocked(account.id) ? '✅ Unlocked' : '🔒 Locked'} • Auto-lock:{' '}
-                    {formatAutoLockLabel(AUTO_LOCK_OPTIONS, account.autoLockMinutes)}
+                    {isUnlocked(account.id) ? '✅ Unlocked' : '🔒 Locked'} • {totpCounts.get(
+                      account.id,
+                    ) ?? 0} TOTP{(totpCounts.get(account.id) ?? 0) !== 1 ? 's' : ''} saved
+                  </div>
+                  <div class="text-xs text-muted-foreground">
+                    Auto-lock: {formatAutoLockLabel(AUTO_LOCK_OPTIONS, account.autoLockMinutes)}
                   </div>
                   {#if getAutoLockCountdown(account)}
                     <div class="text-xs text-muted-foreground">

@@ -1,12 +1,13 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { TOTPRecord, Account } from './types';
+import type { TOTPRecord, Account, EncryptedPassphrase } from './types';
 
 export const DB_NAME = 'totp-storage';
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 export const STORE_NAME = 'secrets';
 export const ACCOUNTS_STORE = 'accounts';
+export const ENCRYPTED_PASSPHRASES_STORE = 'encrypted_passphrases';
 
-export type TOTPStoreName = 'secrets' | 'accounts';
+export type TOTPStoreName = 'secrets' | 'accounts' | 'encrypted_passphrases';
 
 export interface TOTPDBSchema extends DBSchema {
   secrets: {
@@ -17,6 +18,11 @@ export interface TOTPDBSchema extends DBSchema {
     key: number;
     value: Account;
     indexes: { username: string };
+  };
+  encrypted_passphrases: {
+    key: number;
+    value: EncryptedPassphrase;
+    indexes: { accountId: number; totpId: number; accountId_totpId: [number, number] };
   };
 }
 
@@ -35,6 +41,17 @@ export function openTotpDatabase(): Promise<IDBPDatabase<TOTPDBSchema>> {
           autoIncrement: true,
         });
         store.createIndex('username', 'username', { unique: true });
+      }
+      if (oldVersion < 4 && !db.objectStoreNames.contains(ENCRYPTED_PASSPHRASES_STORE)) {
+        const passphraseStore = db.createObjectStore(ENCRYPTED_PASSPHRASES_STORE, {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
+        passphraseStore.createIndex('accountId', 'accountId', { unique: false });
+        passphraseStore.createIndex('totpId', 'totpId', { unique: false });
+        passphraseStore.createIndex('accountId_totpId', ['accountId', 'totpId'], {
+          unique: true,
+        });
       }
     },
   });
