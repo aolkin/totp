@@ -12,7 +12,7 @@ declare let self: ServiceWorkerGlobalScope;
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
-const handler = createHandlerBoundToURL('/index.html');
+const handler = createHandlerBoundToURL('/');
 registerRoute(new NavigationRoute(handler));
 
 self.addEventListener('install', () => {
