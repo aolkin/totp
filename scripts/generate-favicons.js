@@ -13,7 +13,7 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
-const publicDir = join(rootDir, 'public');
+const publicDir = join(rootDir, 'static');
 
 async function generateFavicons() {
   let browser;

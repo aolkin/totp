@@ -26,7 +26,11 @@ class TOTPStorage extends DbRepository<'secrets'> {
       label,
       created: now,
       lastUsed: now,
-      encrypted,
+      encrypted: {
+        salt: new Uint8Array(encrypted.salt),
+        iv: new Uint8Array(encrypted.iv),
+        ciphertext: new Uint8Array(encrypted.ciphertext),
+      },
       passphraseHint,
       savedWithAccount,
     };

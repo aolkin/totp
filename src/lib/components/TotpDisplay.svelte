@@ -71,6 +71,7 @@
 
   async function saveToBrowser() {
     if (!encryptedData) {
+      console.error('saveToBrowser: encryptedData is missing');
       toast.error('No encrypted data available');
       return;
     }
@@ -79,7 +80,8 @@
     try {
       await totpStorage.addTotp(config.label || 'Unnamed TOTP', encryptedData);
       toast.success('TOTP saved to browser');
-    } catch {
+    } catch (error) {
+      console.error('Failed to save TOTP:', error);
       toast.error('Failed to save TOTP');
     } finally {
       isSaving = false;
