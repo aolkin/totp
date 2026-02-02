@@ -351,7 +351,7 @@
               id="passphrase"
               bind:value={passphrase}
               oninput={handlePassphraseInput}
-              class="flex-1 font-mono tracking-wider"
+              class="flex-1 font-mono"
               autocomplete="off"
             />
             <Button type="button" onclick={regeneratePassphrase} variant="outline">
