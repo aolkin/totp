@@ -74,6 +74,10 @@
         const decoded = decodeURIComponent(dataParam);
         encryptedData = decodeFromURL(decoded);
 
+        // Clear the encrypted data from URL history for privacy
+        // This prevents the encrypted blob from appearing in browser history
+        window.history.replaceState(null, '', '#/');
+
         const record = await totpStorage.findByEncodedData(decoded);
         if (record) {
           currentRecord = record;
