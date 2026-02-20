@@ -71,8 +71,30 @@
 
     try {
       if (dataParam) {
+        // Skip processing if this is the placeholder URL and we already have data
+        if (dataParam === 'active' && encryptedData) {
+          // Data already loaded, restore display state
+          if (config) {
+            mode = 'display';
+          } else {
+            mode = 'prompt';
+          }
+          return;
+        }
+
+        // Don't try to decode the placeholder
+        if (dataParam === 'active') {
+          errorMessage = 'No encrypted data found.';
+          mode = 'error';
+          return;
+        }
+
         const decoded = decodeURIComponent(dataParam);
         encryptedData = decodeFromURL(decoded);
+
+        // Clear the encrypted data from URL history for privacy
+        // Replace with placeholder to stay on the same route
+        window.history.replaceState(null, '', '#/view/active');
 
         const record = await totpStorage.findByEncodedData(decoded);
         if (record) {
